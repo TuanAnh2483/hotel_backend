@@ -42,6 +42,7 @@ public class HotelSearchRequest {
         if(checkIn == null || checkOut == null){
             return true;
         }
+
         return checkOut.isAfter(checkIn);
     }
 }

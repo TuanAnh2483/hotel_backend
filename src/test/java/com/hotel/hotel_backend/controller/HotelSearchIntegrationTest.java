@@ -53,8 +53,8 @@ class HotelSearchIntegrationTest {
 
     @BeforeEach
     void setUp() {
-        // Moi test tu setup lai DB de khong bi phu thuoc vao du lieu cua test khac.
-        // checkIn/checkOut duoc co dinh tu day de toan bo helper method dung chung.
+        // Reset DB truoc moi test de tung case doc lap nhau.
+        // checkIn/checkOut duoc co dinh de helper inventory va request dung chung cung mot ky o.
         dailyInventoryRepository.deleteAll();
         roomRepository.deleteAll();
         hotelRepository.deleteAll();
@@ -66,9 +66,9 @@ class HotelSearchIntegrationTest {
 
     @Test
     void searchShouldReturnHotelsWithAvailableRooms() throws Exception {
-        // Case 1:
-        // Tao 1 hotel dung location, co 1 room active, co inventory day du cho ca ky o.
-        // Khi goi API search, hotel nay phai xuat hien trong ket qua.
+        // Contract:
+        // Hotel dung location, room dang active, va inventory du cho toan bo ky o
+        // thi phai duoc tra ve trong ket qua search.
         User owner = createOwner("owner-available@test.com");
 
         Hotel hotel = createHotel(owner, "Available Hotel", "Bangkok", "District 1");
@@ -91,10 +91,9 @@ class HotelSearchIntegrationTest {
 
     @Test
     void searchShouldExcludeHotelsWithoutAvailability() throws Exception {
-        // Case 2:
-        // Tao 2 hotel cung location.
-        // Hotel thu nhat con phong, hotel thu hai bi block het inventory.
-        // Ket qua search chi duoc tra ve hotel con phong.
+        // Contract:
+        // Hai hotel cung location nhung mot hotel bi sold-out toan bo ky o
+        // thi ket qua search chi duoc giu lai hotel con phong.
         User owner = createOwner("owner-soldout@test.com");
 
         Hotel availableHotel = createHotel(owner, "Available Hotel", "Bangkok", "District 1");
@@ -104,7 +103,7 @@ class HotelSearchIntegrationTest {
         Hotel soldOutHotel = createHotel(owner, "Sold Out Hotel", "Bangkok", "District 1");
         Room soldOutRoom = createRoom(soldOutHotel, "Sold Out Room", 1);
         initInventory(soldOutRoom);
-        blockInventory(soldOutRoom, 1);
+        blockInventoryForEntireStay(soldOutRoom, 1);
 
         mockMvc.perform(get("/api/hotels/search")
                         .param("province", "Bangkok")
@@ -122,9 +121,9 @@ class HotelSearchIntegrationTest {
 
     @Test
     void searchShouldReturnBadRequestWhenDatesMissing() throws Exception {
-        // Case 3:
-        // Thieu checkIn/checkOut phai bi chan ngay o boundary validation
-        // va tra ve 400 thay vi roi xuong logic search.
+        // Contract:
+        // Request thieu checkIn/checkOut phai fail ngay o boundary validation
+        // va tra 400 VALIDATION_ERROR thay vi chay vao business logic.
         mockMvc.perform(get("/api/hotels/search")
                         .param("province", "Bangkok")
                         .param("district", "District 1")
@@ -133,6 +132,89 @@ class HotelSearchIntegrationTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"));
+    }
+
+    @Test
+    void searchShouldExcludeHotelsWithoutEnoughCapacityForAdults() throws Exception {
+        // Contract:
+        // Ca hai hotel deu du so phong user yeu cau.
+        // Nhung chi hotel co tong suc chua du cho so adults moi duoc giu lai.
+        User owner = createOwner("owner-capacity@test.com");
+
+        Hotel familyHotel = createHotel(owner, "Family Hotel", "Bangkok", "District 1");
+        Room familyRoomA = createRoom(familyHotel, "Family A", 1, 2);
+        Room familyRoomB = createRoom(familyHotel, "Family B", 1, 2);
+        initInventory(familyRoomA);
+        initInventory(familyRoomB);
+
+        Hotel lowCapacityHotel = createHotel(owner, "Low Capacity Hotel", "Bangkok", "District 1");
+        Room singleRoomA = createRoom(lowCapacityHotel, "Single A", 1, 1);
+        Room singleRoomB = createRoom(lowCapacityHotel, "Single B", 1, 1);
+        initInventory(singleRoomA);
+        initInventory(singleRoomB);
+
+        mockMvc.perform(get("/api/hotels/search")
+                        .param("province", "Bangkok")
+                        .param("district", "District 1")
+                        .param("checkIn", checkIn.toString())
+                        .param("checkOut", checkOut.toString())
+                        .param("adults", "3")
+                        .param("rooms", "2"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.length()").value(1))
+                .andExpect(jsonPath("$.data[0].hotelId").value(familyHotel.getId()))
+                .andExpect(jsonPath("$.data[0].name").value("Family Hotel"));
+    }
+
+    @Test
+    void searchShouldReturnBadRequestWhenCheckOutIsNotAfterCheckIn() throws Exception {
+        // Contract:
+        // checkOut phai sau checkIn.
+        // Neu checkOut == checkIn hoac checkOut truoc checkIn thi request phai tra 400.
+        LocalDate invalidCheckIn = LocalDate.now().plusDays(3);
+        LocalDate invalidCheckOut = invalidCheckIn;
+
+        mockMvc.perform(get("/api/hotels/search")
+                        .param("province", "Bangkok")
+                        .param("district", "District 1")
+                        .param("checkIn", invalidCheckIn.toString())
+                        .param("checkOut", invalidCheckOut.toString())
+                        .param("adults", "2")
+                        .param("rooms", "1"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"));
+    }
+
+    @Test
+    void searchShouldExcludeHotelWhenOneNightIsSoldOut() throws Exception {
+        // Contract:
+        // Hotel phai available cho tat ca cac dem trong ky o.
+        // Chi can sold-out dung mot dem thi hotel do phai bi loai.
+        User owner = createOwner("owner-one-night@test.com");
+
+        Hotel availableHotel = createHotel(owner, "Always Available Hotel", "Bangkok", "District 1");
+        Room availableRoom = createRoom(availableHotel, "Available Room", 1);
+        initInventory(availableRoom);
+
+        Hotel oneNightSoldOutHotel = createHotel(owner, "One Night Sold Out Hotel", "Bangkok", "District 1");
+        Room soldOutRoom = createRoom(oneNightSoldOutHotel, "Sold Out Room", 1);
+        initInventory(soldOutRoom);
+        blockInventoryOnDate(soldOutRoom, checkIn.plusDays(1), 1);
+
+        mockMvc.perform(get("/api/hotels/search")
+                        .param("province", "Bangkok")
+                        .param("district", "District 1")
+                        .param("checkIn", checkIn.toString())
+                        .param("checkOut", checkOut.toString())
+                        .param("adults", "2")
+                        .param("rooms", "1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.length()").value(1))
+                .andExpect(jsonPath("$.data[0].hotelId").value(availableHotel.getId()))
+                .andExpect(jsonPath("$.data[0].name").value("Always Available Hotel"));
     }
 
     private User createOwner(String email) {
@@ -145,7 +227,7 @@ class HotelSearchIntegrationTest {
     }
 
     private Hotel createHotel(User owner, String name, String province, String district) {
-        // Tao hotel voi location cu the de test filter province/district.
+        // Tao hotel voi location cu the de test filter location.
         Hotel hotel = new Hotel();
         hotel.setOwner(owner);
         hotel.setName(name);
@@ -156,25 +238,32 @@ class HotelSearchIntegrationTest {
     }
 
     private Room createRoom(Hotel hotel, String name, int quantity) {
-        // Tao room active mac dinh. quantity la tong so phong cua room type nay.
+        // Helper mac dinh: room type nay co suc chua 2 nguoi.
+        return createRoom(hotel, name, quantity, 2);
+    }
+
+    private Room createRoom(Hotel hotel, String name, int quantity, int capacity) {
+        // quantity = hotel co bao nhieu phong thuoc room type nay.
+        // capacity = moi phong trong room type nay chua duoc bao nhieu nguoi.
+        // Test capacity dung helper nay de mo phong hotel du phong nhung thieu suc chua cho adults.
         Room room = new Room();
         room.setHotel(hotel);
         room.setName(name);
         room.setPrice(1_000_000L);
-        room.setCapacity(2);
+        room.setCapacity(capacity);
         room.setQuantity(quantity);
         return roomRepository.save(room);
     }
 
     private void initInventory(Room room) {
         // Search chi coi room la available khi moi ngay trong ky o deu co inventory.
-        // Helper nay tao inventory cho [checkIn, checkOut).
+        // Helper nay tao inventory cho tat ca cac ngay trong khoang [checkIn, checkOut).
         inventoryService.initInventory(room.getId(), checkIn, checkOut, room.getQuantity());
     }
 
-    private void blockInventory(Room room, int blockedRooms) {
-        // Block cung mot so luong phong tren tung ngay trong ky o.
-        // Neu blockedRooms = quantity thi room van active nhung khong con kha dung de dat.
+    private void blockInventoryForEntireStay(Room room, int blockedRooms) {
+        // Block cung mot so luong phong tren moi dem cua ky o.
+        // blockedRooms = quantity nghia la room van active nhung sold-out trong suot ky o.
         List<DailyInventory> inventories = dailyInventoryRepository.findByIdRoomIdAndIdDateBetween(
                 room.getId(),
                 checkIn,
@@ -186,5 +275,19 @@ class HotelSearchIntegrationTest {
         }
 
         dailyInventoryRepository.saveAll(inventories);
+    }
+
+    private void blockInventoryOnDate(Room room, LocalDate date, int blockedRooms) {
+        // Chi block mot dem cu the.
+        // Test nay dung de chung minh availability phai dung cho toan bo ky o,
+        // chi thieu inventory o mot dem cung phai loai hotel ra.
+        DailyInventory inventory = dailyInventoryRepository.findByIdRoomIdAndIdDateBetween(
+                room.getId(),
+                date,
+                date
+        ).get(0);
+
+        inventory.setBlockedRooms(blockedRooms);
+        dailyInventoryRepository.save(inventory);
     }
 }

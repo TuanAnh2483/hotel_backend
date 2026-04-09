@@ -28,10 +28,6 @@ public class HotelCandidateQueryService {
             );
         }
 
-
-
-
-
         return hotelRepository.findByProvinceAndStatus(
                 criteria.province(),
                 HotelStatus.ACTIVE

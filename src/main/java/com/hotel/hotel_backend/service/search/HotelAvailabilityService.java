@@ -8,9 +8,11 @@ import com.hotel.hotel_backend.repository.DailyInventoryRepository;
 import com.hotel.hotel_backend.repository.RoomRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+
 import java.time.temporal.ChronoUnit;
+import java.util.Comparator;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -20,12 +22,14 @@ public class HotelAvailabilityService {
     private final RoomRepository roomRepository;
     private final DailyInventoryRepository dailyInventoryRepository;
 
-    ///  điều kiện khi filter date time
     public List<Hotel> filterAvailableHotels(List<Hotel> hotels, HotelSearchCriteria criteria) {
+        // Khong co candidate hotel thi khong can lam them buoc nao nua.
         if (hotels.isEmpty()) {
             return List.of();
         }
-        if(criteria.checkIn() == null || criteria.checkOut() == null) {
+
+        // Service van tu phong thu lai request shape, du boundary validation da xu ly o DTO. +
+        if (!hasValidStayRequest(criteria)) {
             return List.of();
         }
 
@@ -33,42 +37,107 @@ public class HotelAvailabilityService {
                 .map(Hotel::getId)
                 .toList();
 
-        // Phase 1: searchable hotels must have at least one active room.
-        List<Room> activeRooms = roomRepository.findByHotelIdInAndStatus(hotelIds,RoomStatus.ACTIVE);
+        // Lay toan bo room type dang active cua cac hotel candidate.
+        // Tu day tro di, ta danh gia o muc HOTEL, khong con o muc tung room type rieng le.
+        List<Room> activeRooms = roomRepository.findByHotelIdInAndStatus(hotelIds, RoomStatus.ACTIVE);
 
-        List<Room> availableRooms = activeRooms.stream()
-                .filter(room-> isRoomAvailable(room,criteria))
-                .toList();
+        // Gom room type theo hotel de co the tra loi cau hoi:
+        // "voi tat ca room hien co, hotel nay co dap ung duoc request hay khong?"
+        Map<Long, List<Room>> roomsByHotelId = activeRooms.stream()
+                .collect(Collectors.groupingBy(room -> room.getHotel().getId()));
 
-        Set<Long> hotelIdsWithAvailableRooms = availableRooms
-                .stream()
-                .map(room -> room.getHotel().getId())
-                .collect(Collectors.toSet());
-
+        // Chi giu lai hotel nao dap ung dong thoi:
+        // - du so phong user yeu cau
+        // - tong suc chua cua cac phong duoc chon >= adults user yeu cau
         return hotels.stream()
-                .filter(hotel -> hotelIdsWithAvailableRooms.contains(hotel.getId()))
+                .filter(hotel -> canSatisfyStay(roomsByHotelId.getOrDefault(hotel.getId(), List.of()), criteria))
                 .toList();
     }
 
-    private boolean isRoomAvailable(Room room, HotelSearchCriteria criteria) {
-        // load inventories theo room + khoảng ngày
-            List<DailyInventory> inventories = dailyInventoryRepository.findByIdRoomIdAndIdDateBetween(
-                    room.getId(),
-                    criteria.checkIn(),
-                    criteria.checkOut().minusDays(1)
+    private int availableUnitsForStay(Room room, HotelSearchCriteria criteria) {
+        // Inventory duoc luu theo tung ngay.
+        // Muon biet room type nay con bao nhieu phong cho ca ky o,
+        // ta phai load toan bo inventory trong [checkIn, checkOut).
+        List<DailyInventory> inventories = dailyInventoryRepository.findByIdRoomIdAndIdDateBetween(
+                room.getId(),
+                criteria.checkIn(),
+                criteria.checkOut().minusDays(1)
+        );
 
-            );
+        long nights = ChronoUnit.DAYS.between(criteria.checkIn(), criteria.checkOut());
 
-            Long nigth = ChronoUnit.DAYS.between(criteria.checkIn(), criteria.checkOut());
-
-            // kiểm tra đủ số ngày
-        if(inventories.size() != nigth){
-                return false;
+        // Thieu bat ky ngay nao trong ky o thi room type nay khong cover duoc stay.
+        if (inventories.size() != nights) {
+            return 0;
         }
 
-        // kiểm tra mỗi ngày availableRooms - blockedRooms >= criteria.rooms()
+        // So phong co the ban cho ca ky o la muc thap nhat con lai giua cac ngay.
+        // Vi chi can 1 ngay khong du phong, room type nay khong the bao tron stay.
         return inventories.stream()
-                .allMatch(inventory ->
-                        inventory.getAvailableRooms()-inventory.getBlockedRooms()>= criteria.rooms());
+                .mapToInt(inv -> inv.getAvailableRooms() - inv.getBlockedRooms())
+                .min()
+                .orElse(0);
+    }
+
+    private boolean canSatisfyStay(List<Room> rooms, HotelSearchCriteria criteria) {
+        // Khong co room active nao thi chac chan fail.
+        if (rooms.isEmpty()) {
+            return false;
+        }
+
+        // Quy doi moi room type thanh 2 thong tin can cho bai toan search:
+        // - capacity: moi phong cua room type nay chua duoc bao nhieu nguoi
+        // - availableUnits: room type nay con bao nhieu phong cho tron ky o
+        List<RoomStayOption> options = rooms.stream()
+                .map(roommap -> new RoomStayOption(roommap.getCapacity(), availableUnitsForStay(roommap, criteria)))
+                .filter(option -> option.availableUnits() > 0)
+                .toList();
+
+        // Tong so phong available cua hotel phai du lon de cover request rooms.
+        int totalAvailableRooms = options.stream()
+                .mapToInt(opt-> opt.availableUnits())
+                .sum();
+
+        if (totalAvailableRooms < criteria.rooms()) {
+            return false;
+        }
+
+        // De toi da hoa suc chua voi cung so phong user yeu cau,
+        // uu tien lay phong co capacity lon truoc.
+        List<RoomStayOption> optionsSorted = options.stream()
+                .sorted(Comparator.comparingInt(RoomStayOption::capacity).reversed())
+                .toList();
+
+        int roomsRemaining = criteria.rooms();
+        int coveredAdults = 0;
+
+        for (RoomStayOption option : optionsSorted) {
+            if (roomsRemaining == 0) {
+                break;
+            }
+
+            // Tu room type hien tai, lay toi da so phong con thieu.
+            int roomsToTake = Math.min(option.availableUnits(), roomsRemaining);
+            coveredAdults += roomsToTake * option.capacity();
+            roomsRemaining -= roomsToTake;
+        }
+
+        // Hotel chi pass khi:
+        // - da lay du so phong
+        // - tong suc chua cua so phong do du de chua adults request
+        return roomsRemaining == 0 && coveredAdults >= criteria.adults();
+    }
+
+    private boolean hasValidStayRequest(HotelSearchCriteria criteria) {
+        return criteria.checkIn() != null
+                && criteria.checkOut() != null
+                && criteria.checkOut().isAfter(criteria.checkIn())
+                && criteria.rooms() != null
+                && criteria.rooms() > 0
+                && criteria.adults() != null
+                && criteria.adults() > 0;
+    }
+
+    private record RoomStayOption(int capacity, int availableUnits) {
     }
 }
