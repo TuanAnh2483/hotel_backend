@@ -2,6 +2,7 @@ package com.hotel.hotel_backend.mapper;
 
 import com.hotel.hotel_backend.dto.response.HotelSearchItemResponse;
 import com.hotel.hotel_backend.entity.Hotel;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -13,9 +14,15 @@ public class SearchMapper {
         return hotels.stream()
                 .map(hotel -> new HotelSearchItemResponse(
                         hotel.getId(),
-                        hotel.getName()
+                        hotel.getName(),
+                        hotel.getAddress(),
+                        hotel.getProvince(),
+                        hotel.getDistrict(),
+                        hotel.getRatingAvg(),
+                        hotel.getRatingCount(),
+                        null
                 ))
-                .toList();    }
-
+                .toList();
+    }
 
 }

@@ -7,10 +7,16 @@ import org.springframework.stereotype.Component;
 @Component
 public class HotelSearchMapper {
 
-    public HotelSearchItemResponse toItem(Hotel hotel) {
+    public HotelSearchItemResponse toItem(Hotel hotel, Long minPrice) {
         return new HotelSearchItemResponse(
                 hotel.getId(),
-                hotel.getName()
+                hotel.getName(),
+                hotel.getAddress(),
+                hotel.getProvince(),
+                hotel.getDistrict(),
+                hotel.getRatingAvg(),
+                hotel.getRatingCount(),
+                minPrice
         );
     }
 }

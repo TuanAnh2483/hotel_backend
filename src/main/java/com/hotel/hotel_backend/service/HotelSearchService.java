@@ -28,7 +28,10 @@ public class HotelSearchService implements HotelSearchUseCase {
         List<Hotel> availableHotels = hotelAvailabilityService.filterAvailableHotels(candidateHotels, criteria);
 
         return availableHotels.stream()
-                .map(hotelSearchMapper::toItem)
+                .map(hotel -> hotelSearchMapper.toItem(
+                        hotel,
+                        hotelAvailabilityService.findMinPriceForStay(hotel, criteria)
+                ))
                 .toList();
     }
 

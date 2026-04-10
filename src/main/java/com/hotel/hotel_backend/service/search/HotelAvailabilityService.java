@@ -1,18 +1,15 @@
 package com.hotel.hotel_backend.service.search;
 
-import com.hotel.hotel_backend.entity.DailyInventory;
-import com.hotel.hotel_backend.entity.Hotel;
-import com.hotel.hotel_backend.entity.Room;
-import com.hotel.hotel_backend.entity.RoomStatus;
+import com.hotel.hotel_backend.entity.*;
 import com.hotel.hotel_backend.repository.DailyInventoryRepository;
+import com.hotel.hotel_backend.repository.DailyRateRepository;
 import com.hotel.hotel_backend.repository.RoomRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -21,6 +18,7 @@ public class HotelAvailabilityService {
 
     private final RoomRepository roomRepository;
     private final DailyInventoryRepository dailyInventoryRepository;
+    private final DailyRateRepository dailyRateRepository;
 
     public List<Hotel> filterAvailableHotels(List<Hotel> hotels, HotelSearchCriteria criteria) {
         // Khong co candidate hotel thi khong can lam them buoc nao nua.
@@ -52,6 +50,21 @@ public class HotelAvailabilityService {
         return hotels.stream()
                 .filter(hotel -> canSatisfyStay(roomsByHotelId.getOrDefault(hotel.getId(), List.of()), criteria))
                 .toList();
+    }
+
+    public Long findMinPriceForStay(Hotel hotel, HotelSearchCriteria criteria) {
+
+        if (hotel == null || !hasValidStayRequest(criteria)) {
+            return null;
+        }
+
+
+        return roomRepository.findByHotelIdInAndStatus(List.of(hotel.getId()), RoomStatus.ACTIVE).stream()
+                .filter(room -> availableUnitsForStay(room, criteria) > 0)
+                .map(room -> calculateRoomStayPrice(room,criteria))   /// total price
+                .filter(price -> price != null)
+                .min(Long::compareTo)
+                .orElse(null);
     }
 
     private int availableUnitsForStay(Room room, HotelSearchCriteria criteria) {
@@ -140,4 +153,49 @@ public class HotelAvailabilityService {
 
     private record RoomStayOption(int capacity, int availableUnits) {
     }
+
+
+    /// Với mỗi room khả dụng tính tổng giá của kỳ ở
+    /// bỏ room nào không có đinh giá hoặc không hợp lệ
+    private Long calculateRoomStayPrice(Room room, HotelSearchCriteria criteria) {
+        Long night = ChronoUnit.DAYS.between(criteria.checkIn(), criteria.checkOut());
+        if(night<=0){
+            return null;
+        }
+        List<DailyRate> dailyRates = dailyRateRepository.findByIdRoomIdAndIdDateBetween(
+                room.getId(),
+                criteria.checkIn(),
+                criteria.checkOut().minusDays(1)
+        );
+        Map<LocalDate,DailyRate> ratesByDate = dailyRates.stream()
+                .collect(Collectors.toMap(rate-> rate.getId().date(),rate->rate));
+
+
+        //loop checkIn<checkOut
+        long totalPrice = 0 ;
+
+        for(LocalDate date = criteria.checkIn();
+                date.isBefore(criteria.checkOut());
+                date = date.plusDays(1))
+        {
+            DailyRate rate = ratesByDate.get(date);
+            if(rate == null){
+                totalPrice += room.getPrice() ;
+                continue;
+            }
+
+            if(rate.isClosed()) {
+                return null;
+            }
+
+            if(rate.getMinStay()!= null && rate.getMinStay() > night){
+                return null;
+
+            }
+            totalPrice += rate.getPrice();
+        }
+        return  totalPrice;
+    }
+
+
 }

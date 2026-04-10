@@ -3,6 +3,7 @@ package com.hotel.hotel_backend.entity;
 
 import jakarta.persistence.*;
 
+import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.List;
 
@@ -27,6 +28,12 @@ public class  Hotel {
     private String address;
     private String province;
     private String district;
+
+    @Column(nullable = false, precision = 3, scale = 2)
+    private BigDecimal ratingAvg = BigDecimal.ZERO;
+
+    @Column(nullable = false)
+    private Integer ratingCount = 0;
 
     @Enumerated(EnumType.STRING)
     private HotelStatus status = HotelStatus.ACTIVE;
@@ -113,6 +120,22 @@ public class  Hotel {
 
     public HotelStatus getStatus() {
         return status;
+    }
+
+    public BigDecimal getRatingAvg() {
+        return ratingAvg;
+    }
+
+    public void setRatingAvg(BigDecimal ratingAvg) {
+        this.ratingAvg = ratingAvg;
+    }
+
+    public Integer getRatingCount() {
+        return ratingCount;
+    }
+
+    public void setRatingCount(Integer ratingCount) {
+        this.ratingCount = ratingCount;
     }
 
     public void setStatus(HotelStatus status) {

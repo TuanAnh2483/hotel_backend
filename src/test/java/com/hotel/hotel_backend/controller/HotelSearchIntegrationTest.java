@@ -86,7 +86,13 @@ class HotelSearchIntegrationTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.length()").value(1))
                 .andExpect(jsonPath("$.data[0].hotelId").value(hotel.getId()))
-                .andExpect(jsonPath("$.data[0].name").value("Available Hotel"));
+                .andExpect(jsonPath("$.data[0].name").value("Available Hotel"))
+                .andExpect(jsonPath("$.data[0].address").value("Available Hotel address"))
+                .andExpect(jsonPath("$.data[0].province").value("Bangkok"))
+                .andExpect(jsonPath("$.data[0].district").value("District 1"))
+                .andExpect(jsonPath("$.data[0].ratingAvg").value(0))
+                .andExpect(jsonPath("$.data[0].ratingCount").value(0))
+                .andExpect(jsonPath("$.data[0].minPrice").value(2_000_000));
     }
 
     @Test
