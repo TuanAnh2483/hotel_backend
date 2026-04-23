@@ -52,6 +52,9 @@ public class User {
     @OneToMany(mappedBy = "owner",cascade = CascadeType.ALL)
     private List<Property> property;
 
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<PasswordResetToken> passwordResetTokens;
+
     @PrePersist
     void prePersist() {
         var now = OffsetDateTime.now();

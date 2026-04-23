@@ -11,6 +11,7 @@ import com.hotel.hotel_backend.entity.UserType;
 import com.hotel.hotel_backend.repository.BookingItemRepository;
 import com.hotel.hotel_backend.repository.BookingRepository;
 import com.hotel.hotel_backend.repository.DailyInventoryRepository;
+import com.hotel.hotel_backend.repository.DailyRateRepository;
 import com.hotel.hotel_backend.repository.HotelRepository;
 import com.hotel.hotel_backend.repository.PaymentTransactionRepository;
 import com.hotel.hotel_backend.repository.RoomRepository;
@@ -61,6 +62,9 @@ class PartnerHotelRoomIntegrationTest {
     private DailyInventoryRepository dailyInventoryRepository;
 
     @Autowired
+    private DailyRateRepository dailyRateRepository;
+
+    @Autowired
     private BookingItemRepository bookingItemRepository;
 
     @Autowired
@@ -74,6 +78,7 @@ class PartnerHotelRoomIntegrationTest {
         bookingItemRepository.deleteAll();
         bookingRepository.deleteAll();
         paymentTransactionRepository.deleteAll();
+        dailyRateRepository.deleteAll();
         dailyInventoryRepository.deleteAll();
         roomRepository.deleteAll();
         hotelRepository.deleteAll();

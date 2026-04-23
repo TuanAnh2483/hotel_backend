@@ -78,7 +78,8 @@ Nhưng vẫn còn các vấn đề thiết kế:
 
 - In progress
 - Đã có `POST /api/bookings/quote`
-- `POST /api/bookings` hiện đóng vai trò confirm flow tạm thời
+- `POST /api/bookings` hiện là confirm contract đang chạy ở runtime
+- `POST /api/bookings/confirm` mới là hướng refactor naming cho phase sau, chưa expose
 
 ### Mục tiêu
 
@@ -87,7 +88,7 @@ Tách rõ 2 bước:
 - quote: kiểm tra bookability và tính giá
 - confirm: reserve inventory và persist booking
 
-### Endpoint đề xuất
+### Endpoint shape hiện tại / định hướng
 
 1. `POST /api/bookings/quote`
    - input: stay + room selection + contact optional
@@ -98,11 +99,16 @@ Tách rõ 2 bước:
    - không reserve inventory
    - không tạo booking
 
-2. `POST /api/bookings/confirm`
+2. `POST /api/bookings`
    - input: quote-compatible request
    - reserve inventory
    - create booking
    - trả booking response
+   - đây là confirm flow đang chạy ở runtime hiện tại
+
+3. `POST /api/bookings/confirm`
+   - chưa expose
+   - chỉ là phương án rename endpoint nếu sau này muốn tách nghĩa rõ hơn ở API surface
 
 ### Thay đổi cần làm
 
@@ -135,6 +141,7 @@ Tách rõ 2 bước:
   - quote success
   - quote reject room closed
   - confirm vẫn pass sau khi tách flow
+  - confirm runtime hiện vẫn đi qua `POST /api/bookings`
 
 ## Phase 3 - Pending Payment State
 

@@ -32,7 +32,6 @@ Mục tiêu của v1:
 - payment gateway thật
 - webhook
 - refund flow thật
-- auto-expiration scheduler
 
 ## Contract
 
@@ -114,6 +113,7 @@ Mục tiêu của v1:
    - booking bị chuyển `CANCELLED`
    - release inventory
    - trả lỗi `CONFLICT`
+   - passive expiration được evaluate trước khi replay failed idempotent request cũ
 5. Nếu booking đang ở:
    - `CONFIRMED`
    - `CANCELLED`
@@ -137,7 +137,8 @@ Rule:
 
 - pay success -> lưu `SUCCESS`
 - pay fail giả lập -> lưu `FAILED`
-- pay khi booking đã hết hạn / không còn payable -> lưu `FAILED`
+- pay khi booking đã hết hạn / không còn payable với `clientRequestId` mới -> lưu `FAILED`
+- nếu cùng `clientRequestId` đã tồn tại rồi thì không tạo thêm transaction mới
 - booking not found thì không tạo record
 - frontend có thể đọc toàn bộ timeline qua `GET /api/bookings/{bookingId}/payments`
 
@@ -152,8 +153,10 @@ Rule:
   - trả lại `200 OK`
   - không tạo transaction mới
 - nếu request id này đã xử lý `FAILED` rồi:
-  - trả lại cùng lỗi `CONFLICT`
+  - khi booking vẫn còn `PENDING_PAYMENT`: trả lại cùng lỗi `CONFLICT`
+  - khi booking đã hết hạn hoặc không còn payable: trả `CONFLICT` theo state hiện tại của booking
   - không tạo transaction mới
+- trước khi replay failed request cũ, backend luôn evaluate passive expiration trước
 - chỉ request id mới mới được phép tạo thêm payment attempt
 
 ## Test Cases

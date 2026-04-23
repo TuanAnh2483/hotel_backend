@@ -116,7 +116,9 @@ Chua them `nightlyBreakdown` o giai doan nay.
   - `price_asc`
   - `price_desc`
   - `rating_desc`
+  - `recommended`
 - Da co spec rieng o `docs/search-api-spec.md`
+- Da co frontend integration checklist o `docs/search-frontend-integration-checklist.md`
 - Da giam N+1 query lon nhat trong search availability/pricing bang batch load:
   - active rooms
   - daily inventory
@@ -154,7 +156,7 @@ Chua them `nightlyBreakdown` o giai doan nay.
 
 ### Chua xong
 
-- Chua co sorting/ranking nang cao hon nhu `recommended`
+- Chua co ranking signal product cao hon `recommended` nhu booking popularity hay behavioral scoring
 
 ## Search Contract v1
 
@@ -296,6 +298,7 @@ Tasks:
 - [x] Ho tro `price_asc`
 - [x] Ho tro `price_desc`
 - [x] Ho tro `rating_desc`
+- [x] Ho tro `recommended`
 - [x] Viet test pagination va sorting
 
 Definition of done:
@@ -372,6 +375,7 @@ Lam dung thu tu nay:
 
 Task tiep theo duoc chon:
 
-- [ ] Can nhac them `recommended` ranking sau khi co scoring model ro rang
+- [ ] Can nhac them ranking cao hon `recommended` khi co them signal booking/popularity
+- [x] Chot phuong an B: giu backend on dinh va dung checklist frontend de tich hop search V1
 - [x] Thiet ke feature amenities filter cho hotel va room theo nhu cau user
 - [x] Chuan hoa hotel/room type de phuc vu filter product

@@ -624,6 +624,85 @@ class BookingIntegrationTest {
     }
 
     @Test
+    void payRetryWithSameFailedClientRequestIdShouldExpireBookingBeforeRejecting() throws Exception {
+        String customerToken = createToken("customer-pay-retry-expired@test.com", UserType.CUSTOMER);
+        User owner = createUser("partner-pay-retry-expired@test.com", UserType.PARTNER);
+
+        Hotel hotel = createHotel(owner, "Pay Retry Expired Hotel");
+        Room room = createRoom(hotel, "Pay Retry Expired Room", 1);
+        initInventory(room);
+
+        MvcResult createResult = mockMvc.perform(post("/api/bookings")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(customerToken))
+                        .content("""
+                                {
+                                  "checkIn": "%s",
+                                  "checkOut": "%s",
+                                  "room": [
+                                    {
+                                      "roomId": %d,
+                                      "quantity": 1
+                                    }
+                                  ],
+                                  "contact": {
+                                    "fullName": "Pay Retry Expired Customer",
+                                    "email": "customer-pay-retry-expired@test.com",
+                                    "phone": "0123456789"
+                                  }
+                                }
+                                """.formatted(checkIn, checkOut, room.getId())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("PENDING_PAYMENT"))
+                .andReturn();
+
+        long bookingId = readBookingId(createResult);
+        String paymentBody = """
+                {
+                  "simulateSuccess": false,
+                  "clientRequestId": "pay-retry-expired-1"
+                }
+                """;
+
+        mockMvc.perform(post("/api/bookings/{bookingId}/pay", bookingId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(customerToken))
+                        .content(paymentBody))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error.code").value("CONFLICT"));
+
+        var booking = bookingRepository.findById(bookingId).orElseThrow();
+        booking.setExpiresAt(LocalDateTime.now().minusMinutes(1));
+        bookingRepository.save(booking);
+
+        mockMvc.perform(post("/api/bookings/{bookingId}/pay", bookingId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(customerToken))
+                        .content(paymentBody))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("CONFLICT"));
+
+        mockMvc.perform(get("/api/bookings/me")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(customerToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].status").value("CANCELLED"));
+
+        List<DailyInventory> inventories = dailyInventoryRepository.findByIdRoomIdAndIdDateBetween(
+                room.getId(),
+                checkIn,
+                checkOut.minusDays(1)
+        );
+        assertThat(inventories).allMatch(inventory -> inventory.getBlockedRooms() == 0);
+
+        var transactions = paymentTransactionRepository.findByBookingIdOrderByCreatedAtAsc(bookingId);
+        assertThat(transactions).hasSize(1);
+        assertThat(transactions.get(0).getClientRequestId()).isEqualTo("pay-retry-expired-1");
+        assertThat(transactions.get(0).getStatus().name()).isEqualTo("FAILED");
+        assertThat(transactions.get(0).getFailureReason()).isEqualTo("Payment failed");
+    }
+
+    @Test
     void getBookingPaymentsShouldReturnPaymentTimelineForOwnedBooking() throws Exception {
         String customerToken = createToken("customer-payments@test.com", UserType.CUSTOMER);
         User owner = createUser("partner-payments@test.com", UserType.PARTNER);

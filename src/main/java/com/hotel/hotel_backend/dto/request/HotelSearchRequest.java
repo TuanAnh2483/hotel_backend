@@ -55,8 +55,8 @@ public class HotelSearchRequest {
 
     @NotBlank(message = "Sort is required")
     @Pattern(
-            regexp = "price_asc|price_desc|rating_desc",
-            message = "Sort must be one of: price_asc, price_desc, rating_desc"
+            regexp = "price_asc|price_desc|rating_desc|recommended",
+            message = "Sort must be one of: price_asc, price_desc, rating_desc, recommended"
     )
     private String sort = "price_asc";
 

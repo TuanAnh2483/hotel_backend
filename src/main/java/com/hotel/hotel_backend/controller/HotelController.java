@@ -7,11 +7,14 @@ import com.hotel.hotel_backend.entity.HotelType;
 import com.hotel.hotel_backend.entity.RoomCategory;
 import com.hotel.hotel_backend.entity.RoomAmenity;
 import com.hotel.hotel_backend.dto.request.HotelSearchRequest;
+import com.hotel.hotel_backend.dto.request.HotelReviewSearchRequest;
 import com.hotel.hotel_backend.dto.request.HotelStayRequest;
 import com.hotel.hotel_backend.dto.response.ApiResponse;
 import com.hotel.hotel_backend.dto.response.HotelAvailableRoomItemResponse;
 import com.hotel.hotel_backend.dto.response.HotelDetailResponse;
+import com.hotel.hotel_backend.dto.response.HotelReviewResponse;
 import com.hotel.hotel_backend.dto.response.HotelSearchPageResponse;
+import com.hotel.hotel_backend.service.HotelReviewService;
 import com.hotel.hotel_backend.service.search.HotelDetailService;
 import com.hotel.hotel_backend.service.search.HotelSearchCriteria;
 import com.hotel.hotel_backend.service.search.HotelSearchSort;
@@ -32,6 +35,7 @@ import java.util.Set;
 public class HotelController {
     private final HotelSearchUseCase hotelSearchUseCase;
     private final HotelDetailService hotelDetailService;
+    private final HotelReviewService hotelReviewService;
 
     @GetMapping("/search")
     public ApiResponse<HotelSearchPageResponse> search(@Valid @ModelAttribute HotelSearchRequest request) { ///@ModelAttribute giúp bind query param của GET
@@ -76,6 +80,14 @@ public class HotelController {
                 Set.of()
         );
         return ApiResponse.ok(hotelDetailService.getAvailableRooms(hotelId, criteria));
+    }
+
+    @GetMapping("/{id}/reviews")
+    public ApiResponse<List<HotelReviewResponse>> getHotelReviews(
+            @PathVariable("id") Long hotelId,
+            @Valid @ModelAttribute HotelReviewSearchRequest request
+    ) {
+        return ApiResponse.ok(hotelReviewService.getHotelReviews(hotelId, request.getRating()));
     }
 
     private Set<HotelType> toHotelTypeSet(List<HotelType> hotelTypes) {

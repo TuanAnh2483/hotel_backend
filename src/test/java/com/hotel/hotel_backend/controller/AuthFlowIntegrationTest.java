@@ -1,6 +1,9 @@
 package com.hotel.hotel_backend.controller;
 
+import com.hotel.hotel_backend.entity.PasswordResetToken;
+import com.hotel.hotel_backend.entity.User;
 import com.hotel.hotel_backend.repository.PartnerApplicationRepository;
+import com.hotel.hotel_backend.repository.PasswordResetTokenRepository;
 import com.hotel.hotel_backend.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -37,9 +40,13 @@ class AuthFlowIntegrationTest {
     @Autowired
     private PartnerApplicationRepository partnerApplicationRepository;
 
+    @Autowired
+    private PasswordResetTokenRepository passwordResetTokenRepository;
+
     @BeforeEach
     void setUp() {
         partnerApplicationRepository.deleteAll();
+        passwordResetTokenRepository.deleteAll();
         userRepository.deleteAll();
     }
 
@@ -114,6 +121,101 @@ class AuthFlowIntegrationTest {
                                 """))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.error.code").value("PARTNER_APPLICATION_EXISTS"));
+    }
+
+    @Test
+    void forgotAndResetPasswordShouldInvalidateOldSessionsAndAllowNewLogin() throws Exception {
+        String oldAccessToken = registerAndExtractToken("reset-me@example.com", "Password123");
+
+        mockMvc.perform(post("/api/auth/forgot-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "email": "reset-me@example.com"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.message").exists())
+                .andExpect(jsonPath("$.data.deliveryMode").value("EMAIL_LOG"))
+                .andExpect(jsonPath("$.data.resetToken").isEmpty())
+                .andExpect(jsonPath("$.data.expiresAt").isEmpty());
+
+        User resetUser = userRepository.findByEmail("reset-me@example.com").orElseThrow();
+        PasswordResetToken resetTokenEntity = passwordResetTokenRepository
+                .findFirstByUserIdOrderByCreatedAtDesc(resetUser.getId())
+                .orElseThrow();
+        String resetToken = resetTokenEntity.getToken();
+
+        mockMvc.perform(post("/api/auth/reset-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "token": "%s",
+                                  "newPassword": "NewPassword123",
+                                  "confirmPassword": "NewPassword123"
+                                }
+                                """.formatted(resetToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.message").value("Password has been reset successfully"));
+
+        mockMvc.perform(get("/api/me")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(oldAccessToken)))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.error.code").value("UNAUTHORIZED"));
+
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "email": "reset-me@example.com",
+                                  "password": "Password123"
+                                }
+                                """))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.error.code").value("INVALID_CREDENTIALS"));
+
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "email": "reset-me@example.com",
+                                  "password": "NewPassword123"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.user.email").value("reset-me@example.com"));
+
+        mockMvc.perform(post("/api/auth/reset-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "token": "%s",
+                                  "newPassword": "OtherPassword123",
+                                  "confirmPassword": "OtherPassword123"
+                                }
+                                """.formatted(resetToken)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error.code").value("CONFLICT"));
+    }
+
+    @Test
+    void forgotPasswordShouldReturnGenericSuccessForUnknownEmail() throws Exception {
+        mockMvc.perform(post("/api/auth/forgot-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "email": "unknown@example.com"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.message").exists())
+                .andExpect(jsonPath("$.data.deliveryMode").value("EMAIL_LOG"))
+                .andExpect(jsonPath("$.data.resetToken").isEmpty());
+
+        org.assertj.core.api.Assertions.assertThat(passwordResetTokenRepository.count()).isZero();
     }
 
     private String registerAndExtractToken(String email, String password) throws Exception {

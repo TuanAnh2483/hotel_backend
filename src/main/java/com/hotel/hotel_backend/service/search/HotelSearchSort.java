@@ -3,7 +3,8 @@ package com.hotel.hotel_backend.service.search;
 public enum HotelSearchSort {
     PRICE_ASC("price_asc"),
     PRICE_DESC("price_desc"),
-    RATING_DESC("rating_desc");
+    RATING_DESC("rating_desc"),
+    RECOMMENDED("recommended");
 
     private final String value;
 

@@ -11,6 +11,7 @@ import com.hotel.hotel_backend.entity.UserType;
 import com.hotel.hotel_backend.repository.BookingItemRepository;
 import com.hotel.hotel_backend.repository.BookingRepository;
 import com.hotel.hotel_backend.repository.DailyInventoryRepository;
+import com.hotel.hotel_backend.repository.DailyRateRepository;
 import com.hotel.hotel_backend.repository.HotelRepository;
 import com.hotel.hotel_backend.repository.PaymentTransactionRepository;
 import com.hotel.hotel_backend.repository.RoomRepository;
@@ -74,6 +75,9 @@ class PartnerBookingIntegrationTest {
     private DailyInventoryRepository dailyInventoryRepository;
 
     @Autowired
+    private DailyRateRepository dailyRateRepository;
+
+    @Autowired
     private InventoryService inventoryService;
 
     @BeforeEach
@@ -81,6 +85,7 @@ class PartnerBookingIntegrationTest {
         bookingItemRepository.deleteAll();
         bookingRepository.deleteAll();
         paymentTransactionRepository.deleteAll();
+        dailyRateRepository.deleteAll();
         dailyInventoryRepository.deleteAll();
         roomRepository.deleteAll();
         hotelRepository.deleteAll();
@@ -208,6 +213,145 @@ class PartnerBookingIntegrationTest {
                 .andExpect(jsonPath("$.error.code").value("NOT_FOUND"));
     }
 
+    @Test
+    void partnerShouldCompletePastConfirmedBooking() throws Exception {
+        User partner = createUser("partner-complete@test.com", UserType.PARTNER);
+        String partnerToken = jwtService.generate(partner);
+        String customerToken = jwtService.generate(createUser("customer-complete@test.com", UserType.CUSTOMER));
+
+        Hotel hotel = createHotel(partner, "Partner Complete Hotel");
+        Room room = createRoom(hotel, "Partner Complete Room", 1);
+        LocalDate checkIn = LocalDate.now().plusDays(2);
+        LocalDate checkOut = checkIn.plusDays(1);
+        initInventory(room, checkIn, checkOut);
+
+        long bookingId = createBooking(customerToken, room.getId(), checkIn, checkOut, "complete@test.com");
+        payBooking(customerToken, bookingId, "partner-complete-pay");
+        moveBookingStay(bookingId, LocalDate.now().minusDays(3), LocalDate.now().minusDays(1));
+
+        mockMvc.perform(post("/api/partner/bookings/{bookingId}/complete", bookingId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(partnerToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.bookingId").value(bookingId))
+                .andExpect(jsonPath("$.data.status").value("COMPLETED"));
+    }
+
+    @Test
+    void partnerShouldRefundFutureConfirmedBookingAndReleaseInventory() throws Exception {
+        User partner = createUser("partner-refund@test.com", UserType.PARTNER);
+        String partnerToken = jwtService.generate(partner);
+        String customerToken = jwtService.generate(createUser("customer-refund@test.com", UserType.CUSTOMER));
+
+        Hotel hotel = createHotel(partner, "Partner Refund Hotel");
+        Room room = createRoom(hotel, "Partner Refund Room", 1);
+        LocalDate checkIn = LocalDate.now().plusDays(5);
+        LocalDate checkOut = checkIn.plusDays(1);
+        initInventory(room, checkIn, checkOut);
+
+        long bookingId = createBooking(customerToken, room.getId(), checkIn, checkOut, "refund@test.com");
+        payBooking(customerToken, bookingId, "partner-refund-pay");
+
+        mockMvc.perform(post("/api/partner/bookings/{bookingId}/refund", bookingId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(partnerToken))
+                        .content("""
+                                {
+                                  "clientRequestId": "partner-refund-op-1"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.bookingId").value(bookingId))
+                .andExpect(jsonPath("$.data.status").value("REFUNDED"));
+
+        mockMvc.perform(get("/api/hotels/{hotelId}/available-rooms", hotel.getId())
+                        .param("checkIn", checkIn.toString())
+                        .param("checkOut", checkOut.toString())
+                        .param("adults", "2")
+                        .param("rooms", "1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.length()").value(1))
+                .andExpect(jsonPath("$.data[0].roomId").value(room.getId()))
+                .andExpect(jsonPath("$.data[0].availableUnits").value(1));
+
+        assertThat(paymentTransactionRepository.findByBookingIdOrderByCreatedAtAsc(bookingId))
+                .hasSize(2)
+                .anySatisfy(transaction -> assertThat(transaction.getAmount()).isEqualTo(-1_000_000.0));
+    }
+
+    @Test
+    void partnerShouldSeeAnalyticsSummary() throws Exception {
+        User partner = createUser("partner-analytics@test.com", UserType.PARTNER);
+        String partnerToken = jwtService.generate(partner);
+        String customerToken = jwtService.generate(createUser("customer-analytics@test.com", UserType.CUSTOMER));
+
+        Hotel hotel = createHotel(partner, "Partner Analytics Hotel");
+        Room room = createRoom(hotel, "Partner Analytics Room", 4);
+
+        LocalDate pendingCheckIn = LocalDate.now().plusDays(1);
+        LocalDate pendingCheckOut = pendingCheckIn.plusDays(1);
+        LocalDate confirmedCheckIn = LocalDate.now().plusDays(3);
+        LocalDate confirmedCheckOut = confirmedCheckIn.plusDays(1);
+        LocalDate completedCheckIn = LocalDate.now().plusDays(7);
+        LocalDate completedCheckOut = completedCheckIn.plusDays(1);
+        LocalDate refundedCheckIn = LocalDate.now().plusDays(5);
+        LocalDate refundedCheckOut = refundedCheckIn.plusDays(1);
+
+        initInventory(room, pendingCheckIn, pendingCheckOut);
+        initInventory(room, confirmedCheckIn, confirmedCheckOut);
+        initInventory(room, completedCheckIn, completedCheckOut);
+        initInventory(room, refundedCheckIn, refundedCheckOut);
+
+        long pendingBookingId = createBooking(customerToken, room.getId(), pendingCheckIn, pendingCheckOut, "pending@test.com");
+        long confirmedBookingId = createBooking(customerToken, room.getId(), confirmedCheckIn, confirmedCheckOut, "confirmed@test.com");
+        long completedBookingId = createBooking(customerToken, room.getId(), completedCheckIn, completedCheckOut, "completed@test.com");
+        long refundedBookingId = createBooking(customerToken, room.getId(), refundedCheckIn, refundedCheckOut, "refunded@test.com");
+
+        payBooking(customerToken, confirmedBookingId, "analytics-pay-confirmed");
+        payBooking(customerToken, completedBookingId, "analytics-pay-completed");
+        payBooking(customerToken, refundedBookingId, "analytics-pay-refunded");
+        moveBookingStay(completedBookingId, LocalDate.now().minusDays(3), LocalDate.now().minusDays(2));
+
+        mockMvc.perform(post("/api/partner/bookings/{bookingId}/complete", completedBookingId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(partnerToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("COMPLETED"));
+
+        mockMvc.perform(post("/api/partner/bookings/{bookingId}/refund", refundedBookingId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(partnerToken))
+                        .content("""
+                                {
+                                  "clientRequestId": "analytics-refund-1"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("REFUNDED"));
+
+        mockMvc.perform(get("/api/partner/analytics/summary")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(partnerToken))
+                        .param("hotelId", String.valueOf(hotel.getId()))
+                        .param("checkInFrom", LocalDate.now().minusDays(3).toString())
+                        .param("checkInTo", refundedCheckIn.toString()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.hotelIdFilter").value(hotel.getId()))
+                .andExpect(jsonPath("$.data.totalBookings").value(4))
+                .andExpect(jsonPath("$.data.pendingPaymentBookings").value(1))
+                .andExpect(jsonPath("$.data.confirmedBookings").value(1))
+                .andExpect(jsonPath("$.data.completedBookings").value(1))
+                .andExpect(jsonPath("$.data.refundedBookings").value(1))
+                .andExpect(jsonPath("$.data.cancelledBookings").value(0))
+                .andExpect(jsonPath("$.data.grossRevenue").value(3_000_000.0))
+                .andExpect(jsonPath("$.data.refundedAmount").value(1_000_000.0))
+                .andExpect(jsonPath("$.data.netRevenue").value(2_000_000.0))
+                .andExpect(jsonPath("$.data.hotels.length()").value(1))
+                .andExpect(jsonPath("$.data.hotels[0].hotelId").value(hotel.getId()))
+                .andExpect(jsonPath("$.data.hotels[0].totalBookings").value(4));
+
+        assertThat(bookingRepository.findById(pendingBookingId)).isPresent();
+    }
+
     private User createUser(String email, UserType userType) {
         User user = new User();
         user.setEmail(email);
@@ -282,6 +426,13 @@ class PartnerBookingIntegrationTest {
                                 }
                                 """.formatted(clientRequestId)))
                 .andExpect(status().isOk());
+    }
+
+    private void moveBookingStay(long bookingId, LocalDate checkIn, LocalDate checkOut) {
+        var booking = bookingRepository.findById(bookingId).orElseThrow();
+        booking.setCheckIn(checkIn);
+        booking.setCheckOut(checkOut);
+        bookingRepository.save(booking);
     }
 
     private long readBookingId(MvcResult result) throws Exception {

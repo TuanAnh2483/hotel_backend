@@ -20,3 +20,5 @@ app:
   jwt:
     secret: "test-secret-key-for-concurrency-tests-1234567890"
     exp-seconds: 86400
+  mail:
+    enabled: false

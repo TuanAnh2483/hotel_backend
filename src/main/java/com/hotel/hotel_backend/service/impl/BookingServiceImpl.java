@@ -126,23 +126,29 @@ public class BookingServiceImpl implements BookingService {
     @Transactional(noRollbackFor = ApiException.class)
     public BookingResponse payBooking(Long userId, Long bookingId, BookingPaymentRequest request) {
         Booking booking = loadOwnedBooking(userId, bookingId);
+        booking = bookingExpirationService.expirePendingBookingIfNeeded(booking);
         PaymentTransaction existingTransaction = paymentTransactionRepository
                 .findByBookingIdAndClientRequestId(bookingId, request.clientRequestId())
                 .orElse(null);
-        if (existingTransaction != null) {
-            return replayPaymentResult(booking, existingTransaction);
-        }
-
-        booking = bookingExpirationService.expirePendingBookingIfNeeded(booking);
 
         if (booking.getStatus() != BookingStatus.PENDING_PAYMENT) {
-            recordPaymentAttempt(
-                    booking,
-                    request.clientRequestId(),
-                    PaymentTransactionStatus.FAILED,
-                    "Booking is not waiting for payment"
-            );
+            if (canReplaySuccessfulPayment(existingTransaction)) {
+                return replayPaymentResult(booking, existingTransaction);
+            }
+
+            if (existingTransaction == null) {
+                recordPaymentAttempt(
+                        booking,
+                        request.clientRequestId(),
+                        PaymentTransactionStatus.FAILED,
+                        "Booking is not waiting for payment"
+                );
+            }
             throw new ApiException(ErrorCode.CONFLICT, "Booking is not waiting for payment");
+        }
+
+        if (existingTransaction != null) {
+            return replayPaymentResult(booking, existingTransaction);
         }
 
         if (Boolean.FALSE.equals(request.simulateSuccess())) {
@@ -412,6 +418,10 @@ public class BookingServiceImpl implements BookingService {
                         ? existingTransaction.getFailureReason()
                         : "Payment failed"
         );
+    }
+
+    private boolean canReplaySuccessfulPayment(PaymentTransaction existingTransaction) {
+        return existingTransaction != null && existingTransaction.getStatus() == PaymentTransactionStatus.SUCCESS;
     }
 
     private void recordPaymentAttempt(

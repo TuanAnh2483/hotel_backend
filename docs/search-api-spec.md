@@ -62,6 +62,7 @@ Response:
   - `price_asc`
   - `price_desc`
   - `rating_desc`
+  - `recommended`
 - `hotelTypes` chi nhan:
   - `HOTEL`
   - `APARTMENT`
@@ -180,6 +181,10 @@ Response:
 - `price_asc`: `minPrice` tang dan
 - `price_desc`: `minPrice` giam dan
 - `rating_desc`: `ratingAvg` giam dan
+- `recommended`: score can bang giua:
+  - `ratingAvg`
+  - `ratingCount`
+  - `minPrice` tuong doi trong tap ket qua hien tai
 - Tie-breaker:
   - `hotelId asc`
 

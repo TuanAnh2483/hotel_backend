@@ -1,9 +1,13 @@
 package com.hotel.hotel_backend.controller;
 
+import com.hotel.hotel_backend.dto.request.ForgotPasswordRequest;
 import com.hotel.hotel_backend.dto.request.LoginRequest;
+import com.hotel.hotel_backend.dto.request.ResetPasswordRequest;
 import com.hotel.hotel_backend.dto.request.RegisterRequest;
 import com.hotel.hotel_backend.dto.response.ApiResponse;
 import com.hotel.hotel_backend.dto.response.AuthResponse;
+import com.hotel.hotel_backend.dto.response.ForgotPasswordResponse;
+import com.hotel.hotel_backend.dto.response.ResetPasswordResponse;
 import com.hotel.hotel_backend.exeption.ApiException;
 import com.hotel.hotel_backend.exeption.ErrorCode;
 import com.hotel.hotel_backend.service.AuthService;
@@ -29,6 +33,20 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<AuthResponse>> login(@RequestBody @Valid LoginRequest log ) {
         return ResponseEntity.ok(ApiResponse.ok(authService.login(log)));
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<ApiResponse<ForgotPasswordResponse>> forgotPassword(
+            @RequestBody @Valid ForgotPasswordRequest request
+    ) {
+        return ResponseEntity.ok(ApiResponse.ok(authService.forgotPassword(request)));
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<ApiResponse<ResetPasswordResponse>> resetPassword(
+            @RequestBody @Valid ResetPasswordRequest request
+    ) {
+        return ResponseEntity.ok(ApiResponse.ok(authService.resetPassword(request)));
     }
 
     @PostMapping("/logout")

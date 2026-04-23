@@ -82,4 +82,22 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
             """)
     Optional<Booking> findPartnerBookingDetailById(@Param("ownerId") Long ownerId, @Param("bookingId") Long bookingId);
 
+    @Query("""
+            select distinct b
+            from Booking b
+            join fetch b.items bi
+            join fetch bi.room r
+            join fetch r.hotel h
+            where h.owner.id = :ownerId
+              and (:hotelId is null or h.id = :hotelId)
+              and (:checkInFrom is null or b.checkIn >= :checkInFrom)
+              and (:checkInTo is null or b.checkIn <= :checkInTo)
+            """)
+    List<Booking> findPartnerBookingsForAnalytics(
+            @Param("ownerId") Long ownerId,
+            @Param("hotelId") Long hotelId,
+            @Param("checkInFrom") LocalDate checkInFrom,
+            @Param("checkInTo") LocalDate checkInTo
+    );
+
 }

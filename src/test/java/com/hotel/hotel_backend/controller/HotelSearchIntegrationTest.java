@@ -833,6 +833,54 @@ class HotelSearchIntegrationTest {
     }
 
     @Test
+    void searchShouldSortHotelsByRecommendedScore() throws Exception {
+        // Contract:
+        // sort=recommended phai can bang giua rating, do tin cay review va gia tuong doi.
+        // Hotel qua re nhung chua co review khong duoc mac dinh dung dau.
+        User owner = createOwner("owner-recommended-sort@test.com");
+
+        Hotel cheapestUnratedHotel = createHotel(owner, "Cheapest Unrated Hotel", "Bangkok", "District 1");
+        Room cheapestRoom = createRoom(cheapestUnratedHotel, "Cheapest Room", 1);
+        initInventory(cheapestRoom);
+        createDailyRate(cheapestRoom, checkIn, 600_000L, 1, false);
+        createDailyRate(cheapestRoom, checkIn.plusDays(1), 600_000L, 1, false);
+
+        Hotel balancedHotel = createHotel(owner, "Balanced Hotel", "Bangkok", "District 1");
+        balancedHotel.setRatingAvg(new BigDecimal("4.70"));
+        balancedHotel.setRatingCount(48);
+        balancedHotel = hotelRepository.save(balancedHotel);
+        Room balancedRoom = createRoom(balancedHotel, "Balanced Room", 1);
+        initInventory(balancedRoom);
+        createDailyRate(balancedRoom, checkIn, 800_000L, 1, false);
+        createDailyRate(balancedRoom, checkIn.plusDays(1), 800_000L, 1, false);
+
+        Hotel premiumLowConfidenceHotel = createHotel(owner, "Premium Low Confidence Hotel", "Bangkok", "District 1");
+        premiumLowConfidenceHotel.setRatingAvg(new BigDecimal("4.90"));
+        premiumLowConfidenceHotel.setRatingCount(3);
+        premiumLowConfidenceHotel = hotelRepository.save(premiumLowConfidenceHotel);
+        Room premiumRoom = createRoom(premiumLowConfidenceHotel, "Premium Room", 1);
+        initInventory(premiumRoom);
+        createDailyRate(premiumRoom, checkIn, 1_100_000L, 1, false);
+        createDailyRate(premiumRoom, checkIn.plusDays(1), 1_100_000L, 1, false);
+
+        mockMvc.perform(get("/api/hotels/search")
+                        .param("province", "Bangkok")
+                        .param("district", "District 1")
+                        .param("checkIn", checkIn.toString())
+                        .param("checkOut", checkOut.toString())
+                        .param("adults", "2")
+                        .param("rooms", "1")
+                        .param("sort", "recommended"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.items.length()").value(3))
+                .andExpect(jsonPath("$.data.items[0].hotelId").value(balancedHotel.getId()))
+                .andExpect(jsonPath("$.data.items[1].hotelId").value(premiumLowConfidenceHotel.getId()))
+                .andExpect(jsonPath("$.data.items[2].hotelId").value(cheapestUnratedHotel.getId()))
+                .andExpect(jsonPath("$.data.sort").value("recommended"));
+    }
+
+    @Test
     void searchShouldReturnBadRequestWhenSortIsInvalid() throws Exception {
         // Contract:
         // sort ngoai whitelist product phai bi chan o boundary validation.
@@ -843,7 +891,7 @@ class HotelSearchIntegrationTest {
                         .param("checkOut", checkOut.toString())
                         .param("adults", "2")
                         .param("rooms", "1")
-                        .param("sort", "recommended"))
+                        .param("sort", "popular"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"))
