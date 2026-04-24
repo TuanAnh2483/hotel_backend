@@ -5,10 +5,10 @@ spring:
     password: ${DB_PASSWORD:123456}
     driver-class-name: org.postgresql.Driver
   mail:
-    host: ${MAIL_HOST:localhost}
+    host: ${MAIL_HOST:smtp.gmail.com}
     port: ${MAIL_PORT:587}
-    username: ${MAIL_USERNAME:}
-    password: ${MAIL_PASSWORD:}
+    username: ${MAIL_USERNAME:trananhtodien@gmail.com}
+    password: ${MAIL_PASSWORD:pkbrrvnosbdvuuiq}
     properties:
       mail:
         smtp:
@@ -37,9 +37,12 @@ app:
     password: ${ADMIN_PASSWORD:Password123}
   password-reset:
     frontend-reset-url: ${PASSWORD_RESET_FRONTEND_URL:http://localhost:3000/reset-password}
+  email-verification:
+    frontend-verify-url: ${EMAIL_VERIFICATION_FRONTEND_URL:http://localhost:3000/verify-email}
   mail:
-    enabled: ${MAIL_ENABLED:false}
-    from: ${MAIL_FROM:no-reply@hotel.local}
+    enabled: ${MAIL_ENABLED:true}
+    from: ${MAIL_FROM:trananhtodien@gmail.com}
+    expose-debug-tokens: ${MAIL_EXPOSE_DEBUG_TOKENS:false}
 logging:
   level:
     org.springframework.web: INFO

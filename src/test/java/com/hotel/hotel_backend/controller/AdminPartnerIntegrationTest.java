@@ -150,6 +150,7 @@ class AdminPartnerIntegrationTest {
         user.setPasswordHash(passwordEncoder.encode(password));
         user.setUserType(userType);
         user.setStatus(UserStatus.ACTIVE);
+        user.setEmailVerifiedAt(java.time.OffsetDateTime.now());
         user = userRepository.save(user);
         return jwtService.generate(user);
     }
@@ -192,11 +193,43 @@ class AdminPartnerIntegrationTest {
                                 """.formatted(email, password, password)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.verificationToken").isString())
+                .andReturn();
+
+        String verificationToken = objectMapper.readTree(result.getResponse().getContentAsString())
+                .path("data")
+                .path("verificationToken")
+                .asText();
+
+        mockMvc.perform(post("/api/auth/verify-email")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "token": "%s"
+                                }
+                                """.formatted(verificationToken)))
+                .andExpect(status().isOk());
+
+        return loginAndExtractToken(email, password);
+    }
+
+    private String loginAndExtractToken(String email, String password) throws Exception {
+        MvcResult result = mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "email": "%s",
+                                  "password": "%s"
+                                }
+                                """.formatted(email, password)))
+                .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.accessToken").isString())
                 .andReturn();
 
-        JsonNode body = objectMapper.readTree(result.getResponse().getContentAsString());
-        return body.path("data").path("accessToken").asText();
+        return objectMapper.readTree(result.getResponse().getContentAsString())
+                .path("data")
+                .path("accessToken")
+                .asText();
     }
 
     private String bearer(String token) {

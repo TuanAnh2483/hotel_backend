@@ -16,10 +16,27 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.Set;
 import java.util.List;
 
 @Component
 public class JwtAuthFilter extends OncePerRequestFilter {
+
+    private static final Set<String> PUBLIC_POST_ENDPOINTS = Set.of(
+            "/api/auth/register",
+            "/api/auth/login",
+            "/api/auth/register-partner",
+            "/api/auth/forgot-password",
+            "/api/auth/reset-password",
+            "/api/auth/verify-email",
+            "/api/auth/resend-verification"
+    );
+
+    private static final Set<String> PUBLIC_GET_ENDPOINTS = Set.of(
+            "/auth-demo.html",
+            "/api/health",
+            "/api/hotels/search"
+    );
 
     private final JwtService jwtService;
     private final UserRepository userRepository;
@@ -41,6 +58,11 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             HttpServletResponse response,
             FilterChain filterChain
     ) throws ServletException, IOException {
+        // Public auth endpoints ignore stale Bearer headers so Postman requests do not get accidental 401s.
+        if (isPublicEndpoint(request)) {
+            filterChain.doFilter(request, response);
+            return;
+        }
 
         String header = request.getHeader(HttpHeaders.AUTHORIZATION);
 
@@ -94,5 +116,27 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             SecurityContextHolder.clearContext();
             restAuthEntryPoint.commence(request, response, new BadCredentialsException("Invalid JWT", ex));
         }
+    }
+
+    private boolean isPublicEndpoint(HttpServletRequest request) {
+        String path = request.getRequestURI();
+        String contextPath = request.getContextPath();
+        if (contextPath != null && !contextPath.isEmpty() && path.startsWith(contextPath)) {
+            path = path.substring(contextPath.length());
+        }
+        String method = request.getMethod();
+
+        if ("POST".equalsIgnoreCase(method)) {
+            return PUBLIC_POST_ENDPOINTS.contains(path);
+        }
+        if ("GET".equalsIgnoreCase(method)) {
+            if (PUBLIC_GET_ENDPOINTS.contains(path)) {
+                return true;
+            }
+
+            return path.matches("^/api/hotels/[^/]+$") || path.matches("^/api/hotels/[^/]+/(reviews|available-rooms)$");
+        }
+
+        return false;
     }
 }

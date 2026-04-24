@@ -36,6 +36,9 @@ public class User {
     @Column(name="password_hash", nullable = false, length = 255)
     private String passwordHash;
 
+    @Column(name = "email_verified_at")
+    private OffsetDateTime emailVerifiedAt;
+
     @Column(name = "token_version", nullable = false)
     @ColumnDefault("0")
     private long tokenVersion;
@@ -55,6 +58,9 @@ public class User {
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PasswordResetToken> passwordResetTokens;
 
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<EmailVerificationToken> emailVerificationTokens;
+
     @PrePersist
     void prePersist() {
         var now = OffsetDateTime.now();
@@ -65,6 +71,10 @@ public class User {
     @PreUpdate
     void preUpdate() {
         updatedAt = OffsetDateTime.now();
+    }
+
+    public boolean isEmailVerified() {
+        return emailVerifiedAt != null;
     }
 
     // getters/setters...

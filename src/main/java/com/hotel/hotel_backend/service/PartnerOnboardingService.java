@@ -40,9 +40,7 @@ public class PartnerOnboardingService {
             String email,
             String phone
     ) {
-        if (currentUser.getUserType() != UserType.CUSTOMER) {
-            throw new ApiException(ErrorCode.FORBIDDEN, "Only customers can start partner onboarding");
-        }
+        assertVerifiedCustomer(currentUser);
 
         if (partnerApplicationRepository.existsByUserIdAndStatusIn(currentUser.getId(), BLOCKING_STATUSES)) {
             throw new ApiException(
@@ -70,6 +68,8 @@ public class PartnerOnboardingService {
      * - Only DRAFT application can be submitted
      */
     public PartnerApplication submitPartnerApplication(User currentUser, Long applicationId) {
+        assertVerifiedCustomer(currentUser);
+
         PartnerApplication partnerApplication = partnerApplicationRepository.findByIdAndUserId(applicationId, currentUser.getId())
                 .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND, "Partner application not found"));
 
@@ -81,5 +81,17 @@ public class PartnerOnboardingService {
         }
         partnerApplication.setStatus(PartnerApplicationStatus.SUBMITTED);
         return partnerApplicationRepository.save(partnerApplication);
+    }
+
+    private void assertVerifiedCustomer(User currentUser) {
+        if (currentUser.getUserType() != UserType.CUSTOMER) {
+            throw new ApiException(ErrorCode.FORBIDDEN, "Only customers can start partner onboarding");
+        }
+        if (!currentUser.isEmailVerified()) {
+            throw new ApiException(
+                    ErrorCode.EMAIL_NOT_VERIFIED,
+                    "Please verify your email before starting partner onboarding"
+            );
+        }
     }
 }

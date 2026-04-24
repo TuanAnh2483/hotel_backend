@@ -23,7 +23,9 @@ public class MeController {
                 currentUser.getId(),
                 currentUser.getEmail(),
                 currentUser.getUserType().name(),
-                currentUser.getStatus().name()
+                currentUser.getStatus().name(),
+                currentUser.isEmailVerified(),
+                currentUser.getEmailVerifiedAt()
         ));
     }
 }

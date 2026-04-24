@@ -13,6 +13,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.OffsetDateTime;
+
 @Component
 @RequiredArgsConstructor
 public class AdminSeedInitializer implements ApplicationRunner {
@@ -54,6 +56,10 @@ public class AdminSeedInitializer implements ApplicationRunner {
         }
         if (created || user.getPasswordHash() == null || !passwordEncoder.matches(password, user.getPasswordHash())) {
             user.setPasswordHash(passwordEncoder.encode(password));
+            changed = true;
+        }
+        if (user.getEmailVerifiedAt() == null) {
+            user.setEmailVerifiedAt(OffsetDateTime.now());
             changed = true;
         }
 

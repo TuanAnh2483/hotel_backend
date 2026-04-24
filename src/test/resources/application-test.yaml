@@ -22,3 +22,4 @@ app:
     exp-seconds: 86400
   mail:
     enabled: false
+    expose-debug-tokens: true

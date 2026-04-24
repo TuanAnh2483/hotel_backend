@@ -44,6 +44,7 @@ class AdminSeedIntegrationTest {
 
         assertThat(admin.getUserType()).isEqualTo(UserType.ADMIN);
         assertThat(admin.getStatus()).isEqualTo(UserStatus.ACTIVE);
+        assertThat(admin.isEmailVerified()).isTrue();
         assertThat(passwordEncoder.matches("Password123", admin.getPasswordHash())).isTrue();
 
         mockMvc.perform(post("/api/auth/login")

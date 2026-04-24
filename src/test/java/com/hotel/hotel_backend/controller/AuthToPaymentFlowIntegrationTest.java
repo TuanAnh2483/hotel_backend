@@ -94,8 +94,8 @@ class AuthToPaymentFlowIntegrationTest {
 
         createUser("admin-flow@test.com", "Password123", UserType.ADMIN);
 
-        String onboardingToken = registerAndExtractToken("partner-flow@test.com", "Password123");
-        registerAndExtractToken("customer-flow@test.com", "Password123");
+        String onboardingToken = registerVerifyAndLogin("partner-flow@test.com", "Password123");
+        registerVerifyAndLogin("customer-flow@test.com", "Password123");
 
         MvcResult startResult = mockMvc.perform(post("/api/partner-onboarding/start")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -314,10 +314,11 @@ class AuthToPaymentFlowIntegrationTest {
         user.setPasswordHash(passwordEncoder.encode(password));
         user.setUserType(userType);
         user.setStatus(UserStatus.ACTIVE);
+        user.setEmailVerifiedAt(java.time.OffsetDateTime.now());
         userRepository.save(user);
     }
 
-    private String registerAndExtractToken(String email, String password) throws Exception {
+    private String registerVerifyAndLogin(String email, String password) throws Exception {
         MvcResult result = mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -328,10 +329,19 @@ class AuthToPaymentFlowIntegrationTest {
                                 }
                                 """.formatted(email, password, password)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.accessToken").isString())
+                .andExpect(jsonPath("$.data.verificationToken").isString())
                 .andReturn();
 
-        return readText(result, "data", "accessToken");
+        mockMvc.perform(post("/api/auth/verify-email")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "token": "%s"
+                                }
+                                """.formatted(readText(result, "data", "verificationToken"))))
+                .andExpect(status().isOk());
+
+        return loginAndExtractToken(email, password);
     }
 
     private String loginAndExtractToken(String email, String password) throws Exception {
