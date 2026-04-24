@@ -13,6 +13,7 @@ import com.hotel.hotel_backend.service.search.HotelStayCriteria;
 import com.hotel.hotel_backend.service.search.HotelSearchUseCase;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.Comparator;
@@ -22,6 +23,7 @@ import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class HotelSearchService implements HotelSearchUseCase {
 
     private final HotelCandidateQueryService hotelCandidateQueryService;

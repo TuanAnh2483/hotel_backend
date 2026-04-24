@@ -8,6 +8,7 @@ import jakarta.validation.constraints.NotBlank;
 
 import jakarta.validation.constraints.Min;
 
+import java.util.List;
 import java.util.Set;
 
 public record CreateRoomRequest(
@@ -33,5 +34,7 @@ public record CreateRoomRequest(
         @NotNull(message = "Bed type is required")
         BedType bedType,
 
-        Set<RoomAmenity> amenities
+        Set<RoomAmenity> amenities,
+
+        List<@NotBlank(message = "imageUrl must not be blank") String> imageUrls
 ) {}

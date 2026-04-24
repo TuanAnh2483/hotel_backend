@@ -5,6 +5,7 @@ import com.hotel.hotel_backend.entity.HotelType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
+import java.util.List;
 import java.util.Set;
 
 public record CreateHotelRequest(
@@ -24,5 +25,6 @@ public record CreateHotelRequest(
         String description,
         @NotNull(message = "Hotel type is required")
         HotelType hotelType,
-        Set<HotelAmenity> amenities
+        Set<HotelAmenity> amenities,
+        List<@NotBlank(message = "imageUrl must not be blank") String> imageUrls
 ) {}

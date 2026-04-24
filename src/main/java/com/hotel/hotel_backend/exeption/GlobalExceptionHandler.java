@@ -13,11 +13,13 @@ import org.springframework.validation.BindException;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.web.multipart.MultipartException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.List;
 
@@ -74,6 +76,16 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(ErrorCode.CONFLICT.status).body(ApiResponse.fail(err));
     }
 
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ApiResponse<Void>> handleNoResourceFound(NoResourceFoundException ex) {
+        ApiError err = new ApiError(
+                ErrorCode.NOT_FOUND.name(),
+                "Tài nguyên không tồn tại",
+                List.of()
+        );
+        return ResponseEntity.status(ErrorCode.NOT_FOUND.status).body(ApiResponse.fail(err));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleOther(Exception ex) {
         log.error("Unhandled exception", ex); // <-- QUAN TRỌNG: in stacktrace ra console
@@ -120,6 +132,36 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(BindException.class)
     public ResponseEntity<ApiResponse<Void>> handleBind(BindException exception) {
         return badRequest(exception.getBindingResult());
+    }
+
+    @ExceptionHandler(MissingServletRequestPartException.class)
+    public ResponseEntity<ApiResponse<Void>> handleMissingMultipartPart(MissingServletRequestPartException ex) {
+        ApiError err = new ApiError(
+                ErrorCode.VALIDATION_ERROR.name(),
+                "Multipart field '" + ex.getRequestPartName() + "' is required",
+                List.of()
+        );
+        return ResponseEntity.status(ErrorCode.VALIDATION_ERROR.status).body(ApiResponse.fail(err));
+    }
+
+    @ExceptionHandler(MultipartException.class)
+    public ResponseEntity<ApiResponse<Void>> handleMultipart(MultipartException ex) {
+        ApiError err = new ApiError(
+                ErrorCode.VALIDATION_ERROR.name(),
+                "Multipart upload is invalid",
+                List.of()
+        );
+        return ResponseEntity.status(ErrorCode.VALIDATION_ERROR.status).body(ApiResponse.fail(err));
+    }
+
+    @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
+    public ResponseEntity<ApiResponse<Void>> handleUnsupportedMediaType(HttpMediaTypeNotSupportedException ex) {
+        ApiError err = new ApiError(
+                ErrorCode.VALIDATION_ERROR.name(),
+                "Content-Type must be multipart/form-data for this endpoint",
+                List.of()
+        );
+        return ResponseEntity.status(ErrorCode.VALIDATION_ERROR.status).body(ApiResponse.fail(err));
     }
 
 

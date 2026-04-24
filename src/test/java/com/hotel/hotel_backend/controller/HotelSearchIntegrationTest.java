@@ -13,6 +13,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
@@ -73,6 +74,11 @@ class HotelSearchIntegrationTest {
         User owner = createOwner("owner-available@test.com");
 
         Hotel hotel = createHotel(owner, "Available Hotel", "Bangkok", "District 1");
+        hotel.setImageUrls(new ArrayList<>(List.of(
+                "https://cdn.example.com/hotels/available-cover.jpg",
+                "https://cdn.example.com/hotels/available-lobby.jpg"
+        )));
+        hotel = hotelRepository.save(hotel);
         Room room = createRoom(hotel, "Standard Room", 2);
         initInventory(room);
 
@@ -91,6 +97,8 @@ class HotelSearchIntegrationTest {
                 .andExpect(jsonPath("$.data.items[0].address").value("Available Hotel address"))
                 .andExpect(jsonPath("$.data.items[0].province").value("Bangkok"))
                 .andExpect(jsonPath("$.data.items[0].district").value("District 1"))
+                .andExpect(jsonPath("$.data.items[0].coverImageUrl").value("https://cdn.example.com/hotels/available-cover.jpg"))
+                .andExpect(jsonPath("$.data.items[0].imageUrls[0]").value("https://cdn.example.com/hotels/available-cover.jpg"))
                 .andExpect(jsonPath("$.data.items[0].ratingAvg").value(0))
                 .andExpect(jsonPath("$.data.items[0].ratingCount").value(0))
                 .andExpect(jsonPath("$.data.items[0].minPrice").value(2_000_000))

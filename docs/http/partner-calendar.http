@@ -1,0 +1,56 @@
+@host = http://localhost:8080
+@partnerToken = REPLACE_PARTNER_JWT
+@roomId = 1
+@from = 2026-04-25
+@to = 2026-04-27
+
+### 1. Read the current calendar snapshot for a partner room
+GET {{host}}/api/partner/rooms/{{roomId}}/calendar?from={{from}}&to={{to}}
+Authorization: Bearer {{partnerToken}}
+
+### 2. Patch price + minStay + closed + availableRooms for a date block
+PUT {{host}}/api/partner/rooms/{{roomId}}/calendar
+Authorization: Bearer {{partnerToken}}
+Content-Type: application/json
+
+{
+  "startDate": "{{from}}",
+  "endDate": "{{to}}",
+  "price": 1500000,
+  "minStay": 2,
+  "closed": false,
+  "availableRooms": 3
+}
+
+### 3. Close a room for sale without changing inventory numbers
+PUT {{host}}/api/partner/rooms/{{roomId}}/calendar
+Authorization: Bearer {{partnerToken}}
+Content-Type: application/json
+
+{
+  "startDate": "{{from}}",
+  "endDate": "{{to}}",
+  "closed": true
+}
+
+### 4. Lower sellable rooms only
+PUT {{host}}/api/partner/rooms/{{roomId}}/calendar
+Authorization: Bearer {{partnerToken}}
+Content-Type: application/json
+
+{
+  "startDate": "{{from}}",
+  "endDate": "{{to}}",
+  "availableRooms": 2
+}
+
+### 5. Validation example: endDate before startDate
+PUT {{host}}/api/partner/rooms/{{roomId}}/calendar
+Authorization: Bearer {{partnerToken}}
+Content-Type: application/json
+
+{
+  "startDate": "2026-04-27",
+  "endDate": "2026-04-25",
+  "price": 1400000
+}

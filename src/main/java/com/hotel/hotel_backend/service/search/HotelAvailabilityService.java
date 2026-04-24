@@ -379,9 +379,13 @@ public class HotelAvailabilityService {
     }
 
     private HotelAvailableRoomItemResponse toAvailableRoomItemResponse(RoomStayQuote quote) {
+        // Các thẻ phòng trống hiển thị trực tiếp hình ảnh phòng cho giao diện người dùng chọn thời gian lưu trú.
+
         return new HotelAvailableRoomItemResponse(
                 quote.room().getId(),
                 quote.room().getName(),
+                resolveCoverImageUrl(quote.room().getCoverImageUrl(), quote.room().getImageUrls()),
+                copyImageUrls(quote.room().getImageUrls()),
                 quote.room().getCapacity(),
                 quote.availableUnits(),
                 quote.stayPrice()
@@ -436,6 +440,25 @@ public class HotelAvailabilityService {
         return result;
     }
 
+    private List<String> copyImageUrls(List<String> imageUrls) {
+        if (imageUrls == null || imageUrls.isEmpty()) {
+            return List.of();
+        }
+
+        return List.copyOf(imageUrls);
+    }
+
+    private String resolveCoverImageUrl(String preferredCoverImageUrl, List<String> imageUrls) {
+        List<String> normalizedImageUrls = copyImageUrls(imageUrls);
+        if (preferredCoverImageUrl != null) {
+            String normalizedCover = preferredCoverImageUrl.trim();
+            if (!normalizedCover.isEmpty() && normalizedImageUrls.contains(normalizedCover)) {
+                return normalizedCover;
+            }
+        }
+
+        return normalizedImageUrls.isEmpty() ? null : normalizedImageUrls.get(0);
+    }
 
 
 

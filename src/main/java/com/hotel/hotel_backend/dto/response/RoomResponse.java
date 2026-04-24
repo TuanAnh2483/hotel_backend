@@ -4,6 +4,7 @@ import com.hotel.hotel_backend.entity.BedType;
 import com.hotel.hotel_backend.entity.RoomCategory;
 import com.hotel.hotel_backend.entity.RoomAmenity;
 
+import java.util.List;
 import java.util.Set;
 
 public record RoomResponse(
@@ -15,5 +16,7 @@ public record RoomResponse(
         Long hotelId,
         RoomCategory roomCategory,
         BedType bedType,
-        Set<RoomAmenity> amenities
+        Set<RoomAmenity> amenities,
+        String coverImageUrl,
+        List<String> imageUrls
 ) {}

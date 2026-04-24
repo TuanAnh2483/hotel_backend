@@ -8,6 +8,7 @@ import com.hotel.hotel_backend.dto.request.PartnerBookingSearchRequest;
 import com.hotel.hotel_backend.dto.request.PartnerReviewReplyRequest;
 import com.hotel.hotel_backend.dto.request.PartnerReviewSearchRequest;
 import com.hotel.hotel_backend.dto.request.PartnerRoomCalendarUpsertRequest;
+import com.hotel.hotel_backend.dto.request.SetCoverImageRequest;
 import com.hotel.hotel_backend.dto.request.UpdateHotelRequest;
 import com.hotel.hotel_backend.dto.response.ApiResponse;
 import com.hotel.hotel_backend.dto.response.HotelResponse;
@@ -20,10 +21,12 @@ import com.hotel.hotel_backend.dto.response.RoomResponse;
 import com.hotel.hotel_backend.service.HotelService;
 import com.hotel.hotel_backend.service.HotelReviewService;
 import com.hotel.hotel_backend.service.PartnerBookingService;
+import com.hotel.hotel_backend.service.PartnerImageUploadService;
 import com.hotel.hotel_backend.service.PartnerRoomCalendarService;
 import com.hotel.hotel_backend.service.RoomService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -36,6 +39,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -50,6 +54,7 @@ public class PartnerController {
     private final PartnerBookingService partnerBookingService;
     private final PartnerRoomCalendarService partnerRoomCalendarService;
     private final HotelReviewService hotelReviewService;
+    private final PartnerImageUploadService partnerImageUploadService;
 
     @GetMapping("/hotels")
     @PreAuthorize("hasRole('PARTNER')")
@@ -151,6 +156,36 @@ public class PartnerController {
         return ApiResponse.ok(null);
     }
 
+    /**
+     * Partner uploads real image files and the backend appends generated public URLs to the hotel gallery.
+     */
+    @PostMapping(value = "/hotels/{id}/images", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasRole('PARTNER')")
+    public ApiResponse<HotelResponse> uploadHotelImages(
+            @PathVariable Long id,
+            @RequestParam("files") List<MultipartFile> files
+    ) {
+        return ApiResponse.ok(partnerImageUploadService.uploadHotelImages(id, files));
+    }
+
+    @DeleteMapping("/hotels/{id}/images")
+    @PreAuthorize("hasRole('PARTNER')")
+    public ApiResponse<HotelResponse> deleteHotelImage(
+            @PathVariable Long id,
+            @RequestParam("imageUrl") String imageUrl
+    ) {
+        return ApiResponse.ok(partnerImageUploadService.deleteHotelImage(id, imageUrl));
+    }
+
+    @PutMapping("/hotels/{id}/cover-image")
+    @PreAuthorize("hasRole('PARTNER')")
+    public ApiResponse<HotelResponse> setHotelCoverImage(
+            @PathVariable Long id,
+            @Valid @RequestBody SetCoverImageRequest request
+    ) {
+        return ApiResponse.ok(partnerImageUploadService.setHotelCoverImage(id, request.imageUrl()));
+    }
+
     @PostMapping("/hotels/{hotelId}/rooms")
     @PreAuthorize("hasRole('PARTNER')")
     public ApiResponse<RoomResponse> createRoom(
@@ -206,5 +241,35 @@ public class PartnerController {
     public ApiResponse<Void> deleteRoom(@PathVariable Long roomId) {
         roomService.delete(roomId);
         return ApiResponse.ok(null);
+    }
+
+    /**
+     * Partner uploads real image files and the backend appends generated public URLs to the room gallery.
+     */
+    @PostMapping(value = "/rooms/{roomId}/images", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasRole('PARTNER')")
+    public ApiResponse<RoomResponse> uploadRoomImages(
+            @PathVariable Long roomId,
+            @RequestParam("files") List<MultipartFile> files
+    ) {
+        return ApiResponse.ok(partnerImageUploadService.uploadRoomImages(roomId, files));
+    }
+
+    @DeleteMapping("/rooms/{roomId}/images")
+    @PreAuthorize("hasRole('PARTNER')")
+    public ApiResponse<RoomResponse> deleteRoomImage(
+            @PathVariable Long roomId,
+            @RequestParam("imageUrl") String imageUrl
+    ) {
+        return ApiResponse.ok(partnerImageUploadService.deleteRoomImage(roomId, imageUrl));
+    }
+
+    @PutMapping("/rooms/{roomId}/cover-image")
+    @PreAuthorize("hasRole('PARTNER')")
+    public ApiResponse<RoomResponse> setRoomCoverImage(
+            @PathVariable Long roomId,
+            @Valid @RequestBody SetCoverImageRequest request
+    ) {
+        return ApiResponse.ok(partnerImageUploadService.setRoomCoverImage(roomId, request.imageUrl()));
     }
 }

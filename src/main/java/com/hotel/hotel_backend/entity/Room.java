@@ -5,7 +5,9 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 @Getter
 @Setter
@@ -48,6 +50,16 @@ public class Room {
     @Column(name = "amenity", nullable = false)
     @Enumerated(EnumType.STRING)
     private Set<RoomAmenity> amenities = new HashSet<>();
+
+    // Hình ảnh phòng được lưu trữ dưới dạng URL công khai có thứ tự để giao diện người dùng của khách hàng có thể hiển thị thư viện hình ảnh phòng.
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "room_images", joinColumns = @JoinColumn(name = "room_id"))
+    @OrderColumn(name = "sort_order")
+    @Column(name = "image_url", nullable = false)
+    private List<String> imageUrls = new ArrayList<>();
+
+    @Column(name = "cover_image_url")
+    private String coverImageUrl;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

@@ -23,6 +23,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -78,6 +79,10 @@ class HotelDetailIntegrationTest {
 
         Hotel hotel = createHotel(owner, "Detail Hotel", "Bangkok", "District 1");
         hotel.setDescription("Hotel used for detail endpoint test");
+        hotel.setImageUrls(new ArrayList<>(List.of(
+                "https://cdn.example.com/hotels/detail-cover.jpg",
+                "https://cdn.example.com/hotels/detail-pool.jpg"
+        )));
         hotel.setRatingAvg(new BigDecimal("4.75"));
         hotel.setRatingCount(18);
         hotel = hotelRepository.save(hotel);
@@ -91,6 +96,8 @@ class HotelDetailIntegrationTest {
                 .andExpect(jsonPath("$.data.province").value("Bangkok"))
                 .andExpect(jsonPath("$.data.district").value("District 1"))
                 .andExpect(jsonPath("$.data.description").value("Hotel used for detail endpoint test"))
+                .andExpect(jsonPath("$.data.coverImageUrl").value("https://cdn.example.com/hotels/detail-cover.jpg"))
+                .andExpect(jsonPath("$.data.imageUrls[0]").value("https://cdn.example.com/hotels/detail-cover.jpg"))
                 .andExpect(jsonPath("$.data.ratingAvg").value(4.75))
                 .andExpect(jsonPath("$.data.ratingCount").value(18));
     }
@@ -102,8 +109,15 @@ class HotelDetailIntegrationTest {
         User owner = createOwner("owner-available-rooms@test.com");
 
         Hotel hotel = createHotel(owner, "Room Detail Hotel", "Bangkok", "District 1");
+        hotel.setImageUrls(new ArrayList<>(List.of("https://cdn.example.com/hotels/room-detail-cover.jpg")));
+        hotelRepository.save(hotel);
 
         Room validRoom = createRoom(hotel, "Valid Room", 2);
+        validRoom.setImageUrls(new ArrayList<>(List.of(
+                "https://cdn.example.com/rooms/valid-room-1.jpg",
+                "https://cdn.example.com/rooms/valid-room-2.jpg"
+        )));
+        validRoom = roomRepository.save(validRoom);
         initInventory(validRoom);
         createDailyRate(validRoom, checkIn, 800_000L, 1, false);
         createDailyRate(validRoom, checkIn.plusDays(1), 900_000L, 1, false);
@@ -122,6 +136,8 @@ class HotelDetailIntegrationTest {
                 .andExpect(jsonPath("$.data.length()").value(1))
                 .andExpect(jsonPath("$.data[0].roomId").value(validRoom.getId()))
                 .andExpect(jsonPath("$.data[0].name").value("Valid Room"))
+                .andExpect(jsonPath("$.data[0].coverImageUrl").value("https://cdn.example.com/rooms/valid-room-1.jpg"))
+                .andExpect(jsonPath("$.data[0].imageUrls[0]").value("https://cdn.example.com/rooms/valid-room-1.jpg"))
                 .andExpect(jsonPath("$.data[0].capacity").value(2))
                 .andExpect(jsonPath("$.data[0].availableUnits").value(2))
                 .andExpect(jsonPath("$.data[0].stayPrice").value(1_700_000));

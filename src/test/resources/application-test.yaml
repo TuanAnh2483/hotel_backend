@@ -23,3 +23,8 @@ app:
   mail:
     enabled: false
     expose-debug-tokens: true
+  uploads:
+    provider: local
+    storage-root: ./target/test-uploads
+    public-base-path: /uploads
+    max-file-size-bytes: 10485760
