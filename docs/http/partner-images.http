@@ -1,0 +1,66 @@
+@baseUrl = http://localhost:8080
+@partnerToken = REPLACE_PARTNER_JWT
+@hotelId = 36
+@roomId = 40
+@hotelImageUrl = /uploads/hotels/36/replace-me.png
+@roomImageUrl = /uploads/rooms/40/replace-me.png
+
+### Upload hotel images
+POST {{baseUrl}}/api/partner/hotels/{{hotelId}}/images
+Authorization: Bearer {{partnerToken}}
+Content-Type: multipart/form-data; boundary=CodexBoundary
+
+--CodexBoundary
+Content-Disposition: form-data; name="files"; filename="hotel-cover.png"
+Content-Type: image/png
+
+< ./hotel-cover.png
+--CodexBoundary
+Content-Disposition: form-data; name="files"; filename="hotel-lobby.jpg"
+Content-Type: image/jpeg
+
+< ./hotel-lobby.jpg
+--CodexBoundary--
+
+### Delete one hotel image
+DELETE {{baseUrl}}/api/partner/hotels/{{hotelId}}/images?imageUrl={{hotelImageUrl}}
+Authorization: Bearer {{partnerToken}}
+
+### Set hotel cover image
+PUT {{baseUrl}}/api/partner/hotels/{{hotelId}}/cover-image
+Authorization: Bearer {{partnerToken}}
+Content-Type: application/json
+
+{
+  "imageUrl": "{{hotelImageUrl}}"
+}
+
+### Upload room images
+POST {{baseUrl}}/api/partner/rooms/{{roomId}}/images
+Authorization: Bearer {{partnerToken}}
+Content-Type: multipart/form-data; boundary=CodexBoundary
+
+--CodexBoundary
+Content-Disposition: form-data; name="files"; filename="room-a.png"
+Content-Type: image/png
+
+< ./room-a.png
+--CodexBoundary
+Content-Disposition: form-data; name="files"; filename="room-b.jpg"
+Content-Type: image/jpeg
+
+< ./room-b.jpg
+--CodexBoundary--
+
+### Delete one room image
+DELETE {{baseUrl}}/api/partner/rooms/{{roomId}}/images?imageUrl={{roomImageUrl}}
+Authorization: Bearer {{partnerToken}}
+
+### Set room cover image
+PUT {{baseUrl}}/api/partner/rooms/{{roomId}}/cover-image
+Authorization: Bearer {{partnerToken}}
+Content-Type: application/json
+
+{
+  "imageUrl": "{{roomImageUrl}}"
+}

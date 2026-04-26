@@ -1,0 +1,9 @@
+package com.hotel.hotel_backend.dto.request;
+
+import jakarta.validation.constraints.NotBlank;
+
+public record SetCoverImageRequest(
+        @NotBlank(message = "imageUrl is required")
+        String imageUrl
+) {
+}
