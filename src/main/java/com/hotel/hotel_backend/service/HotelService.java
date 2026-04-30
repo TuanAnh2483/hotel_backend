@@ -35,12 +35,12 @@ public class HotelService {
         User owner = getCurrentUser();
 
         Hotel hotel = new Hotel();
-        hotel.setName(request.name());
-        hotel.setAddress(request.address());
-        hotel.setDistrict(request.district());
-        hotel.setProvince(request.province());
+        hotel.setName(normalizeRequiredText(request.name()));
+        hotel.setAddress(normalizeRequiredText(request.address()));
+        hotel.setDistrict(LocationNormalizer.normalizeDistrictLabel(request.district()));
+        hotel.setProvince(LocationNormalizer.normalizeProvinceLabel(request.province()));
         hotel.setOwner(owner);
-        hotel.setDescription(request.description());
+        hotel.setDescription(normalizeOptionalText(request.description()));
         hotel.setHotelType(request.hotelType());
         hotel.setAmenities(request.amenities() == null ? new HashSet<>() : new HashSet<>(request.amenities()));
         hotel.setImageUrls(normalizeImageUrls(request.imageUrls()));
@@ -65,11 +65,11 @@ public class HotelService {
         // Cập nhật thông tin khách sạn thuộc sở hữu hiện tại.
         Hotel hotel = findOwnedHotel(id);
 
-        hotel.setName(request.name());
-        hotel.setAddress(request.address());
-        hotel.setDistrict(request.district());
-        hotel.setProvince(request.province());
-        hotel.setDescription(request.description());
+        hotel.setName(normalizeRequiredText(request.name()));
+        hotel.setAddress(normalizeRequiredText(request.address()));
+        hotel.setDistrict(LocationNormalizer.normalizeDistrictLabel(request.district()));
+        hotel.setProvince(LocationNormalizer.normalizeProvinceLabel(request.province()));
+        hotel.setDescription(normalizeOptionalText(request.description()));
         hotel.setHotelType(request.hotelType());
         hotel.setAmenities(request.amenities() == null ? new HashSet<>() : new HashSet<>(request.amenities()));
         hotel.setImageUrls(normalizeImageUrls(request.imageUrls()));
@@ -175,6 +175,8 @@ public class HotelService {
                 hotel.getDescription(),
                 hotel.getHotelType(),
                 hotel.getAmenities(),
+                hotel.getRatingAvg(),
+                hotel.getRatingCount(),
                 resolveCoverImageUrl(hotel.getCoverImageUrl(), hotel.getImageUrls()),
                 copyImageUrls(hotel.getImageUrls())
         );
@@ -222,6 +224,19 @@ public class HotelService {
         }
 
         return imageUrl.trim();
+    }
+
+    private String normalizeRequiredText(String value) {
+        return value.trim();
+    }
+
+    private String normalizeOptionalText(String value) {
+        if (value == null) {
+            return null;
+        }
+
+        String normalized = value.trim();
+        return normalized.isEmpty() ? null : normalized;
     }
 
     private String resolveCoverImageUrl(String preferredCoverImageUrl, List<String> imageUrls) {

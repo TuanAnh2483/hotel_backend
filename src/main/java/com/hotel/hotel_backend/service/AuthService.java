@@ -149,8 +149,8 @@ public class AuthService {
         return new ForgotPasswordResponse(
                 PASSWORD_RESET_MESSAGE,
                 delivery.deliveryMode(),
-                null,
-                null
+                exposeDebugTokens ? savedToken.getToken() : null,
+                exposeDebugTokens ? savedToken.getExpiresAt() : null
         );
     }
 

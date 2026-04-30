@@ -19,11 +19,12 @@ Behavior:
 - if user exists and is active, backend creates a reset token
 - previous reset tokens for that user are removed
 - backend sends the token through `PasswordResetEmailService`
-- response does not return the token directly
+- response does not return the token directly in normal mode
 
 Important note:
 - when `MAIL_ENABLED=false`, delivery is mocked by logging the reset link and response uses `EMAIL_LOG`
 - when `MAIL_ENABLED=true`, backend sends the reset link through SMTP and response uses `EMAIL`
+- when `MAIL_EXPOSE_DEBUG_TOKENS=true`, the response also includes `resetToken` and `expiresAt` for local testing
 - SMTP credentials must be supplied through environment variables, not source code
 
 ### Reset password
@@ -72,10 +73,11 @@ Reference file:
 Quick flow:
 1. register or use an existing active account
 2. call `POST /api/auth/forgot-password`
-3. if `MAIL_ENABLED=false`, copy the reset token from the application log line emitted by `PasswordResetEmailService`
-4. if `MAIL_ENABLED=true`, copy the reset token from the email link
-5. call `POST /api/auth/reset-password` with the token and new password
-6. verify old password fails and new password succeeds
+3. if `MAIL_ENABLED=false` and `MAIL_EXPOSE_DEBUG_TOKENS=false`, copy the reset token from the application log line emitted by `PasswordResetEmailService`
+4. if `MAIL_EXPOSE_DEBUG_TOKENS=true`, copy the reset token directly from the API response or use the frontend debug button
+5. if `MAIL_ENABLED=true`, copy the reset token from the email link
+6. call `POST /api/auth/reset-password` with the token and new password
+7. verify old password fails and new password succeeds
 
 ## SMTP Environment Example
 

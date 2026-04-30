@@ -61,15 +61,32 @@ public class HotelAvailabilityService {
         return summary.canSatisfyStay() ? summary.minPrice() : null;
     }
 
+    public record HotelSearchAvailability(
+            Long minPrice,
+            int availableRoomTypes,
+            int availableUnits
+    ) {
+    }
+
 
     /// 8 List <Hotel></>  này có có hotel nào pass search & minprice
     public Map<Long, Long> findAvailableHotelMinPrices(List<Hotel> hotels, HotelStayCriteria criteria) {
+        return findAvailableHotelSummaries(hotels, criteria).entrySet().stream()
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        entry -> entry.getValue().minPrice(),
+                        (left, right) -> left,
+                        LinkedHashMap::new
+                ));
+    }
+
+    public Map<Long, HotelSearchAvailability> findAvailableHotelSummaries(List<Hotel> hotels, HotelStayCriteria criteria) {
         if (hotels.isEmpty() || !hasValidStayRequest(criteria)) {
             return Map.of();
         }
 
         StayEvaluationContext context = buildStayEvaluationContext(hotels, criteria);
-        Map<Long, Long> minPricesByHotelId = new LinkedHashMap<>();
+        Map<Long, HotelSearchAvailability> availabilityByHotelId = new LinkedHashMap<>();
 
         for (Hotel hotel : hotels) {
             List<Room> rooms = context.roomsByHotelId().getOrDefault(hotel.getId(), List.of());
@@ -78,10 +95,13 @@ public class HotelAvailabilityService {
                 continue;
             }
 
-            minPricesByHotelId.put(hotel.getId(), summary.minPrice());
+            availabilityByHotelId.put(
+                    hotel.getId(),
+                    new HotelSearchAvailability(summary.minPrice(), summary.availableRoomTypes(), summary.availableUnits())
+            );
         }
 
-        return minPricesByHotelId;
+        return availabilityByHotelId;
     }
 
 
@@ -115,7 +135,7 @@ public class HotelAvailabilityService {
     private record RoomStayOption(int capacity, int availableUnits) {
     }
 
-    private record HotelStaySummary(boolean canSatisfyStay, Long minPrice) {
+    private record HotelStaySummary(boolean canSatisfyStay, Long minPrice, int availableRoomTypes, int availableUnits) {
     }
 
     /// 7 Hotel nay có đủ rooms + capacity để cover booking hay không
@@ -253,11 +273,13 @@ public class HotelAvailabilityService {
             StayEvaluationContext context
     ) {
         if (rooms.isEmpty()) {
-            return new HotelStaySummary(false, null);
+            return new HotelStaySummary(false, null, 0, 0);
         }
 
         List<RoomStayOption> options = new ArrayList<>();
         Long minPrice = null;
+        int availableRoomTypes = 0;
+        int totalAvailableUnits = 0;
 
         for (Room room : rooms) {
             int availableUnits = availableUnitsForStay(room, criteria, context.inventoriesByRoomId());
@@ -265,15 +287,27 @@ public class HotelAvailabilityService {
                 continue;
             }
 
-            options.add(new RoomStayOption(room.getCapacity(), availableUnits));
-
             Long stayPrice = calculateRoomStayPrice(room, criteria, context.ratesByRoomId());
-            if (stayPrice != null && (minPrice == null || stayPrice < minPrice)) {
+            if (stayPrice == null) {
+                continue;
+            }
+
+            options.add(new RoomStayOption(room.getCapacity(), availableUnits));
+            availableRoomTypes++;
+            totalAvailableUnits += availableUnits;
+
+            if (minPrice == null || stayPrice < minPrice) {
                 minPrice = stayPrice;
             }
         }
 
-        return new HotelStaySummary(canSatisfyStay(options, criteria), minPrice);
+        boolean canSatisfyStay = canSatisfyStay(options, criteria);
+        return new HotelStaySummary(
+                canSatisfyStay,
+                canSatisfyStay ? minPrice : null,
+                canSatisfyStay ? availableRoomTypes : 0,
+                canSatisfyStay ? totalAvailableUnits : 0
+        );
     }
 
     /// 6 room nao hop le trong List<RoomStayQuote>

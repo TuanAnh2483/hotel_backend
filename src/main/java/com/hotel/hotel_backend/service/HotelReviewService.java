@@ -5,6 +5,7 @@ import com.hotel.hotel_backend.dto.request.PartnerReviewReplyRequest;
 import com.hotel.hotel_backend.dto.request.PartnerReviewSearchRequest;
 import com.hotel.hotel_backend.dto.request.UpdateHotelReviewRequest;
 import com.hotel.hotel_backend.dto.response.HotelReviewResponse;
+import com.hotel.hotel_backend.dto.response.MyReviewResponse;
 import com.hotel.hotel_backend.entity.Booking;
 import com.hotel.hotel_backend.entity.BookingStatus;
 import com.hotel.hotel_backend.entity.Hotel;
@@ -92,6 +93,16 @@ public class HotelReviewService {
         refreshHotelRating(hotel);
     }
 
+    public void deleteReviewAsAdmin(Long reviewId) {
+        HotelReview review = hotelReviewRepository.findById(reviewId)
+                .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND, "Review not found"));
+
+        Hotel hotel = review.getHotel();
+        hotelReviewRepository.delete(review);
+        hotelReviewRepository.flush();
+        refreshHotelRating(hotel);
+    }
+
     @Transactional(readOnly = true)
     public List<HotelReviewResponse> getHotelReviews(Long hotelId, Integer rating) {
         hotelRepository.findById(hotelId)
@@ -112,6 +123,27 @@ public class HotelReviewService {
                         request.getHasReply()
                 ).stream()
                 .map(this::toResponse)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<MyReviewResponse> getMyReviews() {
+        long userId = securityService.getCurrentPrincipal().userId();
+        return hotelReviewRepository.findCustomerReviews(userId).stream()
+                .map(review -> new MyReviewResponse(
+                        review.getId(),
+                        review.getBooking().getId(),
+                        review.getHotel().getId(),
+                        review.getHotel().getName(),
+                        review.getRating(),
+                        review.getComment(),
+                        review.getPartnerReply(),
+                        review.getBooking().getCheckIn(),
+                        review.getBooking().getCheckOut(),
+                        review.getCreatedAt(),
+                        review.getUpdatedAt(),
+                        review.getPartnerRepliedAt()
+                ))
                 .toList();
     }
 

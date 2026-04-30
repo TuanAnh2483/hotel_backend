@@ -64,7 +64,9 @@ public class RoomService {
     public RoomResponse update(Long roomId, CreateRoomRequest request) {
         // Cập nhật thông tin phòng thuộc sở hữu hiện tại.
         Room room = findOwnedRoom(roomId);
-
+        if (request.imageUrls().stream().anyMatch(url -> url.startsWith("data:image"))) {
+            throw new RuntimeException("Không được gửi base64, phải upload Cloudinary trước");
+        }
         room.setName(request.name());
         room.setCapacity(request.capacity());
         room.setQuantity(request.quantity());
@@ -72,7 +74,14 @@ public class RoomService {
         room.setRoomCategory(request.roomCategory());
         room.setBedType(request.bedType());
         room.setAmenities(request.amenities() == null ? new HashSet<>() : new HashSet<>(request.amenities()));
-        room.setImageUrls(normalizeImageUrls(request.imageUrls()));
+
+        // ✅ FIX: Dùng mergeImageUrls và convert thành mutable ArrayList
+        room.setImageUrls(new ArrayList<>(
+                request.imageUrls().stream()
+                        .filter(url -> !url.startsWith("data:image"))
+                        .toList()
+        ));
+
         room.setCoverImageUrl(resolveCoverImageUrl(room.getCoverImageUrl(), room.getImageUrls()));
 
         return mapToResponse(room);

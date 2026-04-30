@@ -9,7 +9,7 @@ import java.util.List;
 @Component
 public class HotelSearchMapper {
 
-    public HotelSearchItemResponse toItem(Hotel hotel, Long minPrice) {
+    public HotelSearchItemResponse toItem(Hotel hotel, Long minPrice, int availableRoomTypes, int availableUnits) {
         return new HotelSearchItemResponse(
                 hotel.getId(),
                 hotel.getName(),
@@ -20,7 +20,9 @@ public class HotelSearchMapper {
                 copyImageUrls(hotel.getImageUrls()),
                 hotel.getRatingAvg(),
                 hotel.getRatingCount(),
-                minPrice
+                minPrice,
+                availableRoomTypes,
+                availableUnits
         );
     }
 

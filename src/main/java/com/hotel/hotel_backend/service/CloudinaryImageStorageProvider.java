@@ -61,6 +61,11 @@ public class CloudinaryImageStorageProvider implements ImageStorageProvider {
     }
 
     @Override
+    public List<String> storeUserProfileImages(Long userId, List<MultipartFile> files) {
+        return uploadImages("profiles", userId, files);
+    }
+
+    @Override
     public boolean manages(String imageUrl) {
         if (!StringUtils.hasText(imageUrl)) {
             return false;

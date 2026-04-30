@@ -50,6 +50,17 @@ public interface HotelReviewRepository extends JpaRepository<HotelReview, Long> 
     );
 
     @Query("""
+            select distinct r
+            from HotelReview r
+            join fetch r.hotel h
+            join fetch r.booking b
+            left join fetch b.contact c
+            where r.user.id = :userId
+            order by r.createdAt desc
+            """)
+    List<HotelReview> findCustomerReviews(@Param("userId") Long userId);
+
+    @Query("""
             select r
             from HotelReview r
             join fetch r.hotel h
@@ -69,6 +80,17 @@ public interface HotelReviewRepository extends JpaRepository<HotelReview, Long> 
             where r.hotel.id = :hotelId
             """)
     HotelRatingAggregate findHotelRatingAggregate(@Param("hotelId") Long hotelId);
+
+    @Query("""
+            select distinct r
+            from HotelReview r
+            join fetch r.hotel h
+            join fetch r.user u
+            join fetch r.booking b
+            left join fetch b.contact c
+            order by r.createdAt desc
+            """)
+    List<HotelReview> findAllForAdmin();
 
     interface HotelRatingAggregate {
         Double getAverageRating();

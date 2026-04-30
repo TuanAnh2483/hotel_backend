@@ -12,10 +12,12 @@ import com.hotel.hotel_backend.dto.request.HotelStayRequest;
 import com.hotel.hotel_backend.dto.response.ApiResponse;
 import com.hotel.hotel_backend.dto.response.HotelAvailableRoomItemResponse;
 import com.hotel.hotel_backend.dto.response.HotelDetailResponse;
+import com.hotel.hotel_backend.dto.response.HotelLocationOptionResponse;
 import com.hotel.hotel_backend.dto.response.HotelReviewResponse;
 import com.hotel.hotel_backend.dto.response.HotelSearchPageResponse;
 import com.hotel.hotel_backend.service.HotelReviewService;
 import com.hotel.hotel_backend.service.search.HotelDetailService;
+import com.hotel.hotel_backend.service.search.HotelLocationService;
 import com.hotel.hotel_backend.service.search.HotelSearchCriteria;
 import com.hotel.hotel_backend.service.search.HotelSearchSort;
 import com.hotel.hotel_backend.service.search.HotelStayCriteria;
@@ -36,6 +38,7 @@ public class HotelController {
     private final HotelSearchUseCase hotelSearchUseCase;
     private final HotelDetailService hotelDetailService;
     private final HotelReviewService hotelReviewService;
+    private final HotelLocationService hotelLocationService;
 
     @GetMapping("/search")
     public ApiResponse<HotelSearchPageResponse> search(@Valid @ModelAttribute HotelSearchRequest request) { ///@ModelAttribute giúp bind query param của GET
@@ -56,6 +59,11 @@ public class HotelController {
                 toRoomAmenitySet(request.getRoomAmenities())
         );
         return ApiResponse.ok(hotelSearchUseCase.search(criteria));
+    }
+
+    @GetMapping("/locations")
+    public ApiResponse<List<HotelLocationOptionResponse>> locations() {
+        return ApiResponse.ok(hotelLocationService.getActiveLocationOptions());
     }
 
     @GetMapping("/{id}")

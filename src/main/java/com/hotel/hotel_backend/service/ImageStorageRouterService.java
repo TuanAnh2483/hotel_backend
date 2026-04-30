@@ -33,6 +33,10 @@ public class ImageStorageRouterService {
         return resolveActiveProvider().storeRoomImages(roomId, files);
     }
 
+    public List<String> storeUserProfileImages(Long userId, List<MultipartFile> files) {
+        return resolveActiveProvider().storeUserProfileImages(userId, files);
+    }
+
     /**
      * Delete only when a provider recognizes the stored URL; external URLs are removed from the gallery only.
      */

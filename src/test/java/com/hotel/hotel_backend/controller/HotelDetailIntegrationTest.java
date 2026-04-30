@@ -4,6 +4,8 @@ import com.hotel.hotel_backend.entity.DailyInventory;
 import com.hotel.hotel_backend.entity.DailyRate;
 import com.hotel.hotel_backend.entity.DailyRateId;
 import com.hotel.hotel_backend.entity.Hotel;
+import com.hotel.hotel_backend.entity.HotelAmenity;
+import com.hotel.hotel_backend.entity.HotelType;
 import com.hotel.hotel_backend.entity.Room;
 import com.hotel.hotel_backend.entity.User;
 import com.hotel.hotel_backend.entity.UserType;
@@ -24,6 +26,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -83,6 +86,8 @@ class HotelDetailIntegrationTest {
                 "https://cdn.example.com/hotels/detail-cover.jpg",
                 "https://cdn.example.com/hotels/detail-pool.jpg"
         )));
+        hotel.setHotelType(HotelType.RESORT);
+        hotel.setAmenities(new HashSet<>(List.of(HotelAmenity.WIFI, HotelAmenity.POOL)));
         hotel.setRatingAvg(new BigDecimal("4.75"));
         hotel.setRatingCount(18);
         hotel = hotelRepository.save(hotel);
@@ -96,6 +101,8 @@ class HotelDetailIntegrationTest {
                 .andExpect(jsonPath("$.data.province").value("Bangkok"))
                 .andExpect(jsonPath("$.data.district").value("District 1"))
                 .andExpect(jsonPath("$.data.description").value("Hotel used for detail endpoint test"))
+                .andExpect(jsonPath("$.data.hotelType").value("RESORT"))
+                .andExpect(jsonPath("$.data.amenities.length()").value(2))
                 .andExpect(jsonPath("$.data.coverImageUrl").value("https://cdn.example.com/hotels/detail-cover.jpg"))
                 .andExpect(jsonPath("$.data.imageUrls[0]").value("https://cdn.example.com/hotels/detail-cover.jpg"))
                 .andExpect(jsonPath("$.data.ratingAvg").value(4.75))

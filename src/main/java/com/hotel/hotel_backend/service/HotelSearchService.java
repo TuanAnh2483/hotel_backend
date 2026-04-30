@@ -44,13 +44,20 @@ public class HotelSearchService implements HotelSearchUseCase {
         );
 
         List<Hotel> candidateHotels = hotelCandidateQueryService.findCandidates(criteria);
-        Map<Long, Long> minPricesByHotelId = hotelAvailabilityService.findAvailableHotelMinPrices(candidateHotels, stayCriteria);
+        Map<Long, HotelAvailabilityService.HotelSearchAvailability> availabilityByHotelId =
+                hotelAvailabilityService.findAvailableHotelSummaries(candidateHotels, stayCriteria);
 
         List<HotelSearchItemResponse> sortedItems = candidateHotels.stream()
-                .filter(hotel -> minPricesByHotelId.containsKey(hotel.getId()))
-                .map(hotel -> hotelSearchMapper.toItem(
-                        hotel,minPricesByHotelId.get(hotel.getId())
-                ))
+                .filter(hotel -> availabilityByHotelId.containsKey(hotel.getId()))
+                .map(hotel -> {
+                    HotelAvailabilityService.HotelSearchAvailability availability = availabilityByHotelId.get(hotel.getId());
+                    return hotelSearchMapper.toItem(
+                            hotel,
+                            availability.minPrice(),
+                            availability.availableRoomTypes(),
+                            availability.availableUnits()
+                    );
+                })
                 .toList();
 
         sortedItems = sortItems(sortedItems, criteria.sort());
@@ -78,7 +85,6 @@ public class HotelSearchService implements HotelSearchUseCase {
         if (sort == HotelSearchSort.RECOMMENDED) {
             return sortByRecommended(items);
         }
-
         return items.stream()
                 .sorted(buildSortComparator(sort))
                 .toList();
@@ -192,6 +198,7 @@ public class HotelSearchService implements HotelSearchUseCase {
 
         double normalized = 1.0 - ((double) (minPrice - cheapestPrice) / (mostExpensivePrice - cheapestPrice));
         return Math.max(0.0, Math.min(1.0, normalized));
+
     }
 
 }

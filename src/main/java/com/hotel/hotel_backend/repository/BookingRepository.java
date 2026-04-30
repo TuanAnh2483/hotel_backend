@@ -18,9 +18,13 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
 
     List<Booking> findByUserIdOrderByCreatedAtDesc(Long userId);
 
+    long countByUserId(Long userId);
+
     Optional<Booking> findByIdAndUserId(Long id, Long userId);
 
     List<Booking> findByStatusAndExpiresAtBefore(BookingStatus status, LocalDateTime expiresAt);
+
+    long countByStatus(BookingStatus status);
 
     @Query(
             value = """
@@ -42,10 +46,10 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
                     join r.hotel h
                     left join b.contact c
                     where h.owner.id = :ownerId
-                      and (:hotelId is null or h.id = :hotelId)
-                      and (:status is null or b.status = :status)
-                      and (:checkInFrom is null or b.checkIn >= :checkInFrom)
-                      and (:checkInTo is null or b.checkIn <= :checkInTo)
+                      and h.id = coalesce(:hotelId, h.id)
+                      and b.status = coalesce(:status, b.status)
+                      and b.checkIn >= coalesce(:checkInFrom, b.checkIn)
+                      and b.checkIn <= coalesce(:checkInTo, b.checkIn)
                     order by b.createdAt desc
                     """,
             countQuery = """
@@ -55,10 +59,10 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
                     join bi.room r
                     join r.hotel h
                     where h.owner.id = :ownerId
-                      and (:hotelId is null or h.id = :hotelId)
-                      and (:status is null or b.status = :status)
-                      and (:checkInFrom is null or b.checkIn >= :checkInFrom)
-                      and (:checkInTo is null or b.checkIn <= :checkInTo)
+                      and h.id = coalesce(:hotelId, h.id)
+                      and b.status = coalesce(:status, b.status)
+                      and b.checkIn >= coalesce(:checkInFrom, b.checkIn)
+                      and b.checkIn <= coalesce(:checkInTo, b.checkIn)
                     """
     )
     Page<PartnerBookingSummaryResponse> findPartnerBookingSummaries(
@@ -68,6 +72,36 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
             @Param("checkInFrom") LocalDate checkInFrom,
             @Param("checkInTo") LocalDate checkInTo,
             Pageable pageable
+    );
+
+    @Query("""
+            select distinct new com.hotel.hotel_backend.dto.response.PartnerBookingSummaryResponse(
+                b.id,
+                h.id,
+                h.name,
+                c.name,
+                b.checkIn,
+                b.checkOut,
+                b.totalPrice,
+                b.status,
+                b.createdAt,
+                b.expiresAt
+            )
+            from Booking b
+            join b.items bi
+            join bi.room r
+            join r.hotel h
+            left join b.contact c
+            where h.owner.id = :ownerId
+              and h.id = coalesce(:hotelId, h.id)
+              and b.checkIn >= coalesce(:checkInFrom, b.checkIn)
+              and b.checkIn <= coalesce(:checkInTo, b.checkIn)
+            """)
+    List<PartnerBookingSummaryResponse> findPartnerBookingSummariesForAnalytics(
+            @Param("ownerId") Long ownerId,
+            @Param("hotelId") Long hotelId,
+            @Param("checkInFrom") LocalDate checkInFrom,
+            @Param("checkInTo") LocalDate checkInTo
     );
 
     @Query("""
@@ -99,5 +133,15 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
             @Param("checkInFrom") LocalDate checkInFrom,
             @Param("checkInTo") LocalDate checkInTo
     );
+
+    @Query("""
+            select distinct b
+            from Booking b
+            left join fetch b.items bi
+            left join fetch bi.room r
+            left join fetch r.hotel h
+            order by b.createdAt desc
+            """)
+    List<Booking> findAllForAdmin();
 
 }

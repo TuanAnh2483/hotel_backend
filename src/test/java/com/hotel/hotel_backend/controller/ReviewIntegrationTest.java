@@ -223,6 +223,14 @@ class ReviewIntegrationTest {
                 .andExpect(status().isOk())
                 .andReturn());
 
+        mockMvc.perform(get("/api/reviews/me")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(customerToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.length()").value(1))
+                .andExpect(jsonPath("$.data[0].reviewId").value(reviewId))
+                .andExpect(jsonPath("$.data[0].hotelName").value("Partner Review Hotel"))
+                .andExpect(jsonPath("$.data[0].rating").value(5));
+
         mockMvc.perform(get("/api/hotels/{hotelId}/reviews", hotel.getId()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.length()").value(1))

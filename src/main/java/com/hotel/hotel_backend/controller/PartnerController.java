@@ -17,12 +17,15 @@ import com.hotel.hotel_backend.dto.response.PartnerAnalyticsSummaryResponse;
 import com.hotel.hotel_backend.dto.response.PartnerBookingDetailResponse;
 import com.hotel.hotel_backend.dto.response.PartnerBookingPageResponse;
 import com.hotel.hotel_backend.dto.response.PartnerRoomCalendarResponse;
+import com.hotel.hotel_backend.dto.response.RefundRequestResponse;
 import com.hotel.hotel_backend.dto.response.RoomResponse;
+import com.hotel.hotel_backend.entity.RefundRequestStatus;
 import com.hotel.hotel_backend.service.HotelService;
 import com.hotel.hotel_backend.service.HotelReviewService;
 import com.hotel.hotel_backend.service.PartnerBookingService;
 import com.hotel.hotel_backend.service.PartnerImageUploadService;
 import com.hotel.hotel_backend.service.PartnerRoomCalendarService;
+import com.hotel.hotel_backend.service.RefundRequestService;
 import com.hotel.hotel_backend.service.RoomService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -55,6 +58,7 @@ public class PartnerController {
     private final PartnerRoomCalendarService partnerRoomCalendarService;
     private final HotelReviewService hotelReviewService;
     private final PartnerImageUploadService partnerImageUploadService;
+    private final RefundRequestService refundRequestService;
 
     @GetMapping("/hotels")
     @PreAuthorize("hasRole('PARTNER')")
@@ -66,6 +70,15 @@ public class PartnerController {
     @PreAuthorize("hasRole('PARTNER')")
     public ApiResponse<PartnerBookingPageResponse> getMyBookings(@Valid @ModelAttribute PartnerBookingSearchRequest request) {
         return ApiResponse.ok(partnerBookingService.getPartnerBookings(request));
+    }
+
+    @GetMapping("/refunds")
+    @PreAuthorize("hasRole('PARTNER')")
+    public ApiResponse<List<RefundRequestResponse>> getMyRefundRequests(
+            @RequestParam(required = false) Long hotelId,
+            @RequestParam(required = false) RefundRequestStatus status
+    ) {
+        return ApiResponse.ok(refundRequestService.getPartnerRefundRequests(hotelId, status));
     }
 
     /**
@@ -119,6 +132,18 @@ public class PartnerController {
             @Valid @RequestBody PartnerBookingRefundRequest request
     ) {
         return ApiResponse.ok(partnerBookingService.refundPartnerBooking(bookingId, request));
+    }
+
+    @PostMapping("/refunds/{refundRequestId}/approve")
+    @PreAuthorize("hasRole('PARTNER')")
+    public ApiResponse<RefundRequestResponse> approveRefundRequest(@PathVariable Long refundRequestId) {
+        return ApiResponse.ok(refundRequestService.approvePartnerRefundRequest(refundRequestId));
+    }
+
+    @PostMapping("/refunds/{refundRequestId}/reject")
+    @PreAuthorize("hasRole('PARTNER')")
+    public ApiResponse<RefundRequestResponse> rejectRefundRequest(@PathVariable Long refundRequestId) {
+        return ApiResponse.ok(refundRequestService.rejectPartnerRefundRequest(refundRequestId));
     }
 
     /**

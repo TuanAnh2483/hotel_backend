@@ -46,6 +46,11 @@ public class LocalImageStorageService implements ImageStorageProvider {
     }
 
     @Override
+    public List<String> storeUserProfileImages(Long userId, List<MultipartFile> files) {
+        return storeImages("profiles", userId, files);
+    }
+
+    @Override
     public boolean manages(String imageUrl) {
         if (imageUrl == null || imageUrl.isBlank()) {
             return false;

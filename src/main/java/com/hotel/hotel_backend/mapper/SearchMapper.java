@@ -23,7 +23,9 @@ public class SearchMapper {
                         hotel.getImageUrls(),
                         hotel.getRatingAvg(),
                         hotel.getRatingCount(),
-                        null
+                        null,
+                        0,
+                        0
                 ))
                 .toList();
     }

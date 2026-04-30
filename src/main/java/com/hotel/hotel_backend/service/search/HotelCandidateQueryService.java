@@ -3,6 +3,7 @@ package com.hotel.hotel_backend.service.search;
 import com.hotel.hotel_backend.entity.Hotel;
 import com.hotel.hotel_backend.entity.HotelStatus;
 import com.hotel.hotel_backend.repository.HotelRepository;
+import com.hotel.hotel_backend.service.LocationNormalizer;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -14,25 +15,18 @@ public class HotelCandidateQueryService {
 
     private final HotelRepository hotelRepository;
 
-
-
-
     public List<Hotel> findCandidates(HotelSearchCriteria criteria) {
-        List<Hotel> hotels;
-        if (criteria.district() != null && !criteria.district().isBlank()) {
-            hotels = hotelRepository.findByProvinceAndDistrictAndStatus(
-                    criteria.province(),
-                    criteria.district(),
-                    HotelStatus.ACTIVE
-            );
-        } else {
-            hotels = hotelRepository.findByProvinceAndStatus(
-                    criteria.province(),
-                    HotelStatus.ACTIVE
-            );
+        String requestedProvince = LocationNormalizer.normalizeProvinceKey(criteria.province());
+        String requestedDistrict = LocationNormalizer.normalizeDistrictKey(criteria.district());
+
+        if (requestedProvince.isBlank()) {
+            return List.of();
         }
 
-        return hotels.stream()
+        return hotelRepository.findByStatus(HotelStatus.ACTIVE).stream()
+                .filter(hotel -> LocationNormalizer.provinceMatches(hotel.getProvince(), requestedProvince))
+                .filter(hotel -> requestedDistrict.isBlank()
+                        || LocationNormalizer.districtMatches(hotel.getDistrict(), requestedDistrict))
                 .filter(hotel -> criteria.hotelTypes().isEmpty() || criteria.hotelTypes().contains(hotel.getHotelType()))
                 .filter(hotel -> criteria.hotelAmenities().isEmpty() || hotel.getAmenities().containsAll(criteria.hotelAmenities()))
                 .toList();

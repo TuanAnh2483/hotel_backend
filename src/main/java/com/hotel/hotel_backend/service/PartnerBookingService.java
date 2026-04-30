@@ -9,16 +9,13 @@ import com.hotel.hotel_backend.dto.response.PartnerAnalyticsHotelSummaryResponse
 import com.hotel.hotel_backend.dto.response.PartnerAnalyticsSummaryResponse;
 import com.hotel.hotel_backend.dto.response.PartnerBookingDetailResponse;
 import com.hotel.hotel_backend.dto.response.PartnerBookingPageResponse;
+import com.hotel.hotel_backend.dto.response.PartnerBookingSummaryResponse;
 import com.hotel.hotel_backend.entity.Booking;
 import com.hotel.hotel_backend.entity.BookingStatus;
 import com.hotel.hotel_backend.entity.Hotel;
-import com.hotel.hotel_backend.entity.PaymentMethod;
-import com.hotel.hotel_backend.entity.PaymentTransaction;
-import com.hotel.hotel_backend.entity.PaymentTransactionStatus;
 import com.hotel.hotel_backend.exeption.ApiException;
 import com.hotel.hotel_backend.exeption.ErrorCode;
 import com.hotel.hotel_backend.repository.BookingRepository;
-import com.hotel.hotel_backend.repository.PaymentTransactionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -29,7 +26,6 @@ import java.time.LocalDate;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -37,9 +33,9 @@ import java.util.UUID;
 public class PartnerBookingService {
 
     private final BookingRepository bookingRepository;
-    private final PaymentTransactionRepository paymentTransactionRepository;
     private final SecurityService securityService;
     private final BookingExpirationService bookingExpirationService;
+    private final BookingRefundService bookingRefundService;
 
     public PartnerBookingPageResponse getPartnerBookings(PartnerBookingSearchRequest request) {
         // V1 ưu tiên consistency của dashboard: expire booking pending quá hạn trước khi query list.
@@ -97,71 +93,34 @@ public class PartnerBookingService {
     @Transactional
     public PartnerBookingDetailResponse refundPartnerBooking(Long bookingId, PartnerBookingRefundRequest request) {
         Booking booking = loadOwnedBooking(bookingId);
-        booking = bookingExpirationService.expirePendingBookingIfNeeded(booking);
-
-        PaymentTransaction existingTransaction = paymentTransactionRepository
-                .findByBookingIdAndClientRequestId(bookingId, request.clientRequestId())
-                .orElse(null);
-
-        if (existingTransaction != null) {
-            if (isSuccessfulRefund(existingTransaction)) {
-                return toPartnerBookingDetail(booking);
-            }
-            throw new ApiException(ErrorCode.CONFLICT, "clientRequestId already used");
-        }
-
-        if (booking.getStatus() == BookingStatus.REFUNDED) {
-            throw new ApiException(ErrorCode.CONFLICT, "Booking already refunded");
-        }
-
-        if (booking.getStatus() == BookingStatus.CONFIRMED) {
-            if (!booking.getCheckIn().isAfter(LocalDate.now())) {
-                throw new ApiException(
-                        ErrorCode.CONFLICT,
-                        "Only future confirmed bookings can be refunded"
-                );
-            }
-            bookingExpirationService.releaseReservedInventory(booking);
-        } else if (booking.getStatus() != BookingStatus.COMPLETED) {
-            throw new ApiException(ErrorCode.CONFLICT, "Only paid bookings can be refunded");
-        }
-
-        booking.setStatus(BookingStatus.REFUNDED);
-        booking.setExpiresAt(null);
-        Booking savedBooking = bookingRepository.save(booking);
-        recordRefundTransaction(savedBooking, request.clientRequestId());
-        return toPartnerBookingDetail(savedBooking);
+        Booking refundedBooking = bookingRefundService.refundBooking(booking, request.clientRequestId());
+        return toPartnerBookingDetail(refundedBooking);
     }
 
     public PartnerAnalyticsSummaryResponse getPartnerAnalytics(PartnerAnalyticsSummaryRequest request) {
         bookingExpirationService.expireOverduePendingBookings();
 
         long ownerId = securityService.getCurrentPrincipal().userId();
-        List<Booking> rawBookings = bookingRepository.findPartnerBookingsForAnalytics(
+        List<PartnerBookingSummaryResponse> rawBookings = bookingRepository.findPartnerBookingSummariesForAnalytics(
                 ownerId,
                 request.getHotelId(),
                 request.getCheckInFrom(),
                 request.getCheckInTo()
         );
 
-        Map<Long, Booking> bookingsById = new LinkedHashMap<>();
-        for (Booking booking : rawBookings) {
-            bookingsById.putIfAbsent(booking.getId(), booking);
+        Map<Long, PartnerBookingSummaryResponse> bookingsById = new LinkedHashMap<>();
+        for (PartnerBookingSummaryResponse booking : rawBookings) {
+            bookingsById.putIfAbsent(booking.bookingId(), booking);
         }
 
         AnalyticsAccumulator overall = new AnalyticsAccumulator(null, "ALL");
         Map<Long, AnalyticsAccumulator> hotels = new LinkedHashMap<>();
 
-        for (Booking booking : bookingsById.values()) {
-            if (booking.getItems().isEmpty()) {
-                continue;
-            }
-
-            Hotel hotel = booking.getItems().get(0).getRoom().getHotel();
+        for (PartnerBookingSummaryResponse booking : bookingsById.values()) {
             overall.add(booking);
             hotels.computeIfAbsent(
-                            hotel.getId(),
-                            ignored -> new AnalyticsAccumulator(hotel.getId(), hotel.getName())
+                            booking.hotelId(),
+                            ignored -> new AnalyticsAccumulator(booking.hotelId(), booking.hotelName())
                     )
                     .add(booking);
         }
@@ -232,24 +191,6 @@ public class PartnerBookingService {
         );
     }
 
-    private boolean isSuccessfulRefund(PaymentTransaction paymentTransaction) {
-        return paymentTransaction.getStatus() == PaymentTransactionStatus.SUCCESS
-                && paymentTransaction.getAmount() != null
-                && paymentTransaction.getAmount() < 0;
-    }
-
-    private void recordRefundTransaction(Booking booking, String clientRequestId) {
-        PaymentTransaction refundTransaction = PaymentTransaction.builder()
-                .booking(booking)
-                .method(PaymentMethod.SIMULATED)
-                .status(PaymentTransactionStatus.SUCCESS)
-                .amount(-Math.abs(booking.getTotalPrice()))
-                .providerReference("SIM-REFUND-" + UUID.randomUUID())
-                .clientRequestId(clientRequestId)
-                .build();
-        paymentTransactionRepository.save(refundTransaction);
-    }
-
     private static final class AnalyticsAccumulator {
         private final Long hotelId;
         private final String hotelName;
@@ -267,11 +208,11 @@ public class PartnerBookingService {
             this.hotelName = hotelName;
         }
 
-        private void add(Booking booking) {
+        private void add(PartnerBookingSummaryResponse booking) {
             totalBookings++;
-            double amount = booking.getTotalPrice() != null ? booking.getTotalPrice() : 0.0;
+            double amount = booking.totalPrice() != null ? booking.totalPrice() : 0.0;
 
-            switch (booking.getStatus()) {
+            switch (booking.status()) {
                 case PENDING_PAYMENT -> pendingPaymentBookings++;
                 case CONFIRMED -> {
                     confirmedBookings++;

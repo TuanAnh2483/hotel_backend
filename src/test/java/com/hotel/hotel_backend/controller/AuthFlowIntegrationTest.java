@@ -337,7 +337,7 @@ class AuthFlowIntegrationTest {
     void forgotAndResetPasswordShouldInvalidateOldSessionsAndAllowNewLogin() throws Exception {
         String oldAccessToken = registerVerifyAndLogin("reset-me@example.com", "Password123");
 
-        mockMvc.perform(post("/api/auth/forgot-password")
+        MvcResult forgotPasswordResult = mockMvc.perform(post("/api/auth/forgot-password")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -348,14 +348,16 @@ class AuthFlowIntegrationTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.message").exists())
                 .andExpect(jsonPath("$.data.deliveryMode").value("EMAIL_LOG"))
-                .andExpect(jsonPath("$.data.resetToken").isEmpty())
-                .andExpect(jsonPath("$.data.expiresAt").isEmpty());
+                .andExpect(jsonPath("$.data.resetToken").isString())
+                .andExpect(jsonPath("$.data.expiresAt").exists())
+                .andReturn();
 
         User resetUser = userRepository.findByEmail("reset-me@example.com").orElseThrow();
         PasswordResetToken resetTokenEntity = passwordResetTokenRepository
                 .findFirstByUserIdOrderByCreatedAtDesc(resetUser.getId())
                 .orElseThrow();
-        String resetToken = resetTokenEntity.getToken();
+        String resetToken = readText(forgotPasswordResult, "data", "resetToken");
+        assertThat(resetToken).isEqualTo(resetTokenEntity.getToken());
 
         mockMvc.perform(post("/api/auth/reset-password")
                         .contentType(MediaType.APPLICATION_JSON)

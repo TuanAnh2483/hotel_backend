@@ -48,6 +48,8 @@ public class HotelDetailService {
                 hotel.getProvince(),
                 hotel.getDistrict(),
                 hotel.getDescription(),
+                hotel.getHotelType(),
+                hotel.getAmenities(),
                 resolveCoverImageUrl(hotel.getCoverImageUrl(), hotel.getImageUrls()),
                 copyImageUrls(hotel.getImageUrls()),
                 hotel.getRatingAvg(),

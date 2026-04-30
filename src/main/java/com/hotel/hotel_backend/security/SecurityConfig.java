@@ -1,5 +1,6 @@
 package com.hotel.hotel_backend.security;
 
+import org.springframework.boot.security.autoconfigure.web.servlet.PathRequest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -65,6 +66,7 @@ public class SecurityConfig {
 
                 // ✅ CẤU HÌNH ROUTE PUBLIC / ROUTE CẦN LOGIN
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(PathRequest.toStaticResources().atCommonLocations()).permitAll()
                         // public API
                         .requestMatchers(HttpMethod.POST, "/api/auth/register").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
@@ -81,6 +83,31 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/hotels/*/reviews").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/hotels/*/available-rooms").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/catalog/**").permitAll()
+                        .requestMatchers(HttpMethod.GET,
+                                "/",
+                                "/index.html",
+                                "/assets/**",
+                                "/favicon.svg",
+                                "/icons.svg",
+                                "/login",
+                                "/register",
+                                "/forgot-password",
+                                "/reset-password",
+                                "/verify-email",
+                                "/hotels",
+                                "/hotels/*",
+                                "/book",
+                                "/profile",
+                                "/become-partner",
+                                "/unauthorized",
+                                "/customer",
+                                "/customer/**",
+                                "/partner",
+                                "/partner/**",
+                                "/admin",
+                                "/admin/**",
+                                "/payment/**"
+                        ).permitAll()
                         .requestMatchers("/error").permitAll()
 
                         // còn lại bắt buộc phải login

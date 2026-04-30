@@ -39,6 +39,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.LocalDate;
 import java.util.Comparator;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -185,6 +186,73 @@ class PartnerHotelRoomIntegrationTest {
                 "https://cdn.example.com/rooms/twin-suite-2.jpg"
         );
         assertThat(room.getCoverImageUrl()).isEqualTo("https://cdn.example.com/rooms/twin-suite-1.jpg");
+    }
+
+    @Test
+    void partnerCreatedHotelShouldAppearInSearchWithNormalizedLocationQuery() throws Exception {
+        String partnerToken = createPartnerToken("partner-search@test.com");
+
+        MvcResult hotelResult = mockMvc.perform(post("/api/partner/hotels")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(partnerToken))
+                        .content("""
+                                {
+                                  "name": "Central Saigon Hotel",
+                                  "address": " 1 Nguyen Hue ",
+                                  "district": " Quận 1 ",
+                                  "province": " TP. Hồ Chí Minh ",
+                                  "description": " Search-ready hotel ",
+                                  "hotelType": "HOTEL",
+                                  "amenities": ["WIFI"],
+                                  "imageUrls": [
+                                    "https://cdn.example.com/hotels/search-cover.jpg"
+                                  ]
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.province").value("TP. Hồ Chí Minh"))
+                .andExpect(jsonPath("$.data.district").value("Quận 1"))
+                .andReturn();
+
+        long hotelId = readId(hotelResult, "data", "id");
+
+        mockMvc.perform(post("/api/partner/hotels/{hotelId}/rooms", hotelId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(partnerToken))
+                        .content("""
+                                {
+                                  "name": "Searchable Room",
+                                  "capacity": 2,
+                                  "quantity": 2,
+                                  "price": 1800000,
+                                  "roomCategory": "DELUXE",
+                                  "bedType": "DOUBLE",
+                                  "amenities": ["BALCONY"],
+                                  "imageUrls": [
+                                    "https://cdn.example.com/rooms/searchable-room.jpg"
+                                  ]
+                                }
+                                """))
+                .andExpect(status().isOk());
+
+        LocalDate checkIn = LocalDate.now().plusDays(7);
+        LocalDate checkOut = checkIn.plusDays(2);
+
+        mockMvc.perform(get("/api/hotels/search")
+                        .param("province", "ho chi minh")
+                        .param("district", "q1")
+                        .param("checkIn", checkIn.toString())
+                        .param("checkOut", checkOut.toString())
+                        .param("adults", "2")
+                        .param("rooms", "1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.items.length()").value(1))
+                .andExpect(jsonPath("$.data.items[0].hotelId").value(hotelId))
+                .andExpect(jsonPath("$.data.items[0].name").value("Central Saigon Hotel"))
+                .andExpect(jsonPath("$.data.items[0].province").value("TP. Hồ Chí Minh"))
+                .andExpect(jsonPath("$.data.items[0].district").value("Quận 1"))
+                .andExpect(jsonPath("$.data.items[0].minPrice").value(3_600_000));
     }
 
     @Test

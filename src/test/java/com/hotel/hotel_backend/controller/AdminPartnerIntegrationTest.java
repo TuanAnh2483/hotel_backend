@@ -144,6 +144,43 @@ class AdminPartnerIntegrationTest {
                 .containsExactly("DRAFT", "REJECTED");
     }
 
+    @Test
+    void adminShouldCreateAndToggleUser() throws Exception {
+        String adminToken = createUserAndExtractToken("admin-ops@example.com", "Password123", UserType.ADMIN);
+
+        MvcResult createResult = mockMvc.perform(post("/api/admin/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(adminToken))
+                        .content("""
+                                {
+                                  "email": "new-partner@example.com",
+                                  "password": "Password123",
+                                  "userType": "PARTNER"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.email").value("new-partner@example.com"))
+                .andExpect(jsonPath("$.data.userType").value("PARTNER"))
+                .andExpect(jsonPath("$.data.status").value("ACTIVE"))
+                .andReturn();
+
+        long createdUserId = objectMapper.readTree(createResult.getResponse().getContentAsString())
+                .path("data")
+                .path("id")
+                .asLong();
+
+        mockMvc.perform(post("/api/admin/users/{userId}/toggle-status", createdUserId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(adminToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.id").value(createdUserId))
+                .andExpect(jsonPath("$.data.status").value("LOCKED"));
+
+        mockMvc.perform(get("/api/admin/users")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(adminToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].id").value(createdUserId));
+    }
+
     private String createUserAndExtractToken(String email, String password, UserType userType) {
         User user = new User();
         user.setEmail(email);

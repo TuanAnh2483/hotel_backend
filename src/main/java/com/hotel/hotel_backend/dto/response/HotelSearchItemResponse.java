@@ -13,6 +13,8 @@ public record HotelSearchItemResponse(
         List<String> imageUrls,
         BigDecimal ratingAvg,
         Integer ratingCount,
-        Long minPrice
+        Long minPrice,
+        Integer availableRoomTypes,
+        Integer availableUnits
 ) {
 }

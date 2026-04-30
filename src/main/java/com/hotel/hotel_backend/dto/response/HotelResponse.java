@@ -3,6 +3,7 @@ package com.hotel.hotel_backend.dto.response;
 import com.hotel.hotel_backend.entity.HotelAmenity;
 import com.hotel.hotel_backend.entity.HotelType;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Set;
 
@@ -15,6 +16,8 @@ public record HotelResponse(
         String description,
         HotelType hotelType,
         Set<HotelAmenity> amenities,
+        BigDecimal ratingAvg,
+        Integer ratingCount,
         String coverImageUrl,
         List<String> imageUrls
 

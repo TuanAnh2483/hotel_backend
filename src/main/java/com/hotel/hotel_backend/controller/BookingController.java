@@ -6,13 +6,16 @@ import com.hotel.hotel_backend.dto.response.ApiResponse;
 import com.hotel.hotel_backend.dto.response.BookingPaymentTransactionResponse;
 import com.hotel.hotel_backend.dto.request.BookingPaymentRequest;
 import com.hotel.hotel_backend.dto.request.BookingQuoteRequest;
+import com.hotel.hotel_backend.dto.request.CreateRefundRequest;
 import com.hotel.hotel_backend.dto.response.BookingQuoteResponse;
 import com.hotel.hotel_backend.dto.request.CreateBookingRequest;
 import com.hotel.hotel_backend.dto.response.BookingResponse;
+import com.hotel.hotel_backend.dto.response.RefundRequestResponse;
 import com.hotel.hotel_backend.exeption.ApiException;
 import com.hotel.hotel_backend.exeption.ErrorCode;
 import com.hotel.hotel_backend.security.JwtPrincipal;
 import com.hotel.hotel_backend.service.BookingService;
+import com.hotel.hotel_backend.service.RefundRequestService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -27,6 +30,7 @@ import java.util.List;
 public class BookingController {
 
     private final BookingService bookingService;
+    private final RefundRequestService refundRequestService;
 
 
     /*
@@ -80,6 +84,27 @@ public class BookingController {
     public ApiResponse<BookingResponse> cancelBooking(@PathVariable Long bookingId,
                                  @AuthenticationPrincipal JwtPrincipal principal) {
         return ApiResponse.ok(bookingService.cancelBooking(requireUserId(principal), bookingId));
+    }
+
+    @GetMapping("/{bookingId}/refund-request")
+    @PreAuthorize("hasRole('CUSTOMER')")
+    public ApiResponse<RefundRequestResponse> getMyRefundRequest(
+            @PathVariable Long bookingId,
+            @AuthenticationPrincipal JwtPrincipal principal
+    ) {
+        requireUserId(principal);
+        return ApiResponse.ok(refundRequestService.getMyRefundRequest(bookingId));
+    }
+
+    @PostMapping("/{bookingId}/refund-request")
+    @PreAuthorize("hasRole('CUSTOMER')")
+    public ApiResponse<RefundRequestResponse> createRefundRequest(
+            @PathVariable Long bookingId,
+            @Valid @RequestBody CreateRefundRequest request,
+            @AuthenticationPrincipal JwtPrincipal principal
+    ) {
+        requireUserId(principal);
+        return ApiResponse.ok(refundRequestService.createMyRefundRequest(bookingId, request));
     }
 
     private Long requireUserId(JwtPrincipal principal) {

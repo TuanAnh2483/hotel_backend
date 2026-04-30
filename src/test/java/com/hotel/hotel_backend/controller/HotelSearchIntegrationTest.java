@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -64,6 +65,24 @@ class HotelSearchIntegrationTest {
 
         checkIn = LocalDate.now().plusDays(1);
         checkOut = checkIn.plusDays(2);
+    }
+
+    @Test
+    void locationsShouldReturnActiveProvinceAndDistrictOptions() throws Exception {
+        User owner = createOwner("owner-location-options@test.com");
+
+        createHotel(owner, "Hoan Kiem Hotel", " Hà Nội ", " Quận Hoàn Kiếm ");
+        createHotel(owner, "Ba Dinh Hotel", "Hà Nội", "Quận Ba Đình");
+        Hotel blockedHotel = createHotel(owner, "Blocked Da Nang Hotel", "Đà Nẵng", "Sơn Trà");
+        blockedHotel.setStatus(HotelStatus.BLOCKED);
+        hotelRepository.save(blockedHotel);
+
+        mockMvc.perform(get("/api/hotels/locations"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.length()").value(1))
+                .andExpect(jsonPath("$.data[0].province").value("Hà Nội"))
+                .andExpect(jsonPath("$.data[0].districts", containsInAnyOrder("Quận Hoàn Kiếm", "Quận Ba Đình")));
     }
 
     @Test

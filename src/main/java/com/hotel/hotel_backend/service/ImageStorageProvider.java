@@ -12,6 +12,8 @@ public interface ImageStorageProvider {
 
     List<String> storeRoomImages(Long roomId, List<MultipartFile> files);
 
+    List<String> storeUserProfileImages(Long userId, List<MultipartFile> files);
+
     boolean manages(String imageUrl);
 
     void deleteImage(String imageUrl);
