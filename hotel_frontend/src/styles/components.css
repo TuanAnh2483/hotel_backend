@@ -1,0 +1,259 @@
+/* ── Shared UI Components ─────────────────────────────────────────────── */
+
+/* Card */
+.ui-card {
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: var(--radius-lg);
+  padding: 22px 26px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.03);
+  backdrop-filter: blur(10px);
+}
+
+/* Modal overlay */
+.ui-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.ui-modal-box {
+  background: #fff;
+  border-radius: var(--radius-lg);
+  padding: 28px 30px;
+  max-width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow-xl);
+}
+
+.ui-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 22px;
+}
+
+.ui-modal-title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 800;
+  color: #1a1a1a;
+  user-select: none;
+  cursor: default;
+}
+
+.ui-modal-close {
+  background: #f5f5f5;
+  border: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  font-size: 16px;
+  cursor: pointer;
+  color: #666;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Form field */
+.ui-form-field {
+  margin-bottom: 14px;
+}
+
+.ui-form-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  color: #555;
+  margin-bottom: 5px;
+  letter-spacing: 0.2px;
+}
+
+.ui-form-required {
+  color: var(--color-primary);
+  margin-left: 3px;
+}
+
+/* Input & Select */
+.ui-input,
+.ui-select {
+  width: 100%;
+  padding: 9px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid #e0e0e0;
+  font-size: 13px;
+  font-family: inherit;
+  background: #fff;
+  outline: none;
+  transition: border-color 0.15s;
+  box-sizing: border-box;
+}
+
+.ui-input:focus,
+.ui-select:focus {
+  border-color: var(--color-primary);
+}
+
+.ui-input:disabled {
+  background: #f5f5f5;
+}
+
+/* Search input */
+.ui-search-wrap {
+  position: relative;
+}
+
+.ui-search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #aaa;
+  display: flex;
+  pointer-events: none;
+}
+
+.ui-search-input {
+  padding: 9px 14px 9px 36px;
+  border-radius: 9px;
+  border: 1px solid #e5e5e5;
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+  width: 260px;
+  background: #f8f9fa;
+  transition: border-color 0.15s;
+}
+
+.ui-search-input:focus {
+  border-color: var(--color-primary);
+}
+
+/* Table */
+.ui-table-wrap {
+  overflow-x: auto;
+}
+
+.ui-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.ui-table thead tr {
+  background: #f8f9fa;
+  border-bottom: 2px solid #f0f0f0;
+}
+
+.ui-table th {
+  padding: 11px 14px;
+  text-align: left;
+  font-weight: 700;
+  color: #555;
+  white-space: nowrap;
+  font-size: 12px;
+  letter-spacing: 0.3px;
+}
+
+.ui-table tbody tr {
+  border-bottom: 1px solid #f5f5f5;
+  transition: background 0.1s;
+}
+
+.ui-table tbody tr:hover {
+  background: #fafafa;
+}
+
+.ui-table td {
+  padding: 12px 14px;
+  color: #333;
+  vertical-align: middle;
+}
+
+.ui-table-empty td {
+  text-align: center;
+  padding: 48px 0;
+  color: #bbb;
+}
+
+.ui-table-empty-icon {
+  font-size: 32px;
+  margin-bottom: 8px;
+}
+
+/* Pagination */
+.ui-pagination {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  padding: 24px 0;
+  border-top: 1px solid #f5f5f5;
+  margin-top: 10px;
+}
+
+.ui-page-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+  background: #fff;
+  color: #666;
+  font-weight: 800;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+.ui-page-btn.active {
+  background: var(--color-primary);
+  color: #fff;
+  border-color: var(--color-primary);
+}
+
+/* Loading spinner */
+.ui-spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid #f1f5f9;
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: ui-spin 1s linear infinite;
+  margin: 0 auto 20px;
+}
+
+@keyframes ui-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* Page header */
+.ui-page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 28px;
+}
+
+.ui-page-header-title {
+  font-size: 22px;
+  font-weight: 800;
+  color: #1a1a1a;
+  margin: 0;
+  user-select: none;
+  cursor: default;
+}
+
+.ui-page-header-subtitle {
+  color: #888;
+  font-size: 13px;
+  margin-top: 4px;
+  margin-bottom: 0;
+}

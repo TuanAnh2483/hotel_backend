@@ -1,0 +1,54 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --primary: #BE1E2E;
+    --primary-hover: #A01925;
+    --secondary: #F7F7F7;
+    --secondary-hover: #E5E5E5;
+    
+    --background: #F8F9FA;
+    --surface: #FFFFFF;
+    
+    --text-main: #111827;
+    --text-muted: #4B5563;
+    --text-light: #6B7280;
+    
+    --border: #E5E7EB;
+    
+    --success: #10B981;
+    --warning: #F59E0B;
+    --danger: #EF4444;
+    --info: #3B82F6;
+  }
+
+  body {
+    @apply bg-[var(--background)] text-[var(--text-main)] font-sans antialiased m-0 p-0;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-bold text-[var(--text-main)];
+  }
+
+  p {
+    @apply m-0;
+  }
+}
+
+@layer components {
+  /* We will implement components in standard React files, but some generic classes can live here if needed */
+}
+
+@layer utilities {
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+  .animate-shimmer {
+    background: linear-gradient(90deg, #f0f0f0 25%, #f8f8f8 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite linear;
+  }
+}
