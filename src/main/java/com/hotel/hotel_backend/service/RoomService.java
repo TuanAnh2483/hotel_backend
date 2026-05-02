@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 
 @Service
 @RequiredArgsConstructor
@@ -64,9 +65,7 @@ public class RoomService {
     public RoomResponse update(Long roomId, CreateRoomRequest request) {
         // Cập nhật thông tin phòng thuộc sở hữu hiện tại.
         Room room = findOwnedRoom(roomId);
-        if (request.imageUrls().stream().anyMatch(url -> url.startsWith("data:image"))) {
-            throw new RuntimeException("Không được gửi base64, phải upload Cloudinary trước");
-        }
+        List<String> normalizedImageUrls = normalizeImageUrls(request.imageUrls());
         room.setName(request.name());
         room.setCapacity(request.capacity());
         room.setQuantity(request.quantity());
@@ -74,14 +73,7 @@ public class RoomService {
         room.setRoomCategory(request.roomCategory());
         room.setBedType(request.bedType());
         room.setAmenities(request.amenities() == null ? new HashSet<>() : new HashSet<>(request.amenities()));
-
-        // ✅ FIX: Dùng mergeImageUrls và convert thành mutable ArrayList
-        room.setImageUrls(new ArrayList<>(
-                request.imageUrls().stream()
-                        .filter(url -> !url.startsWith("data:image"))
-                        .toList()
-        ));
-
+        room.setImageUrls(normalizedImageUrls);
         room.setCoverImageUrl(resolveCoverImageUrl(room.getCoverImageUrl(), room.getImageUrls()));
 
         return mapToResponse(room);
@@ -194,7 +186,7 @@ public class RoomService {
     private List<String> normalizeImageUrls(List<String> imageUrls) {
         // Chỉ giữ lại các URL không trống và duy trì thứ tự do người dùng định nghĩa mà không có bản sao trùng lặp.
         if (imageUrls == null || imageUrls.isEmpty()) {
-            return List.of();
+            return new ArrayList<>();
         }
 
         LinkedHashSet<String> uniqueUrls = new LinkedHashSet<>();
@@ -205,6 +197,12 @@ public class RoomService {
 
             String normalized = imageUrl.trim();
             if (!normalized.isEmpty()) {
+                if (isBase64ImageData(normalized)) {
+                    throw new ApiException(
+                            ErrorCode.VALIDATION_ERROR,
+                            "Base64 image data is not supported; upload files with multipart/form-data first"
+                    );
+                }
                 uniqueUrls.add(normalized);
             }
         }
@@ -233,6 +231,10 @@ public class RoomService {
         }
 
         return imageUrl.trim();
+    }
+
+    private boolean isBase64ImageData(String imageUrl) {
+        return imageUrl.toLowerCase(Locale.ROOT).startsWith("data:image");
     }
 
     private String resolveCoverImageUrl(String preferredCoverImageUrl, List<String> imageUrls) {

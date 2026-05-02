@@ -47,11 +47,13 @@ export default function MainNavbar({ active, navigate, user, onLogout }) {
   const menuRef                     = useRef(null);
 
   const isPartner = user?.userType === "PARTNER";
+  const canApplyPartner = !isPartner && user?.userType !== "ADMIN";
 
   const navLinks = isPartner
     ? PARTNER_LINKS
     : [
         ...BASE_LINKS.filter(l => !l.authOnly || user),
+        ...(canApplyPartner ? [{ label: "Đăng chỗ nghỉ của bạn", page: "become-partner" }] : []),
         ...(user?.userType === "ADMIN" ? [{ label: "Quản lý", page: "admin-dashboard" }] : []),
       ];
 
@@ -197,6 +199,17 @@ export default function MainNavbar({ active, navigate, user, onLogout }) {
                     >
                       <LayoutDashboard size={16} color="#555" />
                       <span style={{ fontWeight: 500 }}>Quản trị hệ thống</span>
+                    </button>
+                  )}
+
+                  {user?.userType === "CUSTOMER" && (
+                    <button
+                      className="menu-item"
+                      style={{ width: "100%", padding: "12px 20px", background: "none", border: "none", textAlign: "left", fontSize: 13, cursor: "pointer", color: "#333", display: "flex", alignItems: "center", gap: 12, transition: "background 0.2s" }}
+                      onClick={() => { navigate("become-partner"); setShowMenu(false); }}
+                    >
+                      <ClipboardList size={16} color="#555" />
+                      <span style={{ fontWeight: 500 }}>Đăng chỗ nghỉ của bạn</span>
                     </button>
                   )}
 

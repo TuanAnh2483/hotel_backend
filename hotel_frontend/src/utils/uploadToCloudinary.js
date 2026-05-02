@@ -4,7 +4,7 @@ export async function uploadToCloudinary(file) {
     formData.append("file", file); // 👈 file gốc (KHÔNG base64)
     formData.append("upload_preset", "hotel_upload"); // 👈 đúng tên preset
 
-    const res = await fetch("https://api.cloudinary.com/v1_1/Hotel/image/upload", {
+    const res = await fetch("https://api.cloudinary.com/v1_1/hotel/image/upload", {
         method: "POST",
         body: formData,
     });

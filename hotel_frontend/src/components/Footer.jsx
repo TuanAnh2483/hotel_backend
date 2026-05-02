@@ -30,7 +30,7 @@ export default function Footer({ navigate }) {
         </div>
         <div>
           <h4 style={H4}>CHÍNH SÁCH</h4>
-          <FooterLink text="Đăng kí chỗ nghỉ" onClick={() => navigate && navigate("/become-partner")} />
+          <FooterLink text="Đăng chỗ nghỉ của bạn" onClick={() => navigate && navigate("become-partner")} />
           <FooterLink text="Trợ giúp đối tác" />
           <FooterLink text="Về khả năng tiếp cận" />
         </div>

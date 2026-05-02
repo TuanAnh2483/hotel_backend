@@ -1,6 +1,14 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { partnerService } from "../../services/partnerService";
+import {
+  createExistingImageItems,
+  createPendingImageItems,
+  existingImageUrlsFromItems,
+  imageItemUrl,
+  pendingImageFilesFromItems,
+  revokePendingImageUrls,
+} from "../../utils/imageFormItems";
 import { PageHeader, Card, Btn, Modal } from "../../components/admin/AdminLayout";
 import {
   Building2, MapPin, Star, MoreVertical, Edit2, Trash2, Bed,
@@ -32,9 +40,14 @@ const EMPTY_FORM = {
 };
 
 function getHotelImageUrl(hotel) {
+  const imageUrls = getHotelImageUrls(hotel);
+  return hotel?.coverImageUrl || imageUrls[0] || "";
+}
+
+function getHotelImageUrls(hotel) {
   const imageUrls = Array.isArray(hotel?.imageUrls) ? hotel.imageUrls : [];
   const legacyImages = Array.isArray(hotel?.images) ? hotel.images : [];
-  return hotel?.coverImageUrl || imageUrls[0] || legacyImages[0] || "";
+  return imageUrls.length ? imageUrls : legacyImages;
 }
 
 // --- Components ---
@@ -104,34 +117,39 @@ function HotelForm({ form, setForm, onSubmit, onCancel, saving, title, hotelType
 
         <Field label="Hình ảnh khách sạn (Chọn nhiều hình)">
           <div className="partner-hotel-img-grid">
-            {form.images?.map((img, idx) => (
-              <div key={idx} className="partner-hotel-img-thumb">
-                <img src={img} alt="" />
+            {form.images?.map((img, idx) => {
+              const url = imageItemUrl(img);
+              return (
+              <div key={img?.id || url || idx} className="partner-hotel-img-thumb">
+                <img src={url} alt="" />
                 <button
-                  onClick={() => setForm(f => ({ ...f, images: f.images.filter((_, i) => i !== idx) }))}
+                  onClick={() => setForm(f => {
+                    const images = [...(f.images || [])];
+                    const [removed] = images.splice(idx, 1);
+                    revokePendingImageUrls([removed]);
+                    return { ...f, images };
+                  })}
                   className="partner-hotel-img-remove"
                 >
                   <Trash2 size={12} />
                 </button>
               </div>
-            ))}
+              );
+            })}
             <label className="partner-hotel-img-add">
               <Plus size={24} />
               <div className="partner-hotel-img-add-label">Thêm ảnh</div>
               <input
-                type="file" multiple style={{ display: "none" }}
+                type="file" multiple accept="image/png,image/jpeg,image/webp,image/gif" style={{ display: "none" }}
                 onChange={e => {
-                  const files = Array.from(e.target.files);
-                  files.forEach(file => {
-                    const reader = new FileReader();
-                    reader.onloadend = () => setForm(f => ({ ...f, images: [...(f.images || []), reader.result] }));
-                    reader.readAsDataURL(file);
-                  });
+                  const images = createPendingImageItems(e.target.files);
+                  setForm(f => ({ ...f, images: [...(f.images || []), ...images] }));
+                  e.target.value = "";
                 }}
               />
             </label>
           </div>
-          <p className="partner-hotel-img-hint">Hỗ trợ định dạng JPG, PNG. Tối đa 5MB mỗi ảnh.</p>
+          <p className="partner-hotel-img-hint">Hỗ trợ JPG, PNG, WEBP, GIF. Tối đa 10MB mỗi ảnh.</p>
         </Field>
 
         <div className="partner-hotel-form-actions">
@@ -190,28 +208,67 @@ export default function PartnerHotels() {
     h.province?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  function openAdd() { setForm({ ...EMPTY_FORM, images: [] }); setModal("add"); }
+  function openAdd() {
+    revokePendingImageUrls(form.images);
+    setSelected(null);
+    setForm({ ...EMPTY_FORM, images: [] });
+    setModal("add");
+  }
   function openEdit(hotel) {
+    revokePendingImageUrls(form.images);
     setSelected(hotel);
-    const images = Array.isArray(hotel.imageUrls) ? hotel.imageUrls : (Array.isArray(hotel.images) ? hotel.images : []);
     setForm({
       name: hotel.name || "", province: hotel.province || "", district: hotel.district || "",
       address: hotel.address || "", hotelType: hotel.hotelType || "HOTEL",
       description: hotel.description || "", amenities: hotel.amenities ? [...hotel.amenities] : [],
-      images,
+      images: createExistingImageItems(getHotelImageUrls(hotel)),
     });
     setModal("edit");
   }
   function openDelete(hotel) { setSelected(hotel); setModal("delete"); }
 
+  function closeFormModal() {
+    revokePendingImageUrls(form.images);
+    setModal(null);
+    setSelected(null);
+    setForm({ ...EMPTY_FORM, images: [] });
+  }
+
+  async function deleteRemovedHotelImages(hotel, remainingImageUrls) {
+    const remaining = new Set(remainingImageUrls);
+    const removed = getHotelImageUrls(hotel).filter((url) => !remaining.has(url));
+    for (const imageUrl of removed) {
+      await partnerService.deleteHotelImage(hotel.id, imageUrl);
+    }
+  }
+
   async function handleSave() {
     setSaving(true);
     try {
-      const payload = { ...form, imageUrls: form.images || [] };
+      const images = form.images || [];
+      const existingImageUrls = existingImageUrlsFromItems(images);
+      const pendingFiles = pendingImageFilesFromItems(images);
+      const payload = { ...form, imageUrls: existingImageUrls };
       delete payload.images;
-      if (modal === "add") await partnerService.createHotel(payload);
-      else await partnerService.updateHotel(selected.id, payload);
+      if (modal === "add") {
+        const created = await partnerService.createHotel(payload);
+        if (pendingFiles.length > 0) {
+          await partnerService.uploadHotelImages(created.id, pendingFiles);
+        }
+      } else {
+        await partnerService.updateHotel(selected.id, {
+          ...payload,
+          imageUrls: getHotelImageUrls(selected),
+        });
+        await deleteRemovedHotelImages(selected, existingImageUrls);
+        if (pendingFiles.length > 0) {
+          await partnerService.uploadHotelImages(selected.id, pendingFiles);
+        }
+      }
+      revokePendingImageUrls(images);
       setModal(null);
+      setSelected(null);
+      setForm({ ...EMPTY_FORM, images: [] });
       load();
     } catch (e) { alert(e.message); }
     finally { setSaving(false); }
@@ -367,7 +424,7 @@ export default function PartnerHotels() {
       {(modal === "add" || modal === "edit") && (
         <HotelForm
           title={modal === "add" ? "Thêm khách sạn mới" : "Cập nhật thông tin khách sạn"}
-          form={form} setForm={setForm} onSubmit={handleSave} onCancel={() => setModal(null)} saving={saving}
+          form={form} setForm={setForm} onSubmit={handleSave} onCancel={closeFormModal} saving={saving}
           hotelTypes={hotelTypeOptions}
           amenities={amenityOptions.length ? amenityOptions : AMENITIES}
         />

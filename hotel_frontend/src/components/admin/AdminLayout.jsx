@@ -225,6 +225,8 @@ const BADGE_MAP = {
   CANCELLED:       { bg: "#f5f5f5", color: "#616161",  label: "Đã hủy"        },
   COMPLETED:       { bg: "#e8f5e9", color: "#2e7d32",  label: "Hoàn thành"    },
   PENDING:         { bg: "#fff8e1", color: "#f57f17",  label: "Chờ duyệt"     },
+  SUBMITTED:       { bg: "#fff8e1", color: "#f57f17",  label: "Chờ duyệt"     },
+  UNDER_REVIEW:    { bg: "#e3f2fd", color: "#1565c0",  label: "Đang xem xét"  },
   APPROVED:        { bg: "#e8f5e9", color: "#2e7d32",  label: "Đã duyệt"      },
   REJECTED:        { bg: "#ffebee", color: "#c62828",  label: "Từ chối"       },
   HIGH:            { bg: "#ffebee", color: "#c62828",  label: "Cao"            },

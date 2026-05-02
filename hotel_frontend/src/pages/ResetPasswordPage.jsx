@@ -14,6 +14,16 @@ export default function ResetPasswordPage({ setPage }) {
 
   const upd = k => e => setForm(f => ({ ...f, [k]: e.target.value }));
 
+  const resetErrorMessage = (message = "") => {
+    if (
+      message.includes("Reset token") ||
+      message.includes("Liên kết đặt lại mật khẩu")
+    ) {
+      return "Liên kết đặt lại mật khẩu không hợp lệ, đã dùng hoặc đã hết hạn. Vui lòng yêu cầu liên kết mới.";
+    }
+    return message || "Không thể đặt lại mật khẩu.";
+  };
+
   const handleReset = async () => {
     setError("");
     if (!form.password || form.password.length < 8) {
@@ -41,7 +51,7 @@ export default function ResetPasswordPage({ setPage }) {
       });
       setSuccess(true);
     } catch (err) {
-      setError(err.message || "Không thể đặt lại mật khẩu.");
+      setError(resetErrorMessage(err.message));
     } finally {
       setLoading(false);
     }
@@ -144,9 +154,11 @@ export default function ResetPasswordPage({ setPage }) {
             </div>
           )}
 
-          <SubmitButton loading={loading} onClick={handleReset}>
-            {loading ? "Đang xử lý..." : "Đặt lại mật khẩu"}
-          </SubmitButton>
+          <SubmitButton
+            label={loading ? "Đang xử lý..." : "Đặt lại mật khẩu"}
+            onClick={handleReset}
+            disabled={loading}
+          />
 
           <div style={{ textAlign: "center", marginTop: 18, fontSize: 13, color: "#888" }}>
             Nhớ mật khẩu rồi?{" "}

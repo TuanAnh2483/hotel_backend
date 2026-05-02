@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 
 @Service
 @RequiredArgsConstructor
@@ -185,7 +186,7 @@ public class HotelService {
     private List<String> normalizeImageUrls(List<String> imageUrls) {
         // Chỉ giữ lại các URL không trống và duy trì thứ tự do người dùng định nghĩa mà không có bản sao trùng lặp.
         if (imageUrls == null || imageUrls.isEmpty()) {
-            return List.of();
+            return new ArrayList<>();
         }
 
         LinkedHashSet<String> uniqueUrls = new LinkedHashSet<>();
@@ -196,6 +197,12 @@ public class HotelService {
 
             String normalized = imageUrl.trim();
             if (!normalized.isEmpty()) {
+                if (isBase64ImageData(normalized)) {
+                    throw new ApiException(
+                            ErrorCode.VALIDATION_ERROR,
+                            "Base64 image data is not supported; upload files with multipart/form-data first"
+                    );
+                }
                 uniqueUrls.add(normalized);
             }
         }
@@ -224,6 +231,10 @@ public class HotelService {
         }
 
         return imageUrl.trim();
+    }
+
+    private boolean isBase64ImageData(String imageUrl) {
+        return imageUrl.toLowerCase(Locale.ROOT).startsWith("data:image");
     }
 
     private String normalizeRequiredText(String value) {

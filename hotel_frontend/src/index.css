@@ -51,4 +51,11 @@
     background-size: 200% 100%;
     animation: shimmer 1.5s infinite linear;
   }
+
+  @keyframes verify-email-spin {
+    to { transform: rotate(360deg); }
+  }
+  .verify-email-spin {
+    animation: verify-email-spin 1s linear infinite;
+  }
 }

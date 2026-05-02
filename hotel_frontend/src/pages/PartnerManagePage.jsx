@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback } from "react";
 import MainNavbar from "../components/MainNavbar";
 import Footer from "../components/Footer";
 import { partnerService } from "../services/partnerService";
-import { uploadToCloudinary } from "@/utils/uploadCloudinary";
 import {
   Building2, Bed, Calendar, BarChart3, Pencil, Users, DoorOpen,
   AlertCircle, CircleDollarSign, ClipboardList, CheckCircle2, Inbox, Layers,
@@ -231,8 +230,8 @@ function RoomsTab() {
     partnerService.getRooms(selHotel.id).then(d => setRooms(Array.isArray(d) ? d : [])).catch(() => setRooms([])).finally(() => setLoadingR(false));
   }, [selHotel]);
 
-  function openCreate() { setForm(EMPTY_ROOM); setErr(""); setModal("create"); }
-  function openEdit(r) { setForm({ name:r.name||"",capacity:r.capacity||2,quantity:r.quantity||1,price:r.price||500000,roomCategory:r.roomCategory||"STANDARD",bedType:r.bedType||"DOUBLE",amenities:r.amenities||[] }); setErr(""); setModal(r); }
+  function openCreate() { setForm(EMPTY_ROOM); setSelectedFiles([]); setErr(""); setModal("create"); }
+  function openEdit(r) { setForm({ name:r.name||"",capacity:r.capacity||2,quantity:r.quantity||1,price:r.price||500000,roomCategory:r.roomCategory||"STANDARD",bedType:r.bedType||"DOUBLE",amenities:r.amenities||[],imageUrls:Array.isArray(r.imageUrls)?r.imageUrls:[] }); setSelectedFiles([]); setErr(""); setModal(r); }
 
 
 
@@ -253,26 +252,20 @@ function RoomsTab() {
         imageUrls = [...form.imageUrls];
       }
 
-      // ✅ 2. Upload ảnh mới (nếu có)
-      if (selectedFiles && selectedFiles.length > 0) {
-        const uploaded = await Promise.all(
-            selectedFiles.map(file => uploadToCloudinary(file))
-        );
-
-        imageUrls = [...imageUrls, ...uploaded]; // merge ảnh cũ + mới
-      }
-
       const newForm = {
         ...form,
         imageUrls
       };
 
-      console.log("🚀 SEND ROOM:", newForm); // debug
-
+      let savedRoom;
       if (modal === "create") {
-        await partnerService.createRoom(selHotel.id, newForm);
+        savedRoom = await partnerService.createRoom(selHotel.id, newForm);
       } else {
-        await partnerService.updateRoom(modal.id, newForm);
+        savedRoom = await partnerService.updateRoom(modal.id, newForm);
+      }
+
+      if (selectedFiles && selectedFiles.length > 0) {
+        await partnerService.uploadRoomImages(savedRoom.id, selectedFiles);
       }
 
       setModal(null);
@@ -386,6 +379,7 @@ function RoomsTab() {
                 <input
                     type="file"
                     multiple
+                    accept="image/png,image/jpeg,image/webp,image/gif"
                     className="partner-manage-input"
                     onChange={(e) => setSelectedFiles(Array.from(e.target.files))}
                 />

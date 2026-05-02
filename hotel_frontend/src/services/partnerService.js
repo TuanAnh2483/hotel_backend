@@ -2,18 +2,28 @@ import { getToken } from "./authService";
 
 async function partnerFetch(path, options = {}) {
   const token = getToken();
-  const { headers: extraHeaders, ...restOptions } = options;
+  const { headers: extraHeaders, body, ...restOptions } = options;
+  const isFormData = body instanceof FormData;
   const res = await fetch(path, {
     headers: {
-      "Content-Type": "application/json",
+      ...(isFormData ? {} : { "Content-Type": "application/json" }),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...extraHeaders,
     },
+    body,
     ...restOptions,
   });
   const json = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(json.error?.message || json.message || `HTTP ${res.status}`);
   return json.data ?? json;
+}
+
+function buildImageFormData(files) { // append nhiều file
+  const formData = new FormData();
+  Array.from(files || []).forEach((file) => {
+    formData.append("files", file);
+  });
+  return formData;
 }
 
 export const partnerService = {
@@ -37,6 +47,25 @@ export const partnerService = {
   deleteHotel: (id) =>
     partnerFetch(`/api/partner/hotels/${id}`, { method: "DELETE" }),
 
+
+    //api
+  uploadHotelImages: (id, files) =>
+    partnerFetch(`/api/partner/hotels/${id}/images`, {
+      method: "POST",
+      body: buildImageFormData(files),
+    }),
+
+  deleteHotelImage: (id, imageUrl) =>
+    partnerFetch(`/api/partner/hotels/${id}/images?${new URLSearchParams({ imageUrl })}`, {
+      method: "DELETE",
+    }),
+
+  setHotelCoverImage: (id, imageUrl) =>
+    partnerFetch(`/api/partner/hotels/${id}/cover-image`, {
+      method: "PUT",
+      body: JSON.stringify({ imageUrl }),
+    }),
+
   // ── Rooms ────────────────────────────────────────────────────────────
   getRooms: (hotelId) => partnerFetch(`/api/partner/hotels/${hotelId}/rooms`),
 
@@ -57,6 +86,23 @@ export const partnerService = {
 
   deleteRoom: (roomId) =>
     partnerFetch(`/api/partner/rooms/${roomId}`, { method: "DELETE" }),
+
+  uploadRoomImages: (roomId, files) =>
+    partnerFetch(`/api/partner/rooms/${roomId}/images`, {
+      method: "POST",
+      body: buildImageFormData(files),
+    }),
+
+  deleteRoomImage: (roomId, imageUrl) =>
+    partnerFetch(`/api/partner/rooms/${roomId}/images?${new URLSearchParams({ imageUrl })}`, {
+      method: "DELETE",
+    }),
+
+  setRoomCoverImage: (roomId, imageUrl) =>
+    partnerFetch(`/api/partner/rooms/${roomId}/cover-image`, {
+      method: "PUT",
+      body: JSON.stringify({ imageUrl }),
+    }),
 
   // ── Bookings ─────────────────────────────────────────────────────────
   getBookings: (params = {}) => {

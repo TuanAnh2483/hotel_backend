@@ -84,7 +84,7 @@ export default function BecomePartnerPage({ navigate, user, onLogout }) {
   if (!user) {
     return (
       <div className="bp-root-auth">
-        <MainNavbar active="home" navigate={navigate} user={user} onLogout={onLogout} />
+        <MainNavbar active="become-partner" navigate={navigate} user={user} onLogout={onLogout} />
         <div className="bp-login-gate">
           <div className="bp-login-icon">🏨</div>
           <h2 className="bp-login-title">Đăng nhập để tiếp tục</h2>
@@ -124,7 +124,7 @@ export default function BecomePartnerPage({ navigate, user, onLogout }) {
 
   return (
     <div className="bp-root">
-      <MainNavbar active="home" navigate={navigate} user={user} onLogout={onLogout} />
+      <MainNavbar active="become-partner" navigate={navigate} user={user} onLogout={onLogout} />
 
       {/* Hero */}
       <div className="bp-hero">

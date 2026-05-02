@@ -1,6 +1,14 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { partnerService } from "../../services/partnerService";
+import {
+  createExistingImageItems,
+  createPendingImageItems,
+  existingImageUrlsFromItems,
+  imageItemUrl,
+  pendingImageFilesFromItems,
+  revokePendingImageUrls,
+} from "../../utils/imageFormItems";
 import { PageHeader, Card, Btn, Modal } from "../../components/admin/AdminLayout";
 import {
   Bed, Users, Home, Edit3, Trash2, Search, Plus,
@@ -47,9 +55,14 @@ const EMPTY_FORM = {
 };
 
 function getRoomImageUrl(room) {
+  const imageUrls = getRoomImageUrls(room);
+  return room?.coverImageUrl || imageUrls[0] || "";
+}
+
+function getRoomImageUrls(room) {
   const imageUrls = Array.isArray(room?.imageUrls) ? room.imageUrls : [];
   const legacyImages = Array.isArray(room?.images) ? room.images : [];
-  return room?.coverImageUrl || imageUrls[0] || legacyImages[0] || "";
+  return imageUrls.length ? imageUrls : legacyImages;
 }
 
 function Field({ label, children, required }) {
@@ -134,34 +147,39 @@ function RoomForm({ form, setForm, onSubmit, onCancel, saving, title, categories
 
         <Field label="Hình ảnh loại phòng (Chọn nhiều hình)">
           <div className="pr-images-grid">
-            {form.images?.map((img, idx) => (
-              <div key={idx} className="pr-image-thumb">
-                <img src={img} />
+            {form.images?.map((img, idx) => {
+              const url = imageItemUrl(img);
+              return (
+              <div key={img?.id || url || idx} className="pr-image-thumb">
+                <img src={url} alt="" />
                 <button
                   className="pr-image-delete-btn"
-                  onClick={() => setForm(f => ({ ...f, images: f.images.filter((_, i) => i !== idx) }))}
+                  onClick={() => setForm(f => {
+                    const images = [...(f.images || [])];
+                    const [removed] = images.splice(idx, 1);
+                    revokePendingImageUrls([removed]);
+                    return { ...f, images };
+                  })}
                 >
                   <Trash2 size={12} />
                 </button>
               </div>
-            ))}
+              );
+            })}
             <label className="pr-image-add-label">
               <Plus size={24} />
               <div className="pr-image-add-text">Thêm ảnh</div>
               <input
-                type="file" multiple style={{ display: "none" }}
+                type="file" multiple accept="image/png,image/jpeg,image/webp,image/gif" style={{ display: "none" }}
                 onChange={e => {
-                  const files = Array.from(e.target.files);
-                  files.forEach(file => {
-                    const reader = new FileReader();
-                    reader.onloadend = () => setForm(f => ({ ...f, images: [...(f.images || []), reader.result] }));
-                    reader.readAsDataURL(file);
-                  });
+                  const images = createPendingImageItems(e.target.files);
+                  setForm(f => ({ ...f, images: [...(f.images || []), ...images] }));
+                  e.target.value = "";
                 }}
               />
             </label>
           </div>
-          <p className="pr-image-hint">Hỗ trợ định dạng JPG, PNG. Tối đa 5MB mỗi ảnh.</p>
+          <p className="pr-image-hint">Hỗ trợ JPG, PNG, WEBP, GIF. Tối đa 10MB mỗi ảnh.</p>
         </Field>
 
         <div className="pr-form-footer">
@@ -240,28 +258,67 @@ export default function PartnerRooms() {
       .finally(() => setLoading(false));
   }, [selectedHotelId]);
 
-  function openAdd() { setForm({ ...EMPTY_FORM, images: [] }); setModal("add"); }
+  function openAdd() {
+    revokePendingImageUrls(form.images);
+    setSelected(null);
+    setForm({ ...EMPTY_FORM, images: [] });
+    setModal("add");
+  }
   function openEdit(room) {
+    revokePendingImageUrls(form.images);
     setSelected(room);
-    const images = Array.isArray(room.imageUrls) ? room.imageUrls : (Array.isArray(room.images) ? room.images : []);
     setForm({
       name: room.name || "", capacity: room.capacity || 2, quantity: room.quantity || 1, price: room.price || 0,
       roomCategory: room.roomCategory || "STANDARD", bedType: room.bedType || "DOUBLE",
       amenities: room.amenities ? room.amenities.filter(key => catalog.roomAmenities.includes(key) || ROOM_AMENITY_KEYS.has(key)) : [],
-      images,
+      images: createExistingImageItems(getRoomImageUrls(room)),
     });
     setModal("edit");
   }
   function openDelete(room) { setSelected(room); setModal("delete"); }
 
+  function closeFormModal() {
+    revokePendingImageUrls(form.images);
+    setModal(null);
+    setSelected(null);
+    setForm({ ...EMPTY_FORM, images: [] });
+  }
+
+  async function deleteRemovedRoomImages(room, remainingImageUrls) {
+    const remaining = new Set(remainingImageUrls);
+    const removed = getRoomImageUrls(room).filter((url) => !remaining.has(url));
+    for (const imageUrl of removed) {
+      await partnerService.deleteRoomImage(room.id, imageUrl);
+    }
+  }
+
   async function handleSave() {
     setSaving(true);
     try {
-      const payload = { ...form, imageUrls: form.images || [] };
+      const images = form.images || [];
+      const existingImageUrls = existingImageUrlsFromItems(images);
+      const pendingFiles = pendingImageFilesFromItems(images);
+      const payload = { ...form, imageUrls: existingImageUrls };
       delete payload.images;
-      if (modal === "add") await partnerService.createRoom(selectedHotelId, payload);
-      else await partnerService.updateRoom(selected.id, payload);
+      if (modal === "add") {
+        const created = await partnerService.createRoom(selectedHotelId, payload);
+        if (pendingFiles.length > 0) {
+          await partnerService.uploadRoomImages(created.id, pendingFiles);
+        }
+      } else {
+        await partnerService.updateRoom(selected.id, {
+          ...payload,
+          imageUrls: getRoomImageUrls(selected),
+        });
+        await deleteRemovedRoomImages(selected, existingImageUrls);
+        if (pendingFiles.length > 0) {
+          await partnerService.uploadRoomImages(selected.id, pendingFiles);
+        }
+      }
+      revokePendingImageUrls(images);
       setModal(null);
+      setSelected(null);
+      setForm({ ...EMPTY_FORM, images: [] });
       const data = await partnerService.getRooms(selectedHotelId);
       setRooms(Array.isArray(data) ? data : []);
     } catch (e) { alert(e.message); }
@@ -418,7 +475,7 @@ export default function PartnerRooms() {
       {(modal === "add" || modal === "edit") && (
         <RoomForm
           title={modal === "add" ? "Thêm loại phòng mới" : "Cập nhật loại phòng"}
-          form={form} setForm={setForm} onSubmit={handleSave} onCancel={() => setModal(null)} saving={saving}
+          form={form} setForm={setForm} onSubmit={handleSave} onCancel={closeFormModal} saving={saving}
           categories={categoryOptions}
           bedTypes={bedTypeOptions}
           amenities={roomAmenityOptions}

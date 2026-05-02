@@ -17,6 +17,7 @@ import { S, Navbar } from "./components/auth/AuthShared";
 import Login          from "./pages/Login";
 import Register       from "./pages/Register";
 import ForgotPassword from "./pages/ForgotPassword";
+import VerifyEmailPage from "./pages/VerifyEmailPage";
 
 import HomePage        from "./pages/HomePage";
 import HotelListPage   from "./pages/HotelListPage";
@@ -129,6 +130,15 @@ function ResetPasswordRoute() {
   return (
     <AuthWrapper active="">
       <ResetPasswordPage setPage={navigate} />
+    </AuthWrapper>
+  );
+}
+
+function VerifyEmailRoute() {
+  const navigate = useAppNavigate();
+  return (
+    <AuthWrapper active="">
+      <VerifyEmailPage setPage={navigate} />
     </AuthWrapper>
   );
 }
@@ -265,6 +275,7 @@ function AppRoutes() {
       <Route path="/register"        element={<RegisterRoute />} />
       <Route path="/forgot-password"  element={<ForgotRoute />} />
       <Route path="/reset-password"   element={<ResetPasswordRoute />} />
+      <Route path="/verify-email"     element={<VerifyEmailRoute />} />
 
       {/* ── Booking (auth required, any authenticated role) ───────── */}
       <Route path="/book" element={

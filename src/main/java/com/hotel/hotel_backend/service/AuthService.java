@@ -157,13 +157,16 @@ public class AuthService {
     @Transactional
     public ResetPasswordResponse resetPassword(@Valid ResetPasswordRequest request) {
         PasswordResetToken passwordResetToken = passwordResetTokenRepository.findByToken(request.token())
-                .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND, "Reset token not found"));
+                .orElseThrow(() -> new ApiException(
+                        ErrorCode.NOT_FOUND,
+                        "Liên kết đặt lại mật khẩu không hợp lệ hoặc đã hết hạn"
+                ));
 
         if (passwordResetToken.getUsedAt() != null) {
-            throw new ApiException(ErrorCode.CONFLICT, "Reset token already used");
+            throw new ApiException(ErrorCode.CONFLICT, "Liên kết đặt lại mật khẩu đã được sử dụng");
         }
         if (passwordResetToken.getExpiresAt().isBefore(OffsetDateTime.now())) {
-            throw new ApiException(ErrorCode.CONFLICT, "Reset token expired");
+            throw new ApiException(ErrorCode.CONFLICT, "Liên kết đặt lại mật khẩu đã hết hạn");
         }
 
         User user = passwordResetToken.getUser();

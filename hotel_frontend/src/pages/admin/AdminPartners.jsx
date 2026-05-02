@@ -8,8 +8,10 @@ import { useToast } from "../../contexts/ToastContext";
 import { SkeletonRow } from "../../components/ui/Skeleton";
 import "../../styles/pages/admin/AdminCommon.css";
 
-const STATUSES = ["", "PENDING", "APPROVED", "REJECTED"];
-const STATUS_LABEL = { "": "Tất cả", PENDING: "Chờ duyệt", APPROVED: "Đã duyệt", REJECTED: "Từ chối" };
+const STATUSES = ["", "SUBMITTED", "APPROVED", "REJECTED"];
+const STATUS_LABEL = { "": "Tất cả", SUBMITTED: "Chờ duyệt", APPROVED: "Đã duyệt", REJECTED: "Từ chối" };
+const REVIEWABLE_STATUSES = new Set(["SUBMITTED", "PENDING"]);
+const isReviewable = status => REVIEWABLE_STATUSES.has(status);
 
 export default function AdminPartners({ navigate, user, onLogout }) {
   const [apps, setApps]         = useState([]);
@@ -62,7 +64,7 @@ export default function AdminPartners({ navigate, user, onLogout }) {
   };
 
   const counts = {
-    pending:  apps.filter(a => a.status === "PENDING").length,
+    pending:  apps.filter(a => isReviewable(a.status)).length,
     approved: apps.filter(a => a.status === "APPROVED").length,
     rejected: apps.filter(a => a.status === "REJECTED").length,
   };
@@ -98,7 +100,7 @@ export default function AdminPartners({ navigate, user, onLogout }) {
               className={`admin-filter-tab${filter === s ? " active" : ""}`}
             >
               {STATUS_LABEL[s]}
-              {s === "PENDING" && counts.pending > 0 && (
+              {s === "SUBMITTED" && counts.pending > 0 && (
                 <span className="admin-filter-tab-badge">{counts.pending}</span>
               )}
             </button>
@@ -122,11 +124,11 @@ export default function AdminPartners({ navigate, user, onLogout }) {
               <span className="admin-cell-id">#{a.id}</span>,
               <div className="admin-cell-name">{a.bussinessName || a.businessName || "—"}</div>,
               <span className="admin-cell-text">{a.email || "—"}</span>,
-              <span className="admin-cell-text">{a.phoneNumber || "—"}</span>,
+              <span className="admin-cell-text">{a.phoneNumber || a.phone || "—"}</span>,
               <Badge status={a.status} />,
               <div className="admin-cell-actions">
                 <Btn small variant="action" onClick={() => setDetailModal(a)}>👁 Xem</Btn>
-                {a.status === "PENDING" && (
+                {isReviewable(a.status) && (
                   <>
                     <Btn small variant="success" loading={acting === a.id} onClick={() => handleApprove(a.id)}>Duyệt</Btn>
                     <Btn small variant="danger" loading={acting === a.id} onClick={() => { setRejectModal({ id: a.id }); setRejectReason(""); }}>Từ chối</Btn>
@@ -162,7 +164,7 @@ export default function AdminPartners({ navigate, user, onLogout }) {
             ["ID", `#${detailModal.id}`],
             ["Tên doanh nghiệp", detailModal.bussinessName || detailModal.businessName || "—"],
             ["Email", detailModal.email || "—"],
-            ["Số điện thoại", detailModal.phoneNumber || "—"],
+            ["Số điện thoại", detailModal.phoneNumber || detailModal.phone || "—"],
             ["Trạng thái", <Badge status={detailModal.status} />],
           ].map(([k, v]) => (
             <div key={k} className="admin-modal-row">
@@ -170,13 +172,13 @@ export default function AdminPartners({ navigate, user, onLogout }) {
               <span className="admin-modal-row-val">{v}</span>
             </div>
           ))}
-          {detailModal.status === "PENDING" && (
+          {isReviewable(detailModal.status) && (
             <div className="admin-modal-actions">
-              <Btn variant="danger" onClick={() => { setDetailModal(null); setRejectModal({ id: detailModal.id }); }}>❌ Từ chối</Btn>
+              <Btn variant="danger" onClick={() => { setDetailModal(null); setRejectModal({ id: detailModal.id }); setRejectReason(""); }}>❌ Từ chối</Btn>
               <Btn variant="success" onClick={() => { setDetailModal(null); handleApprove(detailModal.id); }}>✅ Phê duyệt</Btn>
             </div>
           )}
-          {detailModal.status !== "PENDING" && (
+          {!isReviewable(detailModal.status) && (
             <div className="admin-modal-actions-right">
               <Btn variant="ghost" onClick={() => setDetailModal(null)}>Đóng</Btn>
             </div>

@@ -124,6 +124,7 @@ const AUTH_NAV_LINKS = [
   { label: "Trang chủ",         page: "home"        },
   { label: "Khách sạn",         page: "search"      },
   { label: "Đặt phòng của tôi", page: "my-bookings" },
+  { label: "Đăng chỗ nghỉ của bạn", page: "become-partner" },
 ];
 
 const Navbar = ({ active, setPage, user }) => {

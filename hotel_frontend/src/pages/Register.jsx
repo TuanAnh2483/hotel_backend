@@ -85,7 +85,7 @@ export default function Register({ setPage }) {
             <p style={S.sub}>Tài khoản đã được tạo cho {registeredEmail}.</p>
 
             <div style={{ ...noteStyle, marginBottom: 22 }}>
-              Backend hiện yêu cầu xác minh email trước khi dùng tài khoản.
+              Vui lòng mở link xác thực trong email. Sau khi xác thực thành công, hệ thống sẽ báo rõ để bạn quay lại đăng nhập.
               {role === "partner" && " Sau khi xác minh và đăng nhập, hãy vào mục Đăng ký đối tác để gửi hồ sơ partner."}
             </div>
 

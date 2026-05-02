@@ -5,6 +5,7 @@ import com.cloudinary.utils.ObjectUtils;
 import com.hotel.hotel_backend.config.UploadStorageProperties;
 import com.hotel.hotel_backend.exeption.ApiException;
 import com.hotel.hotel_backend.exeption.ErrorCode;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -20,6 +21,7 @@ import java.util.Map;
 import java.util.UUID;
 
 @Service
+@Slf4j
 @ConditionalOnProperty(prefix = "app.uploads.cloudinary", name = "enabled", havingValue = "true")
 public class CloudinaryImageStorageProvider implements ImageStorageProvider {
 
@@ -131,13 +133,51 @@ public class CloudinaryImageStorageProvider implements ImageStorageProvider {
                 }
                 publicUrls.add(publicUrl);
             } catch (IOException ex) {
-                throw new ApiException(ErrorCode.INTERNAL_ERROR, "Failed to upload image to Cloudinary");
+                log.error(
+                        "Failed to read image bytes before Cloudinary upload. scope={}, ownerId={}, fileName={}, contentType={}, size={}",
+                        scope,
+                        ownerId,
+                        file.getOriginalFilename(),
+                        file.getContentType(),
+                        file.getSize(),
+                        ex
+                );
+                throw new ApiException(
+                        ErrorCode.INTERNAL_ERROR,
+                        "Failed to read image file before Cloudinary upload",
+                        ex
+                );
             } catch (Exception ex) {
-                throw new ApiException(ErrorCode.INTERNAL_ERROR, "Failed to upload image to Cloudinary");
+                log.error(
+                        "Cloudinary upload failed. scope={}, ownerId={}, cloudName={}, folderPrefix={}, fileName={}, contentType={}, size={}",
+                        scope,
+                        ownerId,
+                        uploadStorageProperties.getCloudinary().getCloudName(),
+                        uploadStorageProperties.getCloudinary().getFolderPrefix(),
+                        file.getOriginalFilename(),
+                        file.getContentType(),
+                        file.getSize(),
+                        ex
+                );
+                throw new ApiException(
+                        ErrorCode.INTERNAL_ERROR,
+                        "Failed to upload image to Cloudinary: " + resolveFailureDetail(ex),
+                        ex
+                );
             }
         }
 
         return publicUrls;
+    }
+
+    private String resolveFailureDetail(Exception ex) {
+        String message = ex.getMessage();
+        if (!StringUtils.hasText(message)) {
+            return "check Cloudinary cloud name, API credentials, account permissions, and network connectivity";
+        }
+
+        // Không trả nhầm secret ra response nếu Cloudinary SDK đưa config vào message lỗi.
+        return message.replaceAll("(?i)(api_secret[=:])[^,\\s&]+", "$1***");
     }
 
     private String buildPublicId(String scope, Long ownerId) {
