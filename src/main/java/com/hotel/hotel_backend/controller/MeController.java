@@ -11,10 +11,12 @@ import com.hotel.hotel_backend.dto.response.MyProfileResponse;
 import com.hotel.hotel_backend.entity.User;
 import com.hotel.hotel_backend.service.MeService;
 import com.hotel.hotel_backend.service.SecurityService;
+import com.hotel.hotel_backend.service.UserNotificationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -32,6 +34,7 @@ public class MeController {
 
     private final SecurityService securityService;
     private final MeService meService;
+    private final UserNotificationService userNotificationService;
 
     @GetMapping
     public ApiResponse<CurrentUserResponse> me() {
@@ -76,6 +79,11 @@ public class MeController {
     @GetMapping("/notifications")
     public ApiResponse<List<MyNotificationResponse>> getMyNotifications() {
         return ApiResponse.ok(meService.getMyNotifications());
+    }
+
+    @PostMapping("/notifications/{notificationId}/read")
+    public ApiResponse<MyNotificationResponse> markNotificationRead(@PathVariable Long notificationId) {
+        return ApiResponse.ok(userNotificationService.markMyNotificationRead(notificationId));
     }
 
     @PostMapping("/change-password")

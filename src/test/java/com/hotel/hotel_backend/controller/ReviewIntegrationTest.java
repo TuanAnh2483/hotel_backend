@@ -37,6 +37,7 @@ import tools.jackson.databind.ObjectMapper;
 import java.time.LocalDate;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -190,6 +191,42 @@ class ReviewIntegrationTest {
                                 """.formatted(bookingId)))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.error.code").value("CONFLICT"));
+    }
+
+    @Test
+    void customerShouldCreateReviewWithoutComment() throws Exception {
+        User partner = createUser("partner-review-no-comment@test.com", UserType.PARTNER);
+        String customerToken = jwtService.generate(createUser("customer-review-no-comment@test.com", UserType.CUSTOMER));
+
+        Hotel hotel = createHotel(partner, "Review No Comment Hotel");
+        Room room = createRoom(hotel, "Review No Comment Room", 1);
+        LocalDate checkIn = LocalDate.now().plusDays(3);
+        LocalDate checkOut = checkIn.plusDays(1);
+        initInventory(room, checkIn, checkOut);
+
+        long bookingId = createBooking(customerToken, room.getId(), checkIn, checkOut, "review-no-comment@test.com");
+        payBooking(customerToken, bookingId, "review-no-comment-pay");
+        markBookingCompleted(bookingId);
+
+        MvcResult createResult = mockMvc.perform(post("/api/reviews")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(customerToken))
+                        .content("""
+                                {
+                                  "bookingId": %d,
+                                  "rating": 5,
+                                  "comment": null
+                                }
+                                """.formatted(bookingId)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.rating").value(5))
+                .andExpect(jsonPath("$.data.comment").value(nullValue()))
+                .andReturn();
+
+        long reviewId = readReviewId(createResult);
+        HotelReview review = hotelReviewRepository.findById(reviewId).orElseThrow();
+        assertThat(review.getComment()).isNull();
+        assertThat(hotelRepository.findById(hotel.getId()).orElseThrow().getRatingCount()).isEqualTo(1);
     }
 
     @Test

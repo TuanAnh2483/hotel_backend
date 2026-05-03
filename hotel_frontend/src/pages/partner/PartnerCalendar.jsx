@@ -363,7 +363,7 @@ export default function PartnerCalendar() {
     };
   }, [activeTab, selectedHotelId, refundStatusFilter]);
 
-  const calendarItems = calendar?.items || [];
+  const calendarItems = useMemo(() => calendar?.items || [], [calendar]);
 
   const itemsByDate = useMemo(() => {
     return new Map(calendarItems.map((item) => [item.date, item]));

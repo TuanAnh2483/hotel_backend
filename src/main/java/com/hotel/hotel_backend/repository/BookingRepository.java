@@ -26,6 +26,18 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
 
     long countByStatus(BookingStatus status);
 
+    @Query("""
+            select distinct b
+            from Booking b
+            left join fetch b.items bi
+            left join fetch bi.room r
+            left join fetch r.hotel h
+            where b.userId = :userId
+              and b.status = com.hotel.hotel_backend.entity.BookingStatus.COMPLETED
+            order by b.updatedAt desc
+            """)
+    List<Booking> findCompletedReviewNotificationBookings(@Param("userId") Long userId);
+
     @Query(
             value = """
                     select distinct new com.hotel.hotel_backend.dto.response.PartnerBookingSummaryResponse(

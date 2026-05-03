@@ -49,7 +49,7 @@ public class HotelReview {
     @Column(nullable = false)
     private Integer rating;
 
-    @Column(nullable = false, length = 1000)
+    @Column(length = 1000)
     private String comment;
 
     @Column(name = "partner_reply", length = 1000)

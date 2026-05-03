@@ -24,9 +24,29 @@ export function setSession(token, user) {
   localStorage.setItem("user", JSON.stringify(user));
 }
 
+export function setStoredUser(user) {
+  localStorage.setItem("user", JSON.stringify(user));
+}
+
 export function clearSession() {
   localStorage.removeItem("token");
   localStorage.removeItem("user");
+}
+
+async function authedRequest(path, options = {}) {
+  const token = getToken();
+  const { headers: extraHeaders, ...restOptions } = options;
+  const res = await fetch(path, {
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...extraHeaders,
+    },
+    ...restOptions,
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(json.error?.message || json.message || `HTTP ${res.status}`);
+  return json.data ?? json;
 }
 
 // ── Auth API calls ───────────────────────────────────────────────
@@ -73,6 +93,10 @@ export const authService = {
       method: "POST",
       body: JSON.stringify({ email }),
     });
+  },
+
+  getCurrentUser() {
+    return authedRequest("/api/me");
   },
 
   logout() {

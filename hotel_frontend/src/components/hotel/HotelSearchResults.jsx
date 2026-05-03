@@ -38,6 +38,33 @@ function FIcon({ k, size = 14, color = C.primary }) {
   );
 }
 
+const HOTEL_TYPE_OPTIONS = [
+  { value: "HOTEL", label: "Khách sạn" },
+  { value: "APARTMENT", label: "Căn hộ" },
+  { value: "RESORT", label: "Khu nghỉ dưỡng" },
+  { value: "VILLA", label: "Biệt thự" },
+  { value: "HOMESTAY", label: "Homestay" },
+  { value: "HOSTEL", label: "Hostel" },
+];
+
+const ROOM_CATEGORY_OPTIONS = [
+  { value: "STANDARD", label: "Tiêu chuẩn" },
+  { value: "DELUXE", label: "Cao cấp" },
+  { value: "SUITE", label: "Phòng Suite" },
+  { value: "FAMILY", label: "Gia đình" },
+];
+
+const AMENITY_FILTER_OPTIONS = [
+  { value: "WIFI", label: "Wifi miễn phí", target: "hotelAmenities" },
+  { value: "POOL", label: "Hồ bơi", target: "hotelAmenities" },
+  { value: "PARKING", label: "Bãi đỗ xe", target: "hotelAmenities" },
+  { value: "SPA", label: "Spa", target: "hotelAmenities" },
+  { value: "RESTAURANT", label: "Nhà hàng", target: "hotelAmenities" },
+  { value: "MINI_BAR", label: "Quầy mini bar", target: "roomAmenities" },
+  { value: "SEA_VIEW", label: "Tầm nhìn ra biển", target: "roomAmenities" },
+  { value: "BREAKFAST", label: "Bữa sáng", target: "roomAmenities" },
+];
+
 function FilterOption({ label, checked, onClick, isRadio }) {
   const [hov, setHov] = useState(false);
   const active = checked;
@@ -88,7 +115,10 @@ function FilterSidebar({ filters, onChange, onApply }) {
   );
 
   const [showMoreAmenities, setShowMoreAmenities] = useState(false);
-  const [showMoreAccess,    setShowMoreAccess]    = useState(false);
+  const toggleEnumList = (key, value) => {
+    const list = filters[key] || [];
+    onChange({ ...filters, [key]: list.includes(value) ? list.filter((item) => item !== value) : [...list, value] });
+  };
 
   return (
     <div style={{ background: "#fff", borderRadius: 14, padding: "20px 16px", border: "1.5px solid #edd8da", position: "sticky", top: 20 }}>
@@ -98,10 +128,10 @@ function FilterSidebar({ filters, onChange, onApply }) {
       </h3>
 
       <Section iconKey="hotel" title="Loại khách sạn">
-        {["Khu nghỉ dưỡng", "Khách sạn boutique", "Biệt thự"].map(v => (
-          <FilterOption key={v} label={v} isRadio
-            checked={filters.type === v}
-            onClick={() => onChange({ ...filters, type: filters.type === v ? "" : v })} />
+        {HOTEL_TYPE_OPTIONS.map((option) => (
+          <FilterOption key={option.value} label={option.label} isRadio
+            checked={filters.hotelTypes === option.value}
+            onClick={() => onChange({ ...filters, hotelTypes: filters.hotelTypes === option.value ? "" : option.value })} />
         ))}
       </Section>
 
@@ -114,42 +144,22 @@ function FilterSidebar({ filters, onChange, onApply }) {
       </Section>
 
       <Section iconKey="layers" title="Hạng phòng">
-        {["Tiêu chuẩn", "Cao cấp", "Phòng Suite"].map(v => (
-          <FilterOption key={v} label={v} isRadio
-            checked={filters.roomTier === v}
-            onClick={() => onChange({ ...filters, roomTier: filters.roomTier === v ? "" : v })} />
+        {ROOM_CATEGORY_OPTIONS.map((option) => (
+          <FilterOption key={option.value} label={option.label} isRadio
+            checked={filters.roomCategories === option.value}
+            onClick={() => onChange({ ...filters, roomCategories: filters.roomCategories === option.value ? "" : option.value })} />
         ))}
       </Section>
 
       <Section iconKey="wifi" title="Tiện nghi">
-        {["Wifi miễn phí", "Quầy mini bar", "Tầm nhìn ra biển",
-          ...(showMoreAmenities ? ["Hồ bơi", "Dịch vụ phòng"] : [])].map(v => (
-          <FilterOption key={v} label={v}
-            checked={(filters.amenities || []).includes(v)}
-            onClick={() => {
-              const a = filters.amenities || [];
-              onChange({ ...filters, amenities: a.includes(v) ? a.filter(x => x !== v) : [...a, v] });
-            }} />
+        {(showMoreAmenities ? AMENITY_FILTER_OPTIONS : AMENITY_FILTER_OPTIONS.slice(0, 5)).map((option) => (
+          <FilterOption key={`${option.target}-${option.value}`} label={option.label}
+            checked={(filters[option.target] || []).includes(option.value)}
+            onClick={() => toggleEnumList(option.target, option.value)} />
         ))}
         <a style={{ fontSize: 12, color: C.primary, cursor: "pointer", fontWeight: 600 }}
           onClick={() => setShowMoreAmenities(p => !p)}>
           {showMoreAmenities ? "Thu gọn ‹" : "Hiện thêm ›"}
-        </a>
-      </Section>
-
-      <Section iconKey="access" title="Tiện nghi khuyết tật">
-        {["Hướng dẫn âm thanh", "Dấu hiệu nổi Braille",
-          ...(showMoreAccess ? ["Toilet dành cho người khuyết tật"] : [])].map(v => (
-          <FilterOption key={v} label={v}
-            checked={(filters.access || []).includes(v)}
-            onClick={() => {
-              const a = filters.access || [];
-              onChange({ ...filters, access: a.includes(v) ? a.filter(x => x !== v) : [...a, v] });
-            }} />
-        ))}
-        <a style={{ fontSize: 12, color: C.primary, cursor: "pointer", fontWeight: 600 }}
-          onClick={() => setShowMoreAccess(p => !p)}>
-          {showMoreAccess ? "Thu gọn ‹" : "Hiện thêm ›"}
         </a>
       </Section>
 
@@ -269,9 +279,48 @@ function FeaturedBanner() {
   );
 }
 
+function createDefaultFilters(params = {}) {
+  return {
+    hotelTypes: params.hotelTypes || "",
+    stars: null,
+    roomCategories: "",
+    hotelAmenities: [],
+    roomAmenities: [],
+    priceMax: 10000000,
+  };
+}
+
+function filtersToSearchParams(filters) {
+  return {
+    hotelTypes: filters.hotelTypes || "",
+    roomCategories: filters.roomCategories || "",
+    hotelAmenities: filters.hotelAmenities || [],
+    roomAmenities: filters.roomAmenities || [],
+  };
+}
+
+function isoDate(date) {
+  return date.toISOString().slice(0, 10);
+}
+
+function defaultStayParams(params = {}) {
+  const checkInDate = new Date();
+  checkInDate.setDate(checkInDate.getDate() + 1);
+  const checkOutDate = new Date();
+  checkOutDate.setDate(checkOutDate.getDate() + 2);
+  return {
+    ...params,
+    checkIn: params.checkIn || isoDate(checkInDate),
+    checkOut: params.checkOut || isoDate(checkOutDate),
+    guests: params.guests || 2,
+    rooms: params.rooms || 1,
+  };
+}
+
 export default function HotelSearchResults({ navigate, params = {}, hideBanner = false, hideResultText = false }) {
   const containerRef = useRef(null);
-  const [filters, setFilters] = useState({ type: "", stars: null, roomTier: "", amenities: [], access: [], priceMax: 10000000 });
+  const [filters, setFilters] = useState(() => createDefaultFilters(params));
+  const [appliedFilters, setAppliedFilters] = useState(() => createDefaultFilters(params));
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(true);
   const [totalPages, setTotalPages] = useState(1);
@@ -280,18 +329,25 @@ export default function HotelSearchResults({ navigate, params = {}, hideBanner =
 
   const fetchResults = useCallback((pg) => {
     setLoading(true);
-    hotelService.searchHotels({ ...params, page: pg, size: 10 })
+    hotelService.searchHotels({ ...params, ...filtersToSearchParams(appliedFilters), page: pg, size: 10 })
       .then(({ hotels, totalPages: tp, totalItems: ti }) => {
         setResults(hotels);
         setTotalPages(tp);
         setTotalItems(ti || hotels.length);
       })
       .finally(() => setLoading(false));
-  }, [params]);
+  }, [appliedFilters, params]);
 
   useEffect(() => {
     fetchResults(page);
   }, [page, fetchResults]);
+
+  useEffect(() => {
+    const next = createDefaultFilters(params);
+    setFilters(next);
+    setAppliedFilters(next);
+    setPage(1);
+  }, [params]);
 
   const handlePageChange = (p) => {
     setPage(p);
@@ -302,13 +358,22 @@ export default function HotelSearchResults({ navigate, params = {}, hideBanner =
   };
 
   const displayed = results
-    .filter(h => filters.stars === null || Math.round(h.rating) >= filters.stars)
-    .filter(h => filters.priceMax >= 10000000 || h.price === 0 || h.price <= filters.priceMax);
+    .filter(h => appliedFilters.stars === null || Math.round(h.rating) >= appliedFilters.stars)
+    .filter(h => appliedFilters.priceMax >= 10000000 || h.price === 0 || h.price <= appliedFilters.priceMax);
+
+  const handleApplyFilters = () => {
+    setAppliedFilters({
+      ...filters,
+      hotelAmenities: [...(filters.hotelAmenities || [])],
+      roomAmenities: [...(filters.roomAmenities || [])],
+    });
+    setPage(1);
+  };
 
   return (
     <div ref={containerRef} style={{ maxWidth: 1300, margin: "0 auto", width: "100%", padding: "24px 40px 40px", display: "flex", gap: 24, flex: 1, boxSizing: "border-box" }}>
       <div style={{ flex: "0 0 280px" }}>
-        <FilterSidebar filters={filters} onChange={setFilters} onApply={() => handlePageChange(1)} />
+        <FilterSidebar filters={filters} onChange={setFilters} onApply={handleApplyFilters} />
       </div>
 
       <div style={{ flex: 1, minWidth: 0 }}>
@@ -327,7 +392,7 @@ export default function HotelSearchResults({ navigate, params = {}, hideBanner =
           : displayed.length === 0
             ? <p style={{ color: "#888", textAlign: "center", padding: "40px 0" }}>Không tìm thấy kết quả phù hợp.</p>
             : displayed.map(h => (
-                <HotelResultCard key={h.id} hotel={h} onView={() => navigate("hotel", { hotelId: h.id, ...params })} />
+                <HotelResultCard key={h.id} hotel={h} onView={() => navigate("hotel", { hotelId: h.id, ...defaultStayParams(params) })} />
               ))
         }
 

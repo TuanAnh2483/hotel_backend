@@ -99,6 +99,7 @@ export default function ProfilePage({ navigate, onLogout }) {
   const [loading, setLoading] = useState(false);
   const [pageLoading, setPageLoading] = useState(true);
   const [avatarLoading, setAvatarLoading] = useState(false);
+  const [markingNotification, setMarkingNotification] = useState(null);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
 
@@ -203,6 +204,23 @@ export default function ProfilePage({ navigate, onLogout }) {
       setMessage("Đã cập nhật tuỳ chọn thông báo.");
     } catch (e) {
       setError(e.message || "Không thể cập nhật tuỳ chọn.");
+    }
+  };
+
+  const handleMarkNotificationRead = async (notificationId) => {
+    if (!notificationId) return;
+    setMarkingNotification(notificationId);
+    setError("");
+    setMessage("");
+    try {
+      const updated = await profileService.markNotificationRead(notificationId);
+      setNotifications((items) =>
+        items.map((item) => item.id === notificationId ? { ...item, ...updated } : item),
+      );
+    } catch (e) {
+      setError(e.message || "Không thể cập nhật thông báo.");
+    } finally {
+      setMarkingNotification(null);
     }
   };
 
@@ -544,16 +562,32 @@ export default function ProfilePage({ navigate, onLogout }) {
                     <div className="profile-bio-text">Chưa có thông báo nào.</div>
                   )}
                   {notifications.map((n, index) => (
-                    <div key={`${n.type}-${n.occurredAt}-${index}`} className="profile-notify-card">
+                    <div key={`${n.id || n.type}-${n.occurredAt}-${index}`} className="profile-notify-card" style={{ borderColor: n.read === false ? "#bfdbfe" : undefined }}>
                       <div className="profile-notify-icon" style={{ backgroundColor: n.type === "SECURITY" ? "#fef2f2" : "#f0f9ff" }}>
                         {n.type === "SECURITY" ? <Shield size={28} color="#ef4444" /> : <Bell size={28} color="#0ea5e9" />}
                       </div>
                       <div className="profile-notify-content">
                         <div className="profile-notify-header">
-                          <div className="profile-notify-title">{n.title}</div>
+                          <div className="profile-notify-title">
+                            {n.read === false && (
+                              <span style={{ background: "#dbeafe", borderRadius: 999, color: "#1d4ed8", display: "inline-block", fontSize: 10, fontWeight: 900, marginRight: 8, padding: "3px 8px", textTransform: "uppercase" }}>
+                                Mới
+                              </span>
+                            )}
+                            {n.title}
+                          </div>
                           <div className="profile-notify-time">{formatDateTime(n.occurredAt)}</div>
                         </div>
                         <p className="profile-notify-desc">{n.message}</p>
+                        {n.id && n.read === false && (
+                          <button
+                            onClick={() => handleMarkNotificationRead(n.id)}
+                            disabled={markingNotification === n.id}
+                            style={{ background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 10, color: "#1d4ed8", cursor: markingNotification === n.id ? "not-allowed" : "pointer", fontSize: 12, fontWeight: 800, marginTop: 10, opacity: markingNotification === n.id ? 0.7 : 1, padding: "7px 10px" }}
+                          >
+                            {markingNotification === n.id ? "Đang cập nhật..." : "Đánh dấu đã đọc"}
+                          </button>
+                        )}
                       </div>
                     </div>
                   ))}

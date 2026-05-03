@@ -235,6 +235,28 @@ class PartnerBookingIntegrationTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.bookingId").value(bookingId))
                 .andExpect(jsonPath("$.data.status").value("COMPLETED"));
+
+        MvcResult notificationResult = mockMvc.perform(get("/api/me/notifications")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(customerToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data[0].id").exists())
+                .andExpect(jsonPath("$.data[0].type").value("REVIEW"))
+                .andExpect(jsonPath("$.data[0].read").value(false))
+                .andExpect(jsonPath("$.data[0].actionUrl").value("/customer/reviews"))
+                .andExpect(jsonPath("$.data[0].title").value("Cảm ơn bạn đã lưu trú tại Partner Complete Hotel"))
+                .andExpect(jsonPath("$.data[0].message").value("Booking #" + bookingId + " đã hoàn tất. Bạn có thể gửi đánh giá để chia sẻ trải nghiệm dịch vụ."))
+                .andReturn();
+
+        JsonNode notificationBody = objectMapper.readTree(notificationResult.getResponse().getContentAsString());
+        long notificationId = notificationBody.path("data").path(0).path("id").asLong();
+
+        mockMvc.perform(post("/api/me/notifications/{notificationId}/read", notificationId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(customerToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.id").value(notificationId))
+                .andExpect(jsonPath("$.data.read").value(true))
+                .andExpect(jsonPath("$.data.readAt").exists());
     }
 
     @Test

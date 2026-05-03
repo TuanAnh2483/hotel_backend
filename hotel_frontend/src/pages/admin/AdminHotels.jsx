@@ -20,6 +20,7 @@ export default function AdminHotels({ navigate, user, onLogout }) {
   const [selected, setSelected] = useState(null);
   const [form, setForm]       = useState(EMPTY_FORM);
   const [acting, setActing]   = useState(false);
+  const [error, setError]     = useState("");
   const [filterType, setFilterType] = useState("");
   const [page, setPage] = useState(1);
   const pageSize = 10;
@@ -36,30 +37,41 @@ export default function AdminHotels({ navigate, user, onLogout }) {
   });
 
   const upd = k => e => setForm(f => ({ ...f, [k]: e.target.value }));
-  const openAdd  = () => { setForm(EMPTY_FORM); setModal("add"); };
   const openEdit = h => {
+    setError("");
     setSelected(h);
     setForm({ name: h.name || "", province: h.province || "", district: h.district || "", address: h.address || "", hotelType: h.hotelType || "HOTEL", description: h.description || "" });
     setModal("edit");
   };
-  const openDel = h => { setSelected(h); setModal("delete"); };
+  const openDel = h => { setError(""); setSelected(h); setModal("delete"); };
 
   const handleSave = async () => {
-    if (!form.name.trim()) return;
+    if (!form.name.trim() || !form.province.trim() || !form.district.trim() || !form.address.trim() || !selected?.id) return;
     setActing(true);
-    if (modal === "add") {
-      const fake = { id: Date.now(), ...form, ratingAvg: 0, ratingCount: 0, status: "ACTIVE" };
-      setHotels(prev => [fake, ...prev]);
-    } else {
-      setHotels(prev => prev.map(h => h.id === selected.id ? { ...h, ...form } : h));
+    setError("");
+    try {
+      const updated = await adminService.updateHotel(selected.id, form);
+      setHotels(prev => prev.map(h => h.id === selected.id ? updated : h));
+      setModal(null);
+    } catch (e) {
+      setError(e.message || "Không thể cập nhật khách sạn.");
+    } finally {
+      setActing(false);
     }
-    setActing(false); setModal(null);
   };
 
   const handleDelete = async () => {
     setActing(true);
-    setHotels(prev => prev.filter(h => h.id !== selected.id));
-    setActing(false); setModal(null);
+    setError("");
+    try {
+      await adminService.deleteHotel(selected.id);
+      setHotels(prev => prev.filter(h => h.id !== selected.id));
+      setModal(null);
+    } catch (e) {
+      setError(e.message || "Không thể xóa khách sạn.");
+    } finally {
+      setActing(false);
+    }
   };
 
   const counts = {
@@ -73,8 +85,13 @@ export default function AdminHotels({ navigate, user, onLogout }) {
       <PageHeader
         title="Quản lý khách sạn"
         subtitle="Danh sách tất cả khách sạn trong hệ thống"
-        action={<Btn onClick={openAdd}>+ Thêm khách sạn</Btn>}
       />
+
+      {error && (
+        <div style={{ background: "#ffebee", color: "#c62828", padding: "10px 14px", borderRadius: 8, fontSize: 13, marginBottom: 16, fontWeight: 700 }}>
+          {error}
+        </div>
+      )}
 
       {/* Summary */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14, marginBottom: 24 }}>
@@ -168,9 +185,9 @@ export default function AdminHotels({ navigate, user, onLogout }) {
         )}
       </Card>
 
-      {/* Add / Edit modal */}
-      {(modal === "add" || modal === "edit") && (
-        <Modal title={modal === "add" ? "➕ Thêm khách sạn" : "✏️ Chỉnh sửa khách sạn"} onClose={() => setModal(null)} width={520}>
+      {/* Edit modal */}
+      {modal === "edit" && (
+        <Modal title="✏️ Chỉnh sửa khách sạn" onClose={() => setModal(null)} width={520}>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 0 }}>
             <div style={{ gridColumn: "1/-1" }}>
               <FormField label="Tên khách sạn" required>
@@ -183,12 +200,12 @@ export default function AdminHotels({ navigate, user, onLogout }) {
               </FormField>
             </div>
             <div style={{ paddingLeft: 8 }}>
-              <FormField label="Quận / Huyện">
+              <FormField label="Quận / Huyện" required>
                 <Input value={form.district} onChange={upd("district")} placeholder="VD: Hoàn Kiếm" />
               </FormField>
             </div>
             <div style={{ gridColumn: "1/-1" }}>
-              <FormField label="Địa chỉ cụ thể">
+              <FormField label="Địa chỉ cụ thể" required>
                 <Input value={form.address} onChange={upd("address")} placeholder="Số nhà, đường..." />
               </FormField>
             </div>
@@ -217,8 +234,8 @@ export default function AdminHotels({ navigate, user, onLogout }) {
           </div>
           <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 4 }}>
             <Btn variant="ghost" onClick={() => setModal(null)}>Hủy</Btn>
-            <Btn disabled={acting || !form.name.trim()} onClick={handleSave}>
-              {acting ? "Đang lưu..." : modal === "add" ? "Thêm khách sạn" : "Lưu thay đổi"}
+            <Btn disabled={acting || !form.name.trim() || !form.province.trim() || !form.district.trim() || !form.address.trim()} onClick={handleSave}>
+              {acting ? "Đang lưu..." : "Lưu thay đổi"}
             </Btn>
           </div>
         </Modal>

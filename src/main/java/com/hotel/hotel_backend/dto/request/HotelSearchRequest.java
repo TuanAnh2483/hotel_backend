@@ -23,7 +23,6 @@ import java.util.List;
 @Setter
 public class HotelSearchRequest {
 
-    @NotBlank(message = "Khong duoc trong")
     private String province;
 
     private String district;

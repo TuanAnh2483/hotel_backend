@@ -36,6 +36,7 @@ public class PartnerBookingService {
     private final SecurityService securityService;
     private final BookingExpirationService bookingExpirationService;
     private final BookingRefundService bookingRefundService;
+    private final UserNotificationService userNotificationService;
 
     public PartnerBookingPageResponse getPartnerBookings(PartnerBookingSearchRequest request) {
         // V1 ưu tiên consistency của dashboard: expire booking pending quá hạn trước khi query list.
@@ -87,7 +88,9 @@ public class PartnerBookingService {
         }
 
         booking.setStatus(BookingStatus.COMPLETED);
-        return toPartnerBookingDetail(bookingRepository.save(booking));
+        Booking savedBooking = bookingRepository.save(booking);
+        userNotificationService.createCheckoutReviewNotification(savedBooking);
+        return toPartnerBookingDetail(savedBooking);
     }
 
     @Transactional

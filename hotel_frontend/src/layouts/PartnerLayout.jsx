@@ -11,6 +11,7 @@ const PATH_TO_PAGE = {
   "/partner/rooms":    "partner-rooms",
   "/partner/calendar": "partner-calendar",
   "/partner/bookings": "partner-bookings",
+  "/partner/reviews":  "partner-reviews",
   "/partner/revenue":  "partner-revenue",
   "/partner/forecast": "partner-forecast",
   "/partner/refunds":  "partner-refunds",

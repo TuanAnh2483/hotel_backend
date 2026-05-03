@@ -5,8 +5,12 @@ import { useAuth } from "../contexts/AuthContext";
 // Unauthenticated users are sent to /login with the current location saved
 // so LoginPage can redirect them back after a successful login.
 export default function ProtectedRoute({ children, role }) {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const location = useLocation();
+
+  if (loading) {
+    return null;
+  }
 
   if (!user) {
     return <Navigate to="/login" state={{ from: location }} replace />;

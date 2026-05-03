@@ -13,7 +13,11 @@ async function authedFetch(path, options = {}) {
     ...options,
   });
   const json = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(json.error?.message || json.message || `HTTP ${res.status}`);
+  if (!res.ok) {
+    const error = new Error(json.error?.message || json.message || `HTTP ${res.status}`);
+    error.status = res.status;
+    throw error;
+  }
   return json.data ?? json;
 }
 
@@ -63,7 +67,10 @@ export const bookingService = {
   },
 
   getRefundRequest(bookingId) {
-    return authedFetch(`/api/bookings/${bookingId}/refund-request`);
+    return authedFetch(`/api/bookings/${bookingId}/refund-request`).catch((error) => {
+      if (error.status === 404) return null;
+      throw error;
+    });
   },
 
   createRefundRequest(bookingId, { reason, note }) {

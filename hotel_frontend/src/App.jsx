@@ -51,6 +51,7 @@ import PartnerCalendar  from "./pages/partner/PartnerCalendar";
 import PartnerBookings  from "./pages/partner/PartnerBookings";
 import PartnerRevenue   from "./pages/partner/PartnerRevenue";
 import PartnerForecast  from "./pages/partner/PartnerForecast";
+import PartnerReviews   from "./pages/partner/PartnerReviews";
 import PartnerBookingDetailPage from "./pages/partner/PartnerBookingDetailPage";
 
 import PartnerManagePage   from "./pages/PartnerManagePage";
@@ -168,6 +169,7 @@ function HotelListRoute() {
     guests:   Number(sp.get("guests"))  || 2,
     rooms:    Number(sp.get("rooms"))   || 1,
     hotelTypes: sp.get("hotelTypes") || "",
+    sort: sp.get("sort") || "",
   };
   return <HotelListPage navigate={navigate} user={user} onLogout={logout} params={params} />;
 }
@@ -277,17 +279,17 @@ function AppRoutes() {
       <Route path="/reset-password"   element={<ResetPasswordRoute />} />
       <Route path="/verify-email"     element={<VerifyEmailRoute />} />
 
-      {/* ── Booking (auth required, any authenticated role) ───────── */}
+      {/* ── Booking (CUSTOMER only) ───────── */}
       <Route path="/book" element={
-        <ProtectedRoute><BookingRoute /></ProtectedRoute>
+        <ProtectedRoute role="CUSTOMER"><BookingRoute /></ProtectedRoute>
       } />
 
       {/* ── Customer auth pages (no sidebar — keep existing layout) ── */}
       <Route path="/customer/bookings" element={
-        <ProtectedRoute><MyBookingsRoute /></ProtectedRoute>
+        <ProtectedRoute role="CUSTOMER"><MyBookingsRoute /></ProtectedRoute>
       } />
       <Route path="/customer/bookings/:bookingId" element={
-        <ProtectedRoute><BookingDetailRoute /></ProtectedRoute>
+        <ProtectedRoute role="CUSTOMER"><BookingDetailRoute /></ProtectedRoute>
       } />
 
       {/* ── Customer layout pages (top-navbar, CUSTOMER only) ── */}
@@ -311,6 +313,7 @@ function AppRoutes() {
         <Route path="calendar"  element={<PartnerCalendar />} />
         <Route path="bookings"  element={<PartnerBookings />} />
         <Route path="bookings/:bookingId" element={<PartnerBookingDetailPage />} />
+        <Route path="reviews"   element={<PartnerReviews />} />
         <Route path="revenue"   element={<PartnerRevenue />} />
         <Route path="forecast"  element={<PartnerForecast />} />
       </Route>
@@ -353,7 +356,7 @@ function AppRoutes() {
 
       {/* ── Payment page ──────────────────────────────────────────── */}
       <Route path="/payment/:bookingId" element={
-        <ProtectedRoute><PaymentRoute /></ProtectedRoute>
+        <ProtectedRoute role="CUSTOMER"><PaymentRoute /></ProtectedRoute>
       } />
 
       {/* ── Payment result pages ───────────────────────────────────── */}
@@ -362,7 +365,7 @@ function AppRoutes() {
 
       {/* ── Refund request (customer auth required) ───────────────── */}
       <Route path="/customer/refund-request/:bookingId" element={
-        <ProtectedRoute><RefundRequestRoute /></ProtectedRoute>
+        <ProtectedRoute role="CUSTOMER"><RefundRequestRoute /></ProtectedRoute>
       } />
 
       {/* ── Fallbacks ─────────────────────────────────────────────── */}

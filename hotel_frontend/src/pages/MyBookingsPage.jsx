@@ -8,6 +8,8 @@ const STATUS_MAP = {
   PENDING_PAYMENT: { label: "Chờ thanh toán", color: "#d48806", bg: "#fffbe6", border: "#ffe58f" },
   CONFIRMED:       { label: "Đã xác nhận",    color: "#389e0d", bg: "#f6ffed", border: "#b7eb8f" },
   CANCELLED:       { label: "Đã hủy",         color: "#888",    bg: "#f5f5f5", border: "#d9d9d9" },
+  COMPLETED:       { label: "Đã hoàn thành",  color: "#1d4ed8", bg: "#eff6ff", border: "#bfdbfe" },
+  REFUNDED:        { label: "Đã hoàn tiền",   color: "#7c3aed", bg: "#f5f3ff", border: "#ddd6fe" },
 };
 
 
@@ -76,6 +78,8 @@ const TABS = [
   { key: "ALL",             label: "Tất cả" },
   { key: "PENDING_PAYMENT", label: "Chờ thanh toán" },
   { key: "CONFIRMED",       label: "Đã xác nhận" },
+  { key: "COMPLETED",       label: "Hoàn thành" },
+  { key: "REFUNDED",        label: "Hoàn tiền" },
   { key: "CANCELLED",       label: "Đã hủy" },
 ];
 

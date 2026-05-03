@@ -3,7 +3,6 @@ import { C } from "../components/auth/AuthShared";
 import MainNavbar from "../components/MainNavbar";
 import Footer from "../components/Footer";
 import { hotelService } from "../services/hotelService";
-import HotelSearchResults from "../components/hotel/HotelSearchResults";
 import { SkeletonCard } from "../components/ui/Skeleton";
 import {
   IMG_HERO,
@@ -64,6 +63,24 @@ function ImgBox({ src, alt = "", h, style = {} }) {
   return <div style={{ width: "100%", height: h || "100%", background: PLACEHOLDER_BG, ...style }} />;
 }
 
+function isoDate(date) {
+  return date.toISOString().slice(0, 10);
+}
+
+function defaultStayParams(params = {}) {
+  const checkInDate = new Date();
+  checkInDate.setDate(checkInDate.getDate() + 1);
+  const checkOutDate = new Date();
+  checkOutDate.setDate(checkOutDate.getDate() + 2);
+  return {
+    ...params,
+    checkIn: params.checkIn || isoDate(checkInDate),
+    checkOut: params.checkOut || isoDate(checkOutDate),
+    guests: params.guests || 2,
+    rooms: params.rooms || 1,
+  };
+}
+
 const Field = ({ iconKey, label, children, flex }) => (
   <div className="customer-homepage-field" style={flex ? { flex } : undefined}>
     <div className="customer-homepage-field-label">
@@ -83,13 +100,37 @@ function SearchBar({ initial = {}, onSearch }) {
     checkOut: initial.checkOut || "",
     guests:   initial.guests   || "",
     rooms:    initial.rooms    || "",
+    hotelTypes: initial.hotelTypes || "",
   });
   const [provinceErr, setProvinceErr] = useState(false);
+  const [searchErr, setSearchErr] = useState("");
   const selectedLocation = locations.find((item) => item.province === q.province);
   const districtOptions = selectedLocation?.districts || [];
   const visibleDistrictOptions = q.district && !districtOptions.includes(q.district)
     ? [q.district, ...districtOptions]
     : districtOptions;
+
+  useEffect(() => {
+    setQ({
+      province: initial.province || "",
+      district: initial.district || "",
+      checkIn:  initial.checkIn  || "",
+      checkOut: initial.checkOut || "",
+      guests:   initial.guests   || "",
+      rooms:    initial.rooms    || "",
+      hotelTypes: initial.hotelTypes || "",
+    });
+    setProvinceErr(false);
+    setSearchErr("");
+  }, [
+    initial.province,
+    initial.district,
+    initial.checkIn,
+    initial.checkOut,
+    initial.guests,
+    initial.rooms,
+    initial.hotelTypes,
+  ]);
 
   useEffect(() => {
     let active = true;
@@ -106,23 +147,40 @@ function SearchBar({ initial = {}, onSearch }) {
 
   const upd = k => e => {
     if (k === "province") setProvinceErr(false);
+    setSearchErr("");
     setQ(p => ({ ...p, [k]: e.target.value }));
   };
   const updateProvince = e => {
     setProvinceErr(false);
+    setSearchErr("");
     setQ(p => ({ ...p, province: e.target.value, district: "" }));
   };
-  const clearAll = () => { setProvinceErr(false); setQ({ province: "", district: "", checkIn: "", checkOut: "", guests: "", rooms: "" }); };
-  const hasData = !!(q.province || q.district || q.checkIn || q.checkOut || q.guests || q.rooms);
-  const handleSearch = () => {
-    if (!q.province.trim()) { setProvinceErr(true); return; }
+  const clearAll = () => {
     setProvinceErr(false);
-    onSearch({ ...q, guests: Number(q.guests) || 2, rooms: Number(q.rooms) || 1 });
+    setSearchErr("");
+    setQ({ province: "", district: "", checkIn: "", checkOut: "", guests: "", rooms: "", hotelTypes: "" });
+  };
+  const hasData = !!(q.province || q.district || q.checkIn || q.checkOut || q.guests || q.rooms || q.hotelTypes);
+  const handleSearch = () => {
+    const province = q.province.trim();
+    if ((q.checkIn && !q.checkOut) || (!q.checkIn && q.checkOut)) {
+      setProvinceErr(false);
+      setSearchErr("Vui lòng chọn đủ ngày nhận phòng và ngày trả phòng");
+      return;
+    }
+    if (q.checkIn && q.checkOut && q.checkOut <= q.checkIn) {
+      setProvinceErr(false);
+      setSearchErr("Ngày trả phòng phải sau ngày nhận phòng");
+      return;
+    }
+    setProvinceErr(false);
+    setSearchErr("");
+    onSearch({ ...q, province, guests: Number(q.guests) || 2, rooms: Number(q.rooms) || 1 });
   };
 
   return (
     <div className="customer-homepage-searchbar-wrap">
-      <div className={`customer-homepage-searchbar${provinceErr ? " has-error" : ""}`}>
+      <div className={`customer-homepage-searchbar${provinceErr || searchErr ? " has-error" : ""}`}>
         <Field iconKey="pin" label="TỈNH">
           <select className="customer-homepage-field-input customer-homepage-field-select" value={q.province} onChange={updateProvince}>
             <option value="">Chọn tỉnh / thành phố</option>
@@ -170,10 +228,10 @@ function SearchBar({ initial = {}, onSearch }) {
           Tìm kiếm
         </button>
       </div>
-      {provinceErr && (
+      {(provinceErr || searchErr) && (
         <div className="customer-homepage-error-tip">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="#BE1E2E"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
-          Vui lòng nhập tỉnh / thành phố bạn muốn đến
+          {searchErr || "Vui lòng chọn tỉnh / thành phố bạn muốn đến"}
         </div>
       )}
     </div>
@@ -266,11 +324,23 @@ export default function HomePage({ navigate, user, onLogout }) {
   const handleSearch = (q) => {
     setSearchQuery(q);
     sessionStorage.setItem("homeSearch", JSON.stringify(q));
+    navigate("hotels", q);
   };
 
-  const clearSearch = () => {
-    setSearchQuery(null);
-    sessionStorage.removeItem("homeSearch");
+  const startSearchFromPreset = (preset = {}) => {
+    const next = {
+      province: "",
+      district: "",
+      checkIn: "",
+      checkOut: "",
+      guests: "",
+      rooms: "",
+      hotelTypes: "",
+      ...preset,
+    };
+    setSearchQuery(next);
+    sessionStorage.setItem("homeSearch", JSON.stringify(next));
+    navigate("hotels", { ...next, sort: "recommended" });
   };
 
   useEffect(() => {
@@ -319,21 +389,7 @@ export default function HomePage({ navigate, user, onLogout }) {
         </div>
       </div>
 
-      {searchQuery ? (
-        <div className="customer-homepage-results-state">
-          <div className="customer-homepage-results-header">
-            <button onClick={clearSearch} className="customer-homepage-back-btn">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="19" y1="12" x2="5" y2="12"></line>
-                <polyline points="12 19 5 12 12 5"></polyline>
-              </svg>
-              Quay lại trang chủ
-            </button>
-          </div>
-          <HotelSearchResults navigate={navigate} params={searchQuery} hideBanner={true} />
-        </div>
-      ) : (
-        <>
+      <>
           {/* ── Featured Hotels ── */}
           <div className="customer-homepage-section">
             <p className="customer-homepage-section-eyebrow">GỢI Ý HÀNG ĐẦU</p>
@@ -342,7 +398,7 @@ export default function HomePage({ navigate, user, onLogout }) {
                 <h2 className="customer-homepage-section-title">Nhà ở mà khách yêu thích</h2>
                 <p className="customer-homepage-section-desc">Các chỗ nghỉ đang còn phòng và có giá tốt cho ngày gần nhất</p>
               </div>
-              <a className="customer-homepage-view-all" onClick={() => navigate("hotels")}>
+              <a className="customer-homepage-view-all" onClick={() => startSearchFromPreset({})}>
                 Xem tất cả <Ic k="arrow" size={14} color={C.primary} />
               </a>
             </div>
@@ -354,11 +410,11 @@ export default function HomePage({ navigate, user, onLogout }) {
                       key={h.id}
                       hotel={h}
                       imgUrl={h.imageUrl || IMG_HOTELS[i] || ""}
-                      onView={() => navigate("hotel", { hotelId: h.id })}
+                      onView={() => navigate("hotel", { hotelId: h.id, ...defaultStayParams(searchQuery || {}) })}
                     />
                   ))
               }
-              <div className="customer-homepage-more-card" onClick={() => navigate("hotels")}>
+              <div className="customer-homepage-more-card" onClick={() => startSearchFromPreset({})} title="Xem tất cả khách sạn">
                 <Ic k="arrow" size={22} color={C.primary} />
               </div>
             </div>
@@ -377,7 +433,7 @@ export default function HomePage({ navigate, user, onLogout }) {
                 <DestinationCard
                   key={d.id}
                   item={d}
-                  onNavigate={() => navigate("hotels", { province: d.searchKey })}
+                  onNavigate={() => startSearchFromPreset({ province: d.searchKey })}
                 />
               ))}
             </div>
@@ -395,13 +451,12 @@ export default function HomePage({ navigate, user, onLogout }) {
                 <PropertyTypeCard
                   key={item.id}
                   item={item}
-                  onNavigate={() => navigate("hotels", { province: "Hà Nội", hotelTypes: item.id })}
+                  onNavigate={() => startSearchFromPreset({ hotelTypes: item.id })}
                 />
               ))}
             </div>
           </div>
-        </>
-      )}
+      </>
 
       <Footer />
     </div>

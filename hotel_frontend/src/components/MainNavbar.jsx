@@ -13,8 +13,8 @@ import {
 
 const BASE_LINKS = [
   { label: "Trang chủ",          page: "home"                    },
-  { label: "Khách sạn",          page: "hotels"                  },
-  { label: "Đặt phòng của tôi",  page: "my-bookings"             },
+  { label: "Đặt phòng của tôi",  page: "my-bookings", role: "CUSTOMER" },
+  { label: "Đánh giá",           page: "customer-reviews", role: "CUSTOMER", authOnly: true },
 ];
 
 const PARTNER_LINKS = [
@@ -23,6 +23,7 @@ const PARTNER_LINKS = [
   { label: "Loại phòng", page: "partner-rooms"     },
   { label: "Lịch & Vận hành", page: "partner-calendar"  },
   { label: "Booking",     page: "partner-bookings"  },
+  { label: "Đánh giá",    page: "partner-reviews"   },
   { label: "Doanh thu",   page: "partner-revenue"   },
   { label: "AI Dự báo",  page: "partner-forecast"  },
 ];
@@ -52,7 +53,7 @@ export default function MainNavbar({ active, navigate, user, onLogout }) {
   const navLinks = isPartner
     ? PARTNER_LINKS
     : [
-        ...BASE_LINKS.filter(l => !l.authOnly || user),
+        ...BASE_LINKS.filter(l => (!l.authOnly || user) && (!l.role || !user || user.userType === l.role)),
         ...(canApplyPartner ? [{ label: "Đăng chỗ nghỉ của bạn", page: "become-partner" }] : []),
         ...(user?.userType === "ADMIN" ? [{ label: "Quản lý", page: "admin-dashboard" }] : []),
       ];

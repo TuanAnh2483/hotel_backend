@@ -118,6 +118,11 @@ export const partnerService = {
 
   getBooking: (bookingId) => partnerFetch(`/api/partner/bookings/${bookingId}`),
 
+  completeBooking: (bookingId) =>
+    partnerFetch(`/api/partner/bookings/${bookingId}/complete`, {
+      method: "POST",
+    }),
+
   // ── Analytics ───────────────────────────────────────────────────────
   getAnalyticsSummary: (params = {}) => {
     const q = new URLSearchParams();
@@ -159,5 +164,21 @@ export const partnerService = {
   rejectRefund: (refundRequestId) =>
     partnerFetch(`/api/partner/refunds/${refundRequestId}/reject`, {
       method: "POST",
+    }),
+
+  // ── Reviews ─────────────────────────────────────────────────────────
+  getReviews: (params = {}) => {
+    const q = new URLSearchParams();
+    if (params.hotelId) q.set("hotelId", params.hotelId);
+    if (params.rating) q.set("rating", params.rating);
+    if (params.hasReply !== undefined && params.hasReply !== "") q.set("hasReply", params.hasReply);
+    const suffix = q.toString() ? `?${q.toString()}` : "";
+    return partnerFetch(`/api/partner/reviews${suffix}`);
+  },
+
+  replyReview: (reviewId, reply) =>
+    partnerFetch(`/api/partner/reviews/${reviewId}/reply`, {
+      method: "PUT",
+      body: JSON.stringify({ reply }),
     }),
 };

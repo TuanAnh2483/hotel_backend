@@ -128,7 +128,7 @@ export const hotelService = {
 
   async searchHotels(params = {}) {
     const query = buildQuery({
-      province: params.province || "Hà Nội",
+      province: params.province || "",
       district: params.district || "",
       checkIn:  params.checkIn  || defaultCheckIn(),
       checkOut: params.checkOut || defaultCheckOut(),
@@ -138,6 +138,10 @@ export const hotelService = {
       size:     params.size     || 10,
       sort:     params.sort     || "price_asc",
       hotelTypes: params.hotelTypes || params.hotelType || "",
+      roomCategories: params.roomCategories || "",
+      bedTypes: params.bedTypes || "",
+      hotelAmenities: params.hotelAmenities || "",
+      roomAmenities: params.roomAmenities || "",
     });
     try {
       const data = await apiFetch(`/api/hotels/search?${query}`);

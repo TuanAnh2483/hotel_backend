@@ -20,13 +20,13 @@ export function useAppNavigate() {
         return rrNavigate("/");
 
       case "hotels": {
-        const { province, district, checkIn, checkOut, guests, rooms, hotelTypes } = params;
-        return rrNavigate("/hotels" + toSearchString({ province, district, checkIn, checkOut, guests, rooms, hotelTypes }));
+        const { province, district, checkIn, checkOut, guests, rooms, hotelTypes, sort } = params;
+        return rrNavigate("/hotels" + toSearchString({ province, district, checkIn, checkOut, guests, rooms, hotelTypes, sort }));
       }
 
       case "search": {
-        const { province, district, checkIn, checkOut, guests, rooms, hotelTypes } = params;
-        return rrNavigate("/hotels" + toSearchString({ province, district, checkIn, checkOut, guests, rooms, hotelTypes }));
+        const { province, district, checkIn, checkOut, guests, rooms, hotelTypes, sort } = params;
+        return rrNavigate("/hotels" + toSearchString({ province, district, checkIn, checkOut, guests, rooms, hotelTypes, sort }));
       }
 
       case "hotel": {
@@ -77,6 +77,8 @@ export function useAppNavigate() {
         return rrNavigate("/partner/calendar");
       case "partner-bookings":
         return rrNavigate("/partner/bookings");
+      case "partner-reviews":
+        return rrNavigate("/partner/reviews");
       case "partner-revenue":
         return rrNavigate("/partner/revenue");
       case "partner-forecast":

@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { partnerService } from "../../services/partnerService";
-import { PageHeader, Card, Badge, Btn } from "../../components/admin/AdminLayout";
-import { ArrowLeft, Calendar, User, Building2, CreditCard, Clock, MapPin } from "lucide-react";
+import { PageHeader, Card, Badge } from "../../components/admin/AdminLayout";
+import { ArrowLeft, Calendar, User, Building2, CreditCard, Clock, CheckCircle2 } from "lucide-react";
 import "../../styles/pages/PartnerBookingDetailPage.css";
 
 function fmtPrice(n) {
@@ -20,12 +20,23 @@ function fmtDate(d) {
   });
 }
 
+function canCompleteBooking(booking) {
+  if (booking?.status !== "CONFIRMED" || !booking.checkOut) return false;
+  const checkOut = new Date(`${booking.checkOut}T00:00:00`);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return !Number.isNaN(checkOut.getTime()) && checkOut <= today;
+}
+
 export default function PartnerBookingDetailPage() {
   const { bookingId } = useParams();
   const navigate = useNavigate();
   const [booking, setBooking] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [actionError, setActionError] = useState("");
+  const [actionMessage, setActionMessage] = useState("");
+  const [completing, setCompleting] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -41,6 +52,22 @@ export default function PartnerBookingDetailPage() {
     }
     load();
   }, [bookingId]);
+
+  async function handleComplete() {
+    if (!booking || !window.confirm("Xác nhận check-out booking này? Khách hàng sẽ có thể gửi đánh giá sau khi hoàn tất.")) return;
+    setCompleting(true);
+    setActionError("");
+    setActionMessage("");
+    try {
+      const updated = await partnerService.completeBooking(booking.bookingId);
+      setBooking(updated);
+      setActionMessage("Đã check-out booking. Khách hàng đã có thể gửi đánh giá khách sạn.");
+    } catch (e) {
+      setActionError(e.message || "Không thể hoàn thành đặt phòng.");
+    } finally {
+      setCompleting(false);
+    }
+  }
 
   if (loading) return <div style={{ padding: 40, textAlign: "center", color: "#94a3b8" }}>Đang tải thông tin...</div>;
   if (error || !booking) return <div style={{ padding: 40, textAlign: "center", color: "#ef4444" }}>{error || "Không tìm thấy đặt phòng."}</div>;
@@ -134,6 +161,26 @@ export default function PartnerBookingDetailPage() {
                 <span style={{ fontSize: 20, fontWeight: 800, color: "#BE1E2E" }}>{fmtPrice(booking.totalPrice)}</span>
               </div>
             </div>
+            {actionError && (
+              <div style={{ background: "#fff", border: "1px solid #fecaca", borderRadius: 10, color: "#b91c1c", fontSize: 12, fontWeight: 700, lineHeight: 1.5, marginTop: 16, padding: "10px 12px" }}>
+                {actionError}
+              </div>
+            )}
+            {actionMessage && (
+              <div style={{ background: "#ecfdf5", border: "1px solid #bbf7d0", borderRadius: 10, color: "#047857", fontSize: 12, fontWeight: 700, lineHeight: 1.5, marginTop: 16, padding: "10px 12px" }}>
+                {actionMessage}
+              </div>
+            )}
+            {canCompleteBooking(booking) && (
+              <button
+                onClick={handleComplete}
+                disabled={completing}
+                style={{ alignItems: "center", background: "#10b981", border: "none", borderRadius: 10, color: "#fff", cursor: completing ? "not-allowed" : "pointer", display: "flex", fontSize: 13, fontWeight: 800, gap: 8, justifyContent: "center", marginTop: 16, opacity: completing ? 0.7 : 1, padding: "12px 14px", width: "100%" }}
+              >
+                <CheckCircle2 size={16} />
+                {completing ? "Đang check-out..." : "Check-out và mở đánh giá"}
+              </button>
+            )}
           </Card>
 
           {/* Dates */}

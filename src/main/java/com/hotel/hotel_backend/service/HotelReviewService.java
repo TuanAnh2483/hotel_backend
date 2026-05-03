@@ -57,7 +57,7 @@ public class HotelReviewService {
         review.setHotel(hotel);
         review.setUser(currentUser);
         review.setRating(request.rating());
-        review.setComment(request.comment().trim());
+        review.setComment(normalizeOptionalComment(request.comment()));
 
         HotelReview savedReview = hotelReviewRepository.save(review);
         refreshHotelRating(hotel);
@@ -73,7 +73,7 @@ public class HotelReviewService {
                 .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND, "Review not found"));
 
         review.setRating(request.rating());
-        review.setComment(request.comment().trim());
+        review.setComment(normalizeOptionalComment(request.comment()));
         HotelReview savedReview = hotelReviewRepository.save(review);
         refreshHotelRating(savedReview.getHotel());
         return toResponse(savedReview);
@@ -165,6 +165,13 @@ public class HotelReviewService {
             throw new ApiException(ErrorCode.CONFLICT, "Booking items are missing");
         }
         return booking.getItems().get(0).getRoom().getHotel();
+    }
+
+    private String normalizeOptionalComment(String comment) {
+        if (comment == null || comment.isBlank()) {
+            return null;
+        }
+        return comment.trim();
     }
 
     private void refreshHotelRating(Hotel hotel) {

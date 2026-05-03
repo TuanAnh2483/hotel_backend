@@ -53,6 +53,7 @@ public class MeService {
     private final RefundRequestRepository refundRequestRepository;
     private final PasswordEncoder passwordEncoder;
     private final ImageStorageRouterService imageStorageRouterService;
+    private final UserNotificationService userNotificationService;
 
     public MyProfileResponse getMyProfile() {
         User currentUser = securityService.getCurrentUser();
@@ -122,10 +123,11 @@ public class MeService {
         return paymentTransactionRepository.findCustomerBillingItems(currentUser.getId());
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public List<MyNotificationResponse> getMyNotifications() {
         User currentUser = securityService.getCurrentUser();
         List<NotificationEvent> events = new ArrayList<>();
+        List<MyNotificationResponse> storedNotifications = List.of();
 
         events.add(new NotificationEvent(
                 "SYSTEM",
@@ -144,6 +146,10 @@ public class MeService {
         }
 
         if (currentUser.getUserType() == UserType.CUSTOMER) {
+            var completedBookings = bookingRepository.findCompletedReviewNotificationBookings(currentUser.getId());
+            userNotificationService.ensureCheckoutReviewNotifications(completedBookings);
+            storedNotifications = userNotificationService.getNotifications(currentUser.getId());
+
             paymentTransactionRepository.findCustomerBillingItems(currentUser.getId()).stream()
                     .limit(4)
                     .map(this::toPaymentNotification)
@@ -180,15 +186,23 @@ public class MeService {
                     .forEach(events::add);
         }
 
-        return events.stream()
-                .sorted(Comparator.comparing(NotificationEvent::occurredAt).reversed())
-                .limit(12)
+        List<MyNotificationResponse> generatedNotifications = events.stream()
                 .map(event -> new MyNotificationResponse(
                         event.type(),
                         event.title(),
                         event.message(),
                         event.occurredAt().toString()
                 ))
+                .toList();
+
+        List<MyNotificationResponse> allNotifications = new ArrayList<>();
+        allNotifications.addAll(storedNotifications);
+        allNotifications.addAll(generatedNotifications);
+
+        return allNotifications.stream()
+                .sorted(Comparator.comparing((MyNotificationResponse response) ->
+                        OffsetDateTime.parse(response.occurredAt())).reversed())
+                .limit(12)
                 .toList();
     }
 

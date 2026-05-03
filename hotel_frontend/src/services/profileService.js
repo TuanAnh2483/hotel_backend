@@ -44,6 +44,11 @@ export const profileService = {
 
   getNotifications: () => profileFetch("/api/me/notifications"),
 
+  markNotificationRead: (notificationId) =>
+    profileFetch(`/api/me/notifications/${notificationId}/read`, {
+      method: "POST",
+    }),
+
   updatePreferences: (data) =>
     profileFetch("/api/me/preferences", {
       method: "PUT",

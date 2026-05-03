@@ -2,9 +2,17 @@ import { createElement, useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { partnerService } from "../../services/partnerService";
 import { PageHeader, Card, Badge, Btn, Table, Modal } from "../../components/admin/AdminLayout";
-import { Search, Filter, Calendar, Download, User, Building2, Eye } from "lucide-react";
+import { Filter, Calendar, Download, User, Building2, Eye, CheckCircle2 } from "lucide-react";
 
 const fmtPrice = (n) => new Intl.NumberFormat("vi-VN").format(n) + " ₫";
+
+function canCheckoutBooking(booking) {
+  if (booking?.status !== "CONFIRMED" || !booking.checkOut) return false;
+  const checkOut = new Date(`${booking.checkOut}T00:00:00`);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return !Number.isNaN(checkOut.getTime()) && checkOut <= today;
+}
 
 export default function PartnerBookings() {
   const navigate = useNavigate();
@@ -14,6 +22,8 @@ export default function PartnerBookings() {
   const [loading, setLoading] = useState(true);
   const [detail, setDetail] = useState(null);
   const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
+  const [checkoutId, setCheckoutId] = useState(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -45,37 +55,89 @@ export default function PartnerBookings() {
     }
   };
 
+  const handleCheckout = async (booking) => {
+    if (!booking || !window.confirm("Xác nhận check-out booking này? Khách hàng sẽ có thể gửi đánh giá sau khi hoàn tất.")) return;
+    setCheckoutId(booking.bookingId);
+    setError("");
+    setMessage("");
+    try {
+      const updated = await partnerService.completeBooking(booking.bookingId);
+      setDetail((current) => current?.bookingId === updated.bookingId ? updated : current);
+      setPageData((current) => {
+        if (!current?.items) return current;
+        const updatedItems = current.items.map((item) =>
+          item.bookingId === updated.bookingId ? { ...item, ...updated } : item,
+        );
+        const filteredItems = filters.status && filters.status !== String(updated.status)
+          ? updatedItems.filter((item) => item.bookingId !== updated.bookingId)
+          : updatedItems;
+
+        return {
+          ...current,
+          items: filteredItems,
+          totalItems: filteredItems.length < updatedItems.length ? Math.max(0, (current.totalItems || 0) - 1) : current.totalItems,
+        };
+      });
+      setMessage(`Đã check-out booking #${updated.bookingId}. Khách hàng đã có thể đánh giá khách sạn.`);
+    } catch (e) {
+      setError(e.message || "Không thể check-out booking.");
+    } finally {
+      setCheckoutId(null);
+    }
+  };
+
   const items = pageData?.items || [];
 
-  const rows = items.map(b => [
-    <span style={{ fontFamily: "monospace", fontSize: 12, fontWeight: 700, color: "#64748b" }}>#{b.bookingId}</span>,
-    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-      <Building2 size={14} color="#94a3b8" />
-      <span style={{ fontWeight: 600, color: "#1e293b" }}>{b.hotelName}</span>
-    </div>,
-    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-      <div style={{ width: 28, height: 28, borderRadius: "50%", background: "#f1f5f9", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: "#475569" }}>
-        {b.customerName?.[0] || "C"}
-      </div>
-      <span style={{ fontWeight: 500, color: "#334155" }}>{b.customerName || "Khách ẩn danh"}</span>
-    </div>,
-    <div style={{ fontSize: 13, color: "#1e293b" }}>{b.checkIn}</div>,
-    <div style={{ fontSize: 13, color: "#1e293b" }}>{b.checkOut}</div>,
-    <span style={{ fontWeight: 800, color: "#BE1E2E" }}>{fmtPrice(b.totalPrice)}</span>,
-    <Badge status={b.status} />,
-    <button 
-      onClick={() => openDetail(b.bookingId)}
-      style={{ padding: "8px 16px", borderRadius: 10, background: "#f1f5f9", border: "none", color: "#475569", fontSize: 12, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}
-    >
-      <Eye size={14} /> Chi tiết
-    </button>,
-    <button 
-      onClick={() => navigate(`/partner/bookings/${b.bookingId}`)}
-      style={{ padding: "8px 16px", borderRadius: 10, background: "#BE1E2E", color: "#fff", border: "none", fontSize: 12, fontWeight: 700, cursor: "pointer", boxShadow: "0 4px 10px rgba(190, 30, 46, 0.2)" }}
-    >
-      Xem toàn bộ
-    </button>,
-  ]);
+  const rows = items.map(b => {
+    const canCheckout = canCheckoutBooking(b);
+    const isCheckingOut = checkoutId === b.bookingId;
+
+    return [
+      <span style={{ fontFamily: "monospace", fontSize: 12, fontWeight: 700, color: "#64748b" }}>#{b.bookingId}</span>,
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <Building2 size={14} color="#94a3b8" />
+        <span style={{ fontWeight: 600, color: "#1e293b" }}>{b.hotelName}</span>
+      </div>,
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <div style={{ width: 28, height: 28, borderRadius: "50%", background: "#f1f5f9", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: "#475569" }}>
+          {b.customerName?.[0] || "C"}
+        </div>
+        <span style={{ fontWeight: 500, color: "#334155" }}>{b.customerName || "Khách ẩn danh"}</span>
+      </div>,
+      <div style={{ fontSize: 13, color: "#1e293b" }}>{b.checkIn}</div>,
+      <div style={{ fontSize: 13, color: "#1e293b" }}>{b.checkOut}</div>,
+      <span style={{ fontWeight: 800, color: "#BE1E2E" }}>{fmtPrice(b.totalPrice)}</span>,
+      <Badge status={b.status} />,
+      <button
+        onClick={() => openDetail(b.bookingId)}
+        style={{ padding: "8px 16px", borderRadius: 10, background: "#f1f5f9", border: "none", color: "#475569", fontSize: 12, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}
+      >
+        <Eye size={14} /> Chi tiết
+      </button>,
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        {canCheckout && (
+          <button
+            onClick={() => handleCheckout(b)}
+            disabled={isCheckingOut}
+            style={{ alignItems: "center", background: "#10b981", border: "none", borderRadius: 10, color: "#fff", cursor: isCheckingOut ? "not-allowed" : "pointer", display: "flex", fontSize: 12, fontWeight: 800, gap: 6, opacity: isCheckingOut ? 0.7 : 1, padding: "8px 12px" }}
+          >
+            <CheckCircle2 size={14} /> {isCheckingOut ? "Đang xử lý" : "Check-out"}
+          </button>
+        )}
+        {b.status === "COMPLETED" && (
+          <span style={{ alignItems: "center", background: "#ecfdf5", border: "1px solid #bbf7d0", borderRadius: 10, color: "#047857", display: "flex", fontSize: 12, fontWeight: 800, gap: 6, padding: "7px 10px" }}>
+            <CheckCircle2 size={14} /> Đã check-out
+          </span>
+        )}
+        <button
+          onClick={() => navigate(`/partner/bookings/${b.bookingId}`)}
+          style={{ padding: "8px 16px", borderRadius: 10, background: "#BE1E2E", color: "#fff", border: "none", fontSize: 12, fontWeight: 700, cursor: "pointer", boxShadow: "0 4px 10px rgba(190, 30, 46, 0.2)" }}
+        >
+          Xem toàn bộ
+        </button>
+      </div>,
+    ];
+  });
 
   return (
     <div style={{ paddingBottom: 60 }}>
@@ -164,6 +226,11 @@ export default function PartnerBookings() {
             {error}
           </div>
         )}
+        {message && (
+          <div style={{ margin: 20, padding: "12px 14px", borderRadius: 12, background: "#ecfdf5", border: "1px solid #bbf7d0", color: "#047857", fontSize: 13, fontWeight: 700 }}>
+            {message}
+          </div>
+        )}
         {loading
           ? <div style={{ textAlign: "center", padding: 60, color: "#94a3b8" }}>Đang tải danh sách...</div>
           : <>
@@ -228,6 +295,16 @@ export default function PartnerBookings() {
             )}
 
             <div style={{ marginTop: 10 }}>
+              {canCheckoutBooking(detail) && (
+                <Btn
+                  variant="success"
+                  loading={checkoutId === detail.bookingId}
+                  style={{ width: "100%", marginBottom: 10 }}
+                  onClick={() => handleCheckout(detail)}
+                >
+                  <CheckCircle2 size={15} /> Check-out và mở đánh giá
+                </Btn>
+              )}
               <Btn style={{ width: "100%" }} onClick={() => setDetail(null)}>Đóng</Btn>
             </div>
           </div>

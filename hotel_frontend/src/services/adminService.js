@@ -74,6 +74,15 @@ export const adminService = {
       return Array.isArray(data) ? data : [];
     } catch { return []; }
   },
+  async updateHotel(hotelId, data) {
+    return adminFetch(`/api/admin/hotels/${hotelId}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+  },
+  async deleteHotel(hotelId) {
+    return adminFetch(`/api/admin/hotels/${hotelId}`, { method: "DELETE" });
+  },
 
   // Bookings — real API
   async getBookings(status = "") {

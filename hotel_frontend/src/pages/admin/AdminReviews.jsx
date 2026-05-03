@@ -222,17 +222,15 @@ export default function AdminReviews({ navigate, user, onLogout }) {
               <div style={{ color: "#888", fontWeight: 600, fontSize: 13, marginBottom: 6 }}>Điểm đánh giá</div>
               <StarRating rating={detailModal.rating} size={18} />
             </div>
-            {detailModal.comment && (
-              <div style={{ padding: "12px 0" }}>
-                <div style={{ color: "#888", fontWeight: 600, fontSize: 13, marginBottom: 8 }}>Nhận xét</div>
-                <div style={{
-                  background: "#f8f9fa", borderRadius: 10, padding: "12px 14px",
-                  fontSize: 13, color: "#333", lineHeight: 1.6,
-                }}>
-                  {detailModal.comment}
-                </div>
+            <div style={{ padding: "12px 0" }}>
+              <div style={{ color: "#888", fontWeight: 600, fontSize: 13, marginBottom: 8 }}>Nhận xét</div>
+              <div style={{
+                background: "#f8f9fa", borderRadius: 10, padding: "12px 14px",
+                fontSize: 13, color: detailModal.comment ? "#333" : "#999", lineHeight: 1.6,
+              }}>
+                {detailModal.comment || "Khách hàng chỉ chấm điểm, không để lại bình luận."}
               </div>
-            )}
+            </div>
           </div>
           <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 16 }}>
             <Btn variant="danger" disabled={deleting === detailModal.id} onClick={() => { handleDelete(detailModal.id); setDetail(null); }}>

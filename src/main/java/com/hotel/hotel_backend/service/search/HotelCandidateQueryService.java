@@ -19,12 +19,9 @@ public class HotelCandidateQueryService {
         String requestedProvince = LocationNormalizer.normalizeProvinceKey(criteria.province());
         String requestedDistrict = LocationNormalizer.normalizeDistrictKey(criteria.district());
 
-        if (requestedProvince.isBlank()) {
-            return List.of();
-        }
-
         return hotelRepository.findByStatus(HotelStatus.ACTIVE).stream()
-                .filter(hotel -> LocationNormalizer.provinceMatches(hotel.getProvince(), requestedProvince))
+                .filter(hotel -> requestedProvince.isBlank()
+                        || LocationNormalizer.provinceMatches(hotel.getProvince(), requestedProvince))
                 .filter(hotel -> requestedDistrict.isBlank()
                         || LocationNormalizer.districtMatches(hotel.getDistrict(), requestedDistrict))
                 .filter(hotel -> criteria.hotelTypes().isEmpty() || criteria.hotelTypes().contains(hotel.getHotelType()))

@@ -3,7 +3,19 @@ import { C } from "../components/auth/AuthShared";
 import MainNavbar from "../components/MainNavbar";
 import Footer from "../components/Footer";
 import { bookingService } from "../services/bookingService";
-import { AlertCircle, ArrowRight, CheckCircle2, ChevronLeft, Clock, ShieldCheck, User, XCircle } from "lucide-react";
+import {
+  AlertCircle,
+  ArrowRight,
+  CheckCircle2,
+  ChevronLeft,
+  Clock,
+  CreditCard,
+  ReceiptText,
+  RefreshCcw,
+  ShieldCheck,
+  User,
+  XCircle,
+} from "lucide-react";
 import "../styles/pages/BookingDetailPage.css";
 
 const STATUS_MAP = {
@@ -11,6 +23,19 @@ const STATUS_MAP = {
   CONFIRMED: { label: "Đã xác nhận", color: "#10b981", bg: "#ecfdf5", icon: CheckCircle2 },
   CANCELLED: { label: "Đã hủy", color: "#ef4444", bg: "#fef2f2", icon: XCircle },
   COMPLETED: { label: "Đã hoàn thành", color: "#3b82f6", bg: "#eff6ff", icon: ShieldCheck },
+  REFUNDED: { label: "Đã hoàn tiền", color: "#7c3aed", bg: "#f5f3ff", icon: RefreshCcw },
+};
+
+const PAYMENT_STATUS_MAP = {
+  SUCCESS: { label: "Thành công", color: "#047857", bg: "#ecfdf5", border: "#a7f3d0" },
+  FAILED: { label: "Thất bại", color: "#be123c", bg: "#fff1f2", border: "#fecdd3" },
+  PENDING: { label: "Đang xử lý", color: "#b45309", bg: "#fffbeb", border: "#fde68a" },
+};
+
+const REFUND_STATUS_MAP = {
+  PENDING: { label: "Đang chờ duyệt", color: "#b45309", bg: "#fffbeb", border: "#fde68a" },
+  APPROVED: { label: "Đã duyệt", color: "#047857", bg: "#ecfdf5", border: "#a7f3d0" },
+  REJECTED: { label: "Đã từ chối", color: "#be123c", bg: "#fff1f2", border: "#fecdd3" },
 };
 
 function fmt(n) {
@@ -43,31 +68,95 @@ function Card({ children, style }) {
   );
 }
 
+function SmallBadge({ value, map }) {
+  const cfg = map[value] || { label: value || "Không rõ", color: "#475569", bg: "#f8fafc", border: "#e2e8f0" };
+  return (
+    <span style={{ background: cfg.bg, border: `1px solid ${cfg.border}`, borderRadius: 999, color: cfg.color, display: "inline-flex", fontSize: 12, fontWeight: 800, padding: "4px 10px" }}>
+      {cfg.label}
+    </span>
+  );
+}
+
+function fieldLabel(value) {
+  if (!value) return "—";
+  return String(value).replaceAll("_", " ");
+}
+
 export default function BookingDetailPage({ navigate, user, params = {}, onLogout }) {
   const { bookingId, hotelName } = params;
   const [booking, setBooking] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [cancelling, setCancelling] = useState(false);
+  const [payments, setPayments] = useState([]);
+  const [paymentsLoading, setPaymentsLoading] = useState(false);
+  const [paymentsError, setPaymentsError] = useState("");
+  const [refundRequest, setRefundRequest] = useState(null);
+  const [refundLoading, setRefundLoading] = useState(false);
+  const [refundError, setRefundError] = useState("");
 
   useEffect(() => {
+    let ignore = false;
+
     if (!bookingId) {
       setError("Thiếu mã đặt phòng.");
       setLoading(false);
-      return;
+      return undefined;
     }
 
     setLoading(true);
+    setPayments([]);
+    setRefundRequest(null);
+    setPaymentsError("");
+    setRefundError("");
     bookingService.getBooking(bookingId)
       .then((data) => {
+        if (ignore) return;
         setBooking(data || null);
         setError("");
       })
       .catch((err) => {
+        if (ignore) return;
         setBooking(null);
         setError(err.message || "Không thể tải chi tiết đặt phòng.");
       })
-      .finally(() => setLoading(false));
+      .finally(() => {
+        if (!ignore) setLoading(false);
+      });
+
+    setPaymentsLoading(true);
+    bookingService.getPaymentHistory(bookingId)
+      .then((data) => {
+        if (ignore) return;
+        setPayments(Array.isArray(data) ? data : []);
+      })
+      .catch((err) => {
+        if (ignore) return;
+        setPayments([]);
+        setPaymentsError(err.message || "Không thể tải lịch sử thanh toán.");
+      })
+      .finally(() => {
+        if (!ignore) setPaymentsLoading(false);
+      });
+
+    setRefundLoading(true);
+    bookingService.getRefundRequest(bookingId)
+      .then((data) => {
+        if (ignore) return;
+        setRefundRequest(data || null);
+      })
+      .catch((err) => {
+        if (ignore) return;
+        setRefundRequest(null);
+        setRefundError(err.message || "Không thể tải trạng thái hoàn tiền.");
+      })
+      .finally(() => {
+        if (!ignore) setRefundLoading(false);
+      });
+
+    return () => {
+      ignore = true;
+    };
   }, [bookingId]);
 
   const handleCancel = async () => {
@@ -106,6 +195,9 @@ export default function BookingDetailPage({ navigate, user, params = {}, onLogou
   const nights = nightsBetween(booking?.checkIn, booking?.checkOut);
   const statusCfg = STATUS_MAP[booking?.status] || { label: booking?.status || "Không rõ", color: "#64748b", bg: "#f8fafc", icon: AlertCircle };
   const StatusIcon = statusCfg.icon;
+  const canRequestRefund = booking
+    && ["CONFIRMED", "COMPLETED", "CANCELLED"].includes(booking.status)
+    && !refundRequest;
 
   return (
     <div className="bkd-root">
@@ -204,6 +296,53 @@ export default function BookingDetailPage({ navigate, user, params = {}, onLogou
                   </div>
                 </div>
               </Card>
+
+              <Card>
+                <div style={{ alignItems: "center", display: "flex", gap: 10, marginBottom: 18 }}>
+                  <CreditCard size={20} color={C.primary} />
+                  <h2 style={{ fontSize: 18, fontWeight: 800, color: "#0f172a", margin: 0 }}>Lịch sử thanh toán</h2>
+                </div>
+
+                {paymentsLoading ? (
+                  <div style={{ color: "#94a3b8", fontWeight: 700, padding: "14px 0" }}>Đang tải lịch sử thanh toán...</div>
+                ) : paymentsError ? (
+                  <div style={{ background: "#fff1f2", border: "1px solid #fecdd3", borderRadius: 14, color: "#be123c", fontSize: 13, lineHeight: 1.6, padding: "12px 14px" }}>
+                    {paymentsError}
+                  </div>
+                ) : payments.length === 0 ? (
+                  <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 14, color: "#64748b", fontSize: 13, lineHeight: 1.6, padding: "14px 16px" }}>
+                    Chưa có giao dịch thanh toán nào cho booking này.
+                  </div>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                    {payments.map((payment) => (
+                      <div key={payment.paymentTransactionId || payment.clientRequestId} style={{ border: "1px solid #f1f5f9", borderRadius: 16, padding: 16 }}>
+                        <div style={{ alignItems: "flex-start", display: "flex", justifyContent: "space-between", gap: 12, marginBottom: 10 }}>
+                          <div>
+                            <div style={{ color: "#0f172a", fontSize: 14, fontWeight: 900 }}>
+                              {fieldLabel(payment.method)}
+                            </div>
+                            <div style={{ color: "#94a3b8", fontSize: 12, fontWeight: 700, marginTop: 4 }}>
+                              {fmtDateTime(payment.createdAt)}
+                            </div>
+                          </div>
+                          <SmallBadge value={payment.status} map={PAYMENT_STATUS_MAP} />
+                        </div>
+                        <div style={{ alignItems: "center", color: C.primary, display: "flex", fontSize: 18, fontWeight: 900, justifyContent: "space-between" }}>
+                          <span>{fmt(payment.amount)}</span>
+                          <span style={{ color: "#94a3b8", fontSize: 12, fontWeight: 700 }}>#{payment.paymentTransactionId}</span>
+                        </div>
+                        {(payment.providerReference || payment.failureReason) && (
+                          <div style={{ borderTop: "1px solid #f1f5f9", color: "#64748b", fontSize: 12, lineHeight: 1.6, marginTop: 12, paddingTop: 10 }}>
+                            {payment.providerReference && <div>Mã nhà cung cấp: <strong>{payment.providerReference}</strong></div>}
+                            {payment.failureReason && <div>Lý do lỗi: <strong>{payment.failureReason}</strong></div>}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </Card>
             </div>
 
             <div style={{ display: "flex", flexDirection: "column", gap: 24, position: "sticky", top: 20 }}>
@@ -241,6 +380,54 @@ export default function BookingDetailPage({ navigate, user, params = {}, onLogou
                   >
                     {cancelling ? "Đang hủy..." : "Hủy đặt phòng"}
                   </button>
+                )}
+              </Card>
+
+              <Card>
+                <div style={{ alignItems: "center", display: "flex", gap: 10, marginBottom: 16 }}>
+                  <ReceiptText size={20} color={C.primary} />
+                  <h2 style={{ fontSize: 18, fontWeight: 800, color: "#0f172a", margin: 0 }}>Hoàn tiền</h2>
+                </div>
+
+                {refundLoading ? (
+                  <div style={{ color: "#94a3b8", fontSize: 13, fontWeight: 700 }}>Đang tải trạng thái hoàn tiền...</div>
+                ) : refundError ? (
+                  <div style={{ background: "#fff1f2", border: "1px solid #fecdd3", borderRadius: 14, color: "#be123c", fontSize: 13, lineHeight: 1.6, padding: "12px 14px" }}>
+                    {refundError}
+                  </div>
+                ) : refundRequest ? (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                    <div style={{ alignItems: "center", display: "flex", justifyContent: "space-between", gap: 12 }}>
+                      <span style={{ color: "#64748b", fontSize: 13, fontWeight: 800 }}>Yêu cầu #{refundRequest.id}</span>
+                      <SmallBadge value={refundRequest.status} map={REFUND_STATUS_MAP} />
+                    </div>
+                    <div style={{ background: "#f8fafc", borderRadius: 14, padding: 14 }}>
+                      <div style={{ color: "#94a3b8", fontSize: 11, fontWeight: 900, marginBottom: 4 }}>SỐ TIỀN YÊU CẦU</div>
+                      <div style={{ color: C.primary, fontSize: 20, fontWeight: 900 }}>{fmt(refundRequest.amount)}</div>
+                    </div>
+                    <div style={{ color: "#475569", fontSize: 13, lineHeight: 1.7 }}>
+                      <div><strong>Lý do:</strong> {fieldLabel(refundRequest.reason)}</div>
+                      {refundRequest.note && <div><strong>Ghi chú:</strong> {refundRequest.note}</div>}
+                      <div><strong>Ngày gửi:</strong> {fmtDateTime(refundRequest.requestedAt)}</div>
+                      {refundRequest.reviewedAt && <div><strong>Ngày xử lý:</strong> {fmtDateTime(refundRequest.reviewedAt)}</div>}
+                    </div>
+                  </div>
+                ) : canRequestRefund ? (
+                  <div>
+                    <p style={{ color: "#64748b", fontSize: 13, lineHeight: 1.7, margin: "0 0 14px" }}>
+                      Booking đã có thể gửi yêu cầu hoàn tiền. Trạng thái xử lý sẽ hiển thị tại đây sau khi bạn gửi.
+                    </p>
+                    <button
+                      onClick={() => navigate("refund-request", { bookingId: booking.bookingId })}
+                      style={{ background: "#fff", border: `1px solid ${C.primary}`, borderRadius: 16, color: C.primary, cursor: "pointer", fontSize: 14, fontWeight: 800, padding: "13px 16px", width: "100%" }}
+                    >
+                      Gửi yêu cầu hoàn tiền
+                    </button>
+                  </div>
+                ) : (
+                  <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 14, color: "#64748b", fontSize: 13, lineHeight: 1.6, padding: "12px 14px" }}>
+                    Chưa có yêu cầu hoàn tiền cho booking này.
+                  </div>
                 )}
               </Card>
 
