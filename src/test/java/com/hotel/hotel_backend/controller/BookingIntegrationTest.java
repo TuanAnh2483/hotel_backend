@@ -899,6 +899,118 @@ class BookingIntegrationTest {
     }
 
     @Test
+    void customerShouldCreateSepayPaymentSessionAndWebhookShouldConfirmBooking() throws Exception {
+        String customerToken = createToken("customer-sepay@test.com", UserType.CUSTOMER);
+        User owner = createUser("partner-sepay@test.com", UserType.PARTNER);
+
+        Hotel hotel = createHotel(owner, "SePay Hotel");
+        Room room = createRoom(hotel, "SePay Room", 2);
+        initInventory(room);
+        createDailyRate(room, checkIn, 800_000L, 1, false);
+        createDailyRate(room, checkIn.plusDays(1), 900_000L, 1, false);
+
+        MvcResult createResult = mockMvc.perform(post("/api/bookings")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(customerToken))
+                        .content("""
+                                {
+                                  "checkIn": "%s",
+                                  "checkOut": "%s",
+                                  "room": [
+                                    {
+                                      "roomId": %d,
+                                      "quantity": 1
+                                    }
+                                  ],
+                                  "contact": {
+                                    "fullName": "SePay Customer",
+                                    "email": "customer-sepay@test.com",
+                                    "phone": "0123456789"
+                                  }
+                                }
+                                """.formatted(checkIn, checkOut, room.getId())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("PENDING_PAYMENT"))
+                .andReturn();
+
+        long bookingId = readBookingId(createResult);
+
+        MvcResult sessionResult = mockMvc.perform(post("/api/bookings/{bookingId}/payment-session", bookingId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(customerToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.bookingId").value(bookingId))
+                .andExpect(jsonPath("$.data.method").value("VIETQR_SEPAY"))
+                .andExpect(jsonPath("$.data.status").value("PENDING"))
+                .andExpect(jsonPath("$.data.amount").value(1_700_000.0))
+                .andExpect(jsonPath("$.data.paymentCode").isString())
+                .andExpect(jsonPath("$.data.transferContent").isString())
+                .andExpect(jsonPath("$.data.qrImageUrl").value("/payments/QR_Code.png"))
+                .andReturn();
+
+        JsonNode sessionBody = objectMapper.readTree(sessionResult.getResponse().getContentAsString());
+        String paymentCode = sessionBody.path("data").path("paymentCode").asText();
+
+        mockMvc.perform(post("/api/payments/webhooks/sepay")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header(HttpHeaders.AUTHORIZATION, "Apikey hhb_sepay_webhook_2026")
+                        .content("""
+                                {
+                                  "id": 92704,
+                                  "gateway": "MBBank",
+                                  "transactionDate": "2026-05-03 14:02:37",
+                                  "accountNumber": "0966927203",
+                                  "code": "%s",
+                                  "content": "%s",
+                                  "transferType": "in",
+                                  "transferAmount": 1700000,
+                                  "referenceCode": "TEST.92704",
+                                  "description": "Test payment"
+                                }
+                                """.formatted(paymentCode, paymentCode)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true));
+
+        mockMvc.perform(post("/api/payments/webhooks/sepay")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header(HttpHeaders.AUTHORIZATION, "Apikey hhb_sepay_webhook_2026")
+                        .content("""
+                                {
+                                  "id": 92704,
+                                  "gateway": "MBBank",
+                                  "transactionDate": "2026-05-03 14:02:37",
+                                  "accountNumber": "0966927203",
+                                  "code": "%s",
+                                  "content": "%s",
+                                  "transferType": "in",
+                                  "transferAmount": 1700000,
+                                  "referenceCode": "TEST.92704",
+                                  "description": "Duplicate payment"
+                                }
+                                """.formatted(paymentCode, paymentCode)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true));
+
+        mockMvc.perform(get("/api/bookings/{bookingId}", bookingId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(customerToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("CONFIRMED"))
+                .andExpect(jsonPath("$.data.expiresAt").doesNotExist());
+
+        mockMvc.perform(get("/api/bookings/{bookingId}/payments", bookingId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(customerToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.length()").value(1))
+                .andExpect(jsonPath("$.data[0].method").value("VIETQR_SEPAY"))
+                .andExpect(jsonPath("$.data[0].status").value("SUCCESS"));
+
+        var transactions = paymentTransactionRepository.findByBookingIdOrderByCreatedAtAsc(bookingId);
+        assertThat(transactions).hasSize(1);
+        assertThat(transactions.get(0).getPaymentCode()).isEqualTo(paymentCode);
+        assertThat(transactions.get(0).getGatewayTransactionId()).isEqualTo("92704");
+        assertThat(transactions.get(0).getGatewayReferenceCode()).isEqualTo("TEST.92704");
+    }
+
+    @Test
     void bookingShouldRejectRoomThatIsClosedForStay() throws Exception {
         String customerToken = createToken("customer-closed@test.com", UserType.CUSTOMER);
         User owner = createUser("partner-closed@test.com", UserType.PARTNER);

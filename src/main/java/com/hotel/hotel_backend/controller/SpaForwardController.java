@@ -27,7 +27,7 @@ public class SpaForwardController {
             "/partner/{section}/{itemId}",
             "/admin",
             "/admin/{section}",
-            "/payment/{value}"
+            "/payment/{value:[^\\.]+}"
     })
     public String forwardToSpa() {
         return "forward:/index.html";

@@ -23,6 +23,7 @@ import java.time.OffsetDateTime;
 )
 @Getter
 @Setter
+
 public class PasswordResetToken {
 
     @Id

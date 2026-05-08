@@ -34,6 +34,7 @@ public class HotelReviewService {
     private final HotelRepository hotelRepository;
     private final HotelReviewRepository hotelReviewRepository;
     private final SecurityService securityService;
+    private final UserNotificationService userNotificationService;
 
     /**
      * Customer muon de lai danh gia sau khi stay ket thuc thi booking nao du dieu kien?
@@ -61,6 +62,7 @@ public class HotelReviewService {
 
         HotelReview savedReview = hotelReviewRepository.save(review);
         refreshHotelRating(hotel);
+        userNotificationService.markReviewNotificationCompleted(booking);
         return toResponse(savedReview);
     }
 

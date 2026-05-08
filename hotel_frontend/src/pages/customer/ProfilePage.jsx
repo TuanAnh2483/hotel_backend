@@ -208,7 +208,7 @@ export default function ProfilePage({ navigate, onLogout }) {
   };
 
   const handleMarkNotificationRead = async (notificationId) => {
-    if (!notificationId) return;
+    if (!notificationId) return false;
     setMarkingNotification(notificationId);
     setError("");
     setMessage("");
@@ -217,11 +217,27 @@ export default function ProfilePage({ navigate, onLogout }) {
       setNotifications((items) =>
         items.map((item) => item.id === notificationId ? { ...item, ...updated } : item),
       );
+      return true;
     } catch (e) {
       setError(e.message || "Không thể cập nhật thông báo.");
+      return false;
     } finally {
       setMarkingNotification(null);
     }
+  };
+
+  const handleNotificationAction = async (notification) => {
+    if (!notification?.actionUrl) return;
+    if (notification.id && notification.read === false) {
+      const marked = await handleMarkNotificationRead(notification.id);
+      if (!marked) return;
+    }
+
+    if (notification.actionUrl === "/customer/reviews") {
+      navigate("customer-reviews");
+      return;
+    }
+    window.location.assign(notification.actionUrl);
   };
 
   const TABS = [
@@ -586,6 +602,15 @@ export default function ProfilePage({ navigate, onLogout }) {
                             style={{ background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 10, color: "#1d4ed8", cursor: markingNotification === n.id ? "not-allowed" : "pointer", fontSize: 12, fontWeight: 800, marginTop: 10, opacity: markingNotification === n.id ? 0.7 : 1, padding: "7px 10px" }}
                           >
                             {markingNotification === n.id ? "Đang cập nhật..." : "Đánh dấu đã đọc"}
+                          </button>
+                        )}
+                        {n.actionUrl && (
+                          <button
+                            onClick={() => handleNotificationAction(n)}
+                            disabled={markingNotification === n.id}
+                            style={{ background: "#BE1E2E", border: "none", borderRadius: 10, color: "#fff", cursor: markingNotification === n.id ? "not-allowed" : "pointer", fontSize: 12, fontWeight: 800, marginLeft: n.id && n.read === false ? 8 : 0, marginTop: 10, opacity: markingNotification === n.id ? 0.7 : 1, padding: "7px 10px" }}
+                          >
+                            {n.type === "REVIEW" ? "Đánh giá ngay" : "Xem chi tiết"}
                           </button>
                         )}
                       </div>

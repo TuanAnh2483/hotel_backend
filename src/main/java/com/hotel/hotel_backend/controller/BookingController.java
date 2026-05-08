@@ -10,10 +10,12 @@ import com.hotel.hotel_backend.dto.request.CreateRefundRequest;
 import com.hotel.hotel_backend.dto.response.BookingQuoteResponse;
 import com.hotel.hotel_backend.dto.request.CreateBookingRequest;
 import com.hotel.hotel_backend.dto.response.BookingResponse;
+import com.hotel.hotel_backend.dto.response.PaymentSessionResponse;
 import com.hotel.hotel_backend.dto.response.RefundRequestResponse;
 import com.hotel.hotel_backend.exeption.ApiException;
 import com.hotel.hotel_backend.exeption.ErrorCode;
 import com.hotel.hotel_backend.security.JwtPrincipal;
+import com.hotel.hotel_backend.service.BookingPaymentGatewayService;
 import com.hotel.hotel_backend.service.BookingService;
 import com.hotel.hotel_backend.service.RefundRequestService;
 import jakarta.validation.Valid;
@@ -31,6 +33,7 @@ public class BookingController {
 
     private final BookingService bookingService;
     private final RefundRequestService refundRequestService;
+    private final BookingPaymentGatewayService bookingPaymentGatewayService;
 
 
     /*
@@ -105,6 +108,21 @@ public class BookingController {
     ) {
         requireUserId(principal);
         return ApiResponse.ok(refundRequestService.createMyRefundRequest(bookingId, request));
+    }
+    @PostMapping("/{bookingId}/payment-session")
+    @PreAuthorize("hasRole('CUSTOMER')")
+    /*
+     * Customer gọi endpoint này khi mở màn thanh toán.
+     *
+     * Endpoint chỉ tạo dữ liệu hướng dẫn chuyển khoản, chưa xác nhận booking.
+     * Booking chỉ được xác nhận sau khi webhook SePay báo giao dịch tiền vào
+     * và service match được paymentCode với transaction PENDING.
+     */
+    public ApiResponse<PaymentSessionResponse> createPaymentSession(
+            @PathVariable Long bookingId,
+            @AuthenticationPrincipal JwtPrincipal principal
+    ) {
+        return ApiResponse.ok(bookingPaymentGatewayService.createPaymentSession(requireUserId(principal), bookingId));
     }
 
     private Long requireUserId(JwtPrincipal principal) {

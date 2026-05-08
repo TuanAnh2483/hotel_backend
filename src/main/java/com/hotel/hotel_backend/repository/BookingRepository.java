@@ -34,6 +34,11 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
             left join fetch r.hotel h
             where b.userId = :userId
               and b.status = com.hotel.hotel_backend.entity.BookingStatus.COMPLETED
+              and not exists (
+                  select 1
+                  from HotelReview review
+                  where review.booking = b
+              )
             order by b.updatedAt desc
             """)
     List<Booking> findCompletedReviewNotificationBookings(@Param("userId") Long userId);
@@ -135,9 +140,9 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
             join fetch bi.room r
             join fetch r.hotel h
             where h.owner.id = :ownerId
-              and (:hotelId is null or h.id = :hotelId)
-              and (:checkInFrom is null or b.checkIn >= :checkInFrom)
-              and (:checkInTo is null or b.checkIn <= :checkInTo)
+              and h.id = :hotelId
+              and b.checkIn >= :checkInFrom
+              and b.checkIn <= :checkInTo
             """)
     List<Booking> findPartnerBookingsForAnalytics(
             @Param("ownerId") Long ownerId,

@@ -218,7 +218,7 @@ function BookingDetailRoute() {
   const location       = useLocation();
   const navigate       = useAppNavigate();
   const { user, logout } = useAuth();
-  return <BookingDetailPage navigate={navigate} user={user} onLogout={logout} params={{ bookingId, ...location.state }} />;
+  return <BookingDetailPage navigate={navigate} user={user} onLogout={logout} params={{ ...location.state, bookingId }} />;
 }
 
 function PaymentResultRoute({ variant }) {
@@ -232,7 +232,7 @@ function PaymentRoute() {
   const location       = useLocation();
   const navigate       = useAppNavigate();
   const { user, logout } = useAuth();
-  return <PaymentPage navigate={navigate} user={user} onLogout={logout} params={{ bookingId, ...location.state }} />;
+  return <PaymentPage navigate={navigate} user={user} onLogout={logout} params={{ ...location.state, bookingId }} />;
 }
 
 function RefundRequestRoute() {

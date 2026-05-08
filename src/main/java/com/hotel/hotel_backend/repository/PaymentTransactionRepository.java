@@ -1,6 +1,7 @@
 package com.hotel.hotel_backend.repository;
 
 import com.hotel.hotel_backend.dto.response.MyBillingItemResponse;
+import com.hotel.hotel_backend.entity.PaymentMethod;
 import com.hotel.hotel_backend.entity.PaymentTransaction;
 import com.hotel.hotel_backend.entity.PaymentTransactionStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -15,6 +16,16 @@ public interface PaymentTransactionRepository extends JpaRepository<PaymentTrans
     List<PaymentTransaction> findByBookingIdOrderByCreatedAtAsc(Long bookingId);
 
     Optional<PaymentTransaction> findByBookingIdAndClientRequestId(Long bookingId, String clientRequestId);
+
+    Optional<PaymentTransaction> findByPaymentCode(String paymentCode);
+
+    Optional<PaymentTransaction> findByGatewayTransactionId(String gatewayTransactionId);
+
+    Optional<PaymentTransaction> findTopByBookingIdAndMethodAndStatusOrderByCreatedAtDesc(
+            Long bookingId,
+            PaymentMethod method,
+            PaymentTransactionStatus status
+    );
 
     List<PaymentTransaction> findTop10ByStatusOrderByCreatedAtDesc(PaymentTransactionStatus status);
 

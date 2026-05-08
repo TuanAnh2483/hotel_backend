@@ -70,9 +70,27 @@ public class UserNotificationService {
 
     @Transactional(readOnly = true)
     public List<MyNotificationResponse> getNotifications(Long userId) {
-        return userNotificationRepository.findByUserIdOrderByCreatedAtDesc(userId).stream()
+        return userNotificationRepository.findTop20ByUserIdOrderByCreatedAtDesc(userId).stream()
                 .map(this::toResponse)
                 .toList();
+    }
+
+    public void markReviewNotificationCompleted(Booking booking) {
+        if (booking == null || booking.getId() == null || booking.getUserId() == null) {
+            return;
+        }
+
+        userNotificationRepository
+                .findByUserIdAndTypeAndBookingId(booking.getUserId(), REVIEW_TYPE, booking.getId())
+                .ifPresent(notification -> {
+                    notification.setTitle("Cảm ơn bạn đã đánh giá " + resolveHotelName(booking));
+                    notification.setMessage("Đánh giá của bạn cho booking #" + booking.getId() + " đã được ghi nhận.");
+                    notification.setActionUrl("/customer/reviews");
+                    if (notification.getReadAt() == null) {
+                        notification.setReadAt(OffsetDateTime.now());
+                    }
+                    userNotificationRepository.save(notification);
+                });
     }
 
     public MyNotificationResponse markMyNotificationRead(Long notificationId) {

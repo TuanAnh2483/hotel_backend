@@ -13,6 +13,8 @@ public interface UserNotificationRepository extends JpaRepository<UserNotificati
 
     List<UserNotification> findByUserIdOrderByCreatedAtDesc(Long userId);
 
+    List<UserNotification> findTop20ByUserIdOrderByCreatedAtDesc(Long userId);
+
     Optional<UserNotification> findByIdAndUserId(Long id, Long userId);
 
     Optional<UserNotification> findByUserIdAndTypeAndBookingId(Long userId, String type, Long bookingId);

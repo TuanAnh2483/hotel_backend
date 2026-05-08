@@ -201,3 +201,4 @@ Rule:
   - property override: `app.booking.expiration.fixed-delay-ms`
 - V2 có thể mở rộng `PaymentMethod` ra ngoài `SIMULATED`
 - V2 có thể expose payment transactions qua API detail riêng nếu frontend cần timeline
+- Kế hoạch nối nền tảng miễn phí trước được ghi ở [payment-free-platform-sepay-vietqr.md](payment-free-platform-sepay-vietqr.md)

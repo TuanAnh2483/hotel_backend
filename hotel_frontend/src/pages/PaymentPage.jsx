@@ -3,13 +3,13 @@ import MainNavbar from "../components/MainNavbar";
 import Footer from "../components/Footer";
 import { bookingService } from "../services/bookingService";
 import { 
-  ChevronLeft, CreditCard, Landmark, Wallet, 
+  ChevronLeft, CreditCard, Wallet, 
   ShieldCheck, Lock, ArrowRight, Check,
-  QrCode, AlertCircle, Info, Sparkles
+  QrCode, Sparkles
 } from "lucide-react";
 
 const P = "#BE1E2E";
-const LIGHT_RED = "#FFF1F2";
+const FALLBACK_QR_IMAGE_URL = "/payments/QR_Code.png";
 
 // --- Helpers ---
 function fmt(n) { return (n || 0).toLocaleString("vi-VN") + " ₫"; }
@@ -66,16 +66,19 @@ function Stepper() {
 
 function MethodCard({ method, active, onSelect }) {
   const Icon = method.icon;
+  const disabled = method.disabled;
   return (
     <button 
-      onClick={() => onSelect(method.id)}
+      onClick={() => !disabled && onSelect(method.id)}
+      disabled={disabled}
       style={{
         flex: 1, padding: "24px 20px", borderRadius: 24, border: "2.5px solid",
         borderColor: active ? P : "#f1f5f9",
         background: active ? "#fff" : "#f8fafc",
         display: "flex", flexDirection: "column", alignItems: "center", gap: 12,
-        cursor: "pointer", transition: "all 0.3s ease",
-        boxShadow: active ? `0 12px 24px ${P}15` : "none"
+        cursor: disabled ? "not-allowed" : "pointer", transition: "all 0.3s ease",
+        boxShadow: active ? `0 12px 24px ${P}15` : "none",
+        opacity: disabled ? 0.55 : 1
       }}
     >
        <div style={{ width: 48, height: 48, borderRadius: 16, background: active ? P : "#e2e8f0", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.3s" }}>
@@ -90,9 +93,9 @@ function MethodCard({ method, active, onSelect }) {
 }
 
 const METHODS = [
-  { id: "card",   label: "Thẻ Quốc Tế", icon: CreditCard, sub: "Visa, Mastercard, JCB" },
-  { id: "bank",   label: "Chuyển Khoản", icon: Landmark, sub: "Mã QR Ngân hàng" },
-  { id: "wallet", label: "Ví Điện Tử",   icon: Wallet,   sub: "MoMo, ZaloPay, VNPay" },
+  { id: "bank",   label: "VietQR", icon: QrCode, sub: "Chuyển khoản ngân hàng" },
+  { id: "card",   label: "Thẻ Quốc Tế", icon: CreditCard, sub: "Sẽ hỗ trợ sau", disabled: true },
+  { id: "wallet", label: "Ví Điện Tử",   icon: Wallet,   sub: "Sẽ hỗ trợ sau", disabled: true },
 ];
 
 export default function PaymentPage({ navigate, user, params = {}, onLogout }) {
@@ -100,36 +103,109 @@ export default function PaymentPage({ navigate, user, params = {}, onLogout }) {
 
   const [booking, setBooking]       = useState(null);
   const [loading, setLoading]       = useState(true);
-  const [method, setMethod]         = useState("card");
+  const [method, setMethod]         = useState("bank");
   const [card, setCard]             = useState({ number: "", name: "", expiry: "", cvv: "" });
-  const [simSuccess, setSimSuccess] = useState(true);
   const [paying, setPaying]         = useState(false);
   const [error, setError]           = useState("");
+  const [paymentSession, setPaymentSession] = useState(null);
+  const [sessionLoading, setSessionLoading] = useState(false);
+  const [sessionError, setSessionError] = useState("");
+  const [statusMessage, setStatusMessage] = useState("");
 
   useEffect(() => {
+    let ignore = false;
+
     setLoading(true);
+    setPaymentSession(null);
+    setSessionError("");
+    setStatusMessage("");
     bookingService.getBooking(bookingId)
-      .then(setBooking)
+      .then(async (data) => {
+        if (ignore) return;
+        setBooking(data);
+        if (data?.status === "PENDING_PAYMENT") {
+          /*
+           * Booking vừa tạo chỉ đang giữ chỗ, chưa được xác nhận.
+           * Bước này xin backend cấp payment session để lấy paymentCode riêng
+           * cho booking hiện tại. Customer phải nhập đúng paymentCode này trong
+           * nội dung chuyển khoản để webhook SePay match được giao dịch.
+           */
+          setSessionLoading(true);
+          try {
+            const session = await bookingService.createPaymentSession(bookingId);
+            if (!ignore) setPaymentSession(session);
+          } catch (err) {
+            if (!ignore) setSessionError(err.message || "Không thể tạo phiên thanh toán chuyển khoản.");
+          } finally {
+            if (!ignore) setSessionLoading(false);
+          }
+        }
+      })
       .catch((err) => {
+        if (ignore) return;
         setBooking(null);
         setError(err.message || "Không thể tải đơn đặt phòng để thanh toán.");
       })
-      .finally(() => setLoading(false));
+      .finally(() => {
+        if (!ignore) setLoading(false);
+      });
+
+    return () => {
+      ignore = true;
+    };
   }, [bookingId]);
+
+  useEffect(() => {
+    if (!bookingId || booking?.status !== "PENDING_PAYMENT") return undefined;
+
+    /*
+     * Frontend không biết chính xác khi nào SePay gọi webhook xong.
+     * Vì vậy trang payment poll booking định kỳ. Khi backend đổi status sang
+     * CONFIRMED từ webhook, UI tự chuyển sang màn thanh toán thành công.
+     */
+    const timer = window.setInterval(async () => {
+      try {
+        const latest = await bookingService.getBooking(bookingId);
+        setBooking(latest);
+        if (latest?.status === "CONFIRMED") {
+          navigate("payment-success", { bookingId, amount: latest.totalPrice, hotelName });
+        }
+        if (latest?.status === "CANCELLED") {
+          navigate("payment-failed", { bookingId, errorMessage: "Phiên thanh toán đã hết hạn." });
+        }
+      } catch (err) {
+        setStatusMessage(err.message || "Chưa thể kiểm tra trạng thái thanh toán.");
+      }
+    }, 5000);
+
+    return () => window.clearInterval(timer);
+  }, [bookingId, booking?.status, hotelName, navigate]);
 
   const nights = booking ? nightsBetween(booking.checkIn, booking.checkOut) : 0;
   const total  = booking?.totalPrice || 0;
+  const qrImageUrl = paymentSession?.qrImageUrl || FALLBACK_QR_IMAGE_URL;
 
   const handlePay = async () => {
-    setPaying(true); setError("");
+    setPaying(true); setError(""); setStatusMessage("");
     try {
-      const clientRequestId = `pay_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-      await bookingService.payBooking(bookingId, { simulateSuccess: simSuccess, clientRequestId });
-      navigate("payment-success", { bookingId, amount: total, hotelName });
+      /*
+       * Nút "Tôi đã chuyển khoản" chỉ kiểm tra lại trạng thái mới nhất.
+       * Không gọi API giả lập /pay và không tự đổi booking sang CONFIRMED,
+       * vì nguồn xác nhận thật phải là webhook SePay ở backend.
+       */
+      const latest = await bookingService.getBooking(bookingId);
+      setBooking(latest);
+      if (latest?.status === "CONFIRMED") {
+        navigate("payment-success", { bookingId, amount: latest.totalPrice, hotelName });
+        return;
+      }
+      if (latest?.status === "CANCELLED") {
+        navigate("payment-failed", { bookingId, errorMessage: "Phiên thanh toán đã hết hạn." });
+        return;
+      }
+      setStatusMessage("Chưa nhận được giao dịch. Vui lòng kiểm tra đúng số tiền và nội dung chuyển khoản.");
     } catch (err) {
-      const msg = err.message || "Thanh toán thất bại. Vui lòng thử lại.";
-      setError(msg);
-      navigate("payment-failed", { bookingId, errorMessage: msg });
+      setError(err.message || "Không thể kiểm tra trạng thái thanh toán. Vui lòng thử lại.");
     } finally { setPaying(false); }
   };
 
@@ -231,15 +307,36 @@ export default function PaymentPage({ navigate, user, params = {}, onLogout }) {
                    <div style={{ textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center" }}>
                       <div style={{ background: "#fff", padding: "24px", borderRadius: 24, border: "1.5px solid #f1f5f9", boxShadow: "0 4px 12px rgba(0,0,0,0.05)", marginBottom: 24 }}>
                          <div style={{ width: 200, height: 200, background: "#f8fafc", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 12 }}>
-                            <QrCode size={120} color={P} />
+                            {qrImageUrl ? (
+                              <img
+                                src={qrImageUrl}
+                                alt="QR chuyển khoản"
+                                style={{ width: "100%", height: "100%", objectFit: "contain", borderRadius: 10 }}
+                              />
+                            ) : (
+                              <QrCode size={120} color={P} />
+                            )}
                          </div>
-                         <p style={{ marginTop: 12, fontSize: 13, fontWeight: 800, color: "#1e293b" }}>Mã QR Chuyển Khoản</p>
+                         <p style={{ marginTop: 12, fontSize: 13, fontWeight: 800, color: "#1e293b" }}>Mã QR VietQR</p>
                       </div>
+                      {sessionLoading && (
+                        <div style={{ color: "#64748b", fontSize: 13, fontWeight: 700, marginBottom: 12 }}>Đang tạo mã thanh toán...</div>
+                      )}
+                      {sessionError && (
+                        <div style={{ background: "#fff1f2", border: "1px solid #fecdd3", borderRadius: 14, color: "#be123c", fontSize: 13, lineHeight: 1.6, marginBottom: 14, padding: "12px 14px", maxWidth: 460 }}>
+                          {sessionError}
+                        </div>
+                      )}
                       <div style={{ maxWidth: 400, width: "100%" }}>
-                         <div style={rowSt}><span>Ngân hàng:</span> <strong>Vietcombank</strong></div>
-                         <div style={rowSt}><span>Số tài khoản:</span> <strong>1234 5678 9012</strong></div>
-                         <div style={rowSt}><span>Nội dung CK:</span> <strong style={{ color: P }}>THANHTOAN {bookingId}</strong></div>
+                         <div style={rowSt}><span>Ngân hàng:</span> <strong>{paymentSession?.bankName || "MB Bank"}</strong></div>
+                         <div style={rowSt}><span>Số tài khoản:</span> <strong>{paymentSession?.bankAccountNo || "0966927203"}</strong></div>
+                         <div style={rowSt}><span>Chủ tài khoản:</span> <strong>{paymentSession?.bankAccountName || "Tran Tuan Anh"}</strong></div>
+                         <div style={rowSt}><span>Số tiền:</span> <strong>{fmt(paymentSession?.amount || total)}</strong></div>
+                         <div style={rowSt}><span>Nội dung CK:</span> <strong style={{ color: P }}>{paymentSession?.transferContent || "Đang tạo..."}</strong></div>
                       </div>
+                      <p style={{ margin: "16px 0 0", color: "#64748b", fontSize: 12, lineHeight: 1.7, maxWidth: 440 }}>
+                        SePay sẽ tự xác nhận khi giao dịch vào tài khoản. Trang này kiểm tra trạng thái mỗi vài giây.
+                      </p>
                    </div>
                 )}
 
@@ -311,20 +408,30 @@ export default function PaymentPage({ navigate, user, params = {}, onLogout }) {
              </div>
 
              <button
-               disabled={paying || loading || !booking}
+               disabled={paying || loading || sessionLoading || !booking || booking.status !== "PENDING_PAYMENT"}
                onClick={handlePay}
                style={primaryBtnSt}
              >
-               {paying ? "Đang xử lý..." : `Thanh toán ngay`} <ArrowRight size={20} />
+               {paying ? "Đang kiểm tra..." : "Tôi đã chuyển khoản"} <ArrowRight size={20} />
              </button>
 
-             {/* Simulation toggle */}
-             <div style={{ marginTop: 24, padding: "16px", background: "#f8fafc", borderRadius: 16, border: "1px dashed #e2e8f0" }}>
-                <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", fontSize: 12, color: "#64748b", fontWeight: 600 }}>
-                   <input type="checkbox" checked={simSuccess} onChange={e => setSimSuccess(e.target.checked)} style={{ accentColor: P }} />
-                   Mô phỏng thanh toán thành công
-                </label>
-             </div>
+             {error && booking && (
+               <div style={{ marginTop: 16, padding: "14px 16px", background: "#fff1f2", border: "1px solid #fecdd3", borderRadius: 16, color: "#be123c", fontSize: 12, lineHeight: 1.6, fontWeight: 700 }}>
+                 {error}
+               </div>
+             )}
+
+             {statusMessage && (
+               <div style={{ marginTop: 16, padding: "14px 16px", background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 16, color: "#92400e", fontSize: 12, lineHeight: 1.6, fontWeight: 700 }}>
+                 {statusMessage}
+               </div>
+             )}
+
+             {booking?.status && booking.status !== "PENDING_PAYMENT" && (
+               <div style={{ marginTop: 16, padding: "14px 16px", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 16, color: "#475569", fontSize: 12, lineHeight: 1.6, fontWeight: 700 }}>
+                 Trạng thái hiện tại: {booking.status}
+               </div>
+             )}
           </div>
 
           <div style={{ background: "#f0fdf4", borderRadius: 24, padding: "24px", border: "1px solid #bbf7d0" }}>

@@ -83,5 +83,8 @@ public class AuthController {
                 ErrorCode.FORBIDDEN,
                 "Partner self-registration is disabled. Please use the onboarding flow."
         );
+
+
+
     }
 }

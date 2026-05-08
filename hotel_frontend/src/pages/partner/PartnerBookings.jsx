@@ -71,13 +71,24 @@ export default function PartnerBookings() {
         const filteredItems = filters.status && filters.status !== String(updated.status)
           ? updatedItems.filter((item) => item.bookingId !== updated.bookingId)
           : updatedItems;
+        const removedFromCurrentPage = filteredItems.length < updatedItems.length;
+        const nextTotalItems = removedFromCurrentPage
+          ? Math.max(0, (current.totalItems || 0) - 1)
+          : current.totalItems;
+        const nextTotalPages = current.size
+          ? Math.max(1, Math.ceil(nextTotalItems / current.size))
+          : current.totalPages;
 
         return {
           ...current,
           items: filteredItems,
-          totalItems: filteredItems.length < updatedItems.length ? Math.max(0, (current.totalItems || 0) - 1) : current.totalItems,
+          totalItems: nextTotalItems,
+          totalPages: nextTotalPages,
         };
       });
+      if (filters.status && filters.status !== String(updated.status) && pageData?.items?.length === 1 && filters.page > 1) {
+        setFilters((current) => ({ ...current, page: current.page - 1 }));
+      }
       setMessage(`Đã check-out booking #${updated.bookingId}. Khách hàng đã có thể đánh giá khách sạn.`);
     } catch (e) {
       setError(e.message || "Không thể check-out booking.");

@@ -1,0 +1,50 @@
+package com.hotel.hotel_backend.service.price;
+
+
+import com.hotel.hotel_backend.entity.PriceFeedback;
+import com.hotel.hotel_backend.repository.PriceFeedbackRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
+
+@Service
+@RequiredArgsConstructor
+@Slf4j
+public class PriceFeedbackService {
+    private final PriceFeedbackRepository feedbackRepository;
+
+    public void record(
+            Long roomId,
+            String date,
+            Long suggested,
+            Long appliedPrice,
+            String outcome,
+            long ownerId
+    ) {
+        PriceFeedback priceFeedback = new PriceFeedback();
+        priceFeedback.setRoomId(roomId);
+        priceFeedback.setDate(date);
+        priceFeedback.setSuggestedPrice(suggested);
+        priceFeedback.setAppliedPrice(appliedPrice);
+        priceFeedback.setOutcome(outcome);
+        priceFeedback.setPartnerId(ownerId);
+        priceFeedback.setCreatedAt(LocalDateTime.now());
+
+        feedbackRepository.save(priceFeedback);
+
+        // log de dev theo doi
+
+        log.info(
+                "PriceFeedback saved: roomId={} date={} suggested={} applied={} outcome={} partner={}",
+                roomId,
+                date,
+                suggested,
+                appliedPrice,
+                outcome,
+                ownerId
+        );
+    }
+
+}

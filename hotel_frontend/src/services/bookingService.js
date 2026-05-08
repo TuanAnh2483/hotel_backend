@@ -56,6 +56,13 @@ export const bookingService = {
     });
   },
 
+  // Returns PaymentSessionResponse for VietQR/SePay transfer flow.
+  createPaymentSession(bookingId) {
+    return authedFetch(`/api/bookings/${bookingId}/payment-session`, {
+      method: "POST",
+    });
+  },
+
   // Returns List<BookingPaymentTransactionResponse>
   getPaymentHistory(bookingId) {
     return authedFetch(`/api/bookings/${bookingId}/payments`);

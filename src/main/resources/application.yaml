@@ -32,6 +32,16 @@ server:
   port: 8080
 
 app:
+  payment:
+    provider: ${PAYMENT_PROVIDER:sepay-vietqr}
+    transfer-prefix: ${PAYMENT_TRANSFER_PREFIX:HHB}
+    qr-image-url: ${PAYMENT_QR_IMAGE_URL:/payments/QR_Code.png}
+    bank:
+      account-no: ${PAYMENT_BANK_ACCOUNT_NO:0966927203}
+      account-name: ${PAYMENT_BANK_ACCOUNT_NAME:Tran Tuan Anh}
+      bank-name: ${PAYMENT_BANK_NAME:MB Bank}
+    sepay:
+      webhook-api-key: ${PAYMENT_SEPAY_WEBHOOK_API_KEY:hhb_sepay_webhook_2026}
   jwt:
     secret: ${JWT_SECRET:change-this-secret-in-env-32chars-minimum}
     exp-seconds: 86400
@@ -66,6 +76,10 @@ app:
       secret-key: ${UPLOAD_S3_SECRET_KEY:}
       key-prefix: ${UPLOAD_S3_KEY_PREFIX:hotel-backend}
       public-base-url: ${UPLOAD_S3_PUBLIC_BASE_URL:}
+  ai:
+    gemini-api-key: ${GEMINI_API_KEY:}
+    model: ${GEMINI_MODEL:gemini-2.0-flash}
+
 logging:
   level:
     org.springframework.web: INFO

@@ -75,9 +75,13 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/auth/reset-password").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/verify-email").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/resend-verification").permitAll()
+                        // Webhook SePay không có JWT; endpoint tự xác thực bằng API key trong service.
+                        .requestMatchers(HttpMethod.POST, "/api/payments/webhooks/sepay").permitAll()
                         .requestMatchers(HttpMethod.GET, "/auth-demo.html").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/health").permitAll()
                         .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
+                        // Cho phép browser tải ảnh QR cố định được serve từ static resources.
+                        .requestMatchers(HttpMethod.GET, "/payments/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/hotels/search").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/hotels/*").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/hotels/*/reviews").permitAll()

@@ -13,6 +13,7 @@ import com.hotel.hotel_backend.repository.BookingRepository;
 import com.hotel.hotel_backend.repository.DailyInventoryRepository;
 import com.hotel.hotel_backend.repository.DailyRateRepository;
 import com.hotel.hotel_backend.repository.HotelRepository;
+import com.hotel.hotel_backend.repository.HotelReviewRepository;
 import com.hotel.hotel_backend.repository.PaymentTransactionRepository;
 import com.hotel.hotel_backend.repository.RoomRepository;
 import com.hotel.hotel_backend.repository.UserRepository;
@@ -60,6 +61,9 @@ class PartnerBookingIntegrationTest {
     private HotelRepository hotelRepository;
 
     @Autowired
+    private HotelReviewRepository hotelReviewRepository;
+
+    @Autowired
     private RoomRepository roomRepository;
 
     @Autowired
@@ -82,6 +86,7 @@ class PartnerBookingIntegrationTest {
 
     @BeforeEach
     void setUp() {
+        hotelReviewRepository.deleteAll();
         bookingItemRepository.deleteAll();
         bookingRepository.deleteAll();
         paymentTransactionRepository.deleteAll();
@@ -257,6 +262,27 @@ class PartnerBookingIntegrationTest {
                 .andExpect(jsonPath("$.data.id").value(notificationId))
                 .andExpect(jsonPath("$.data.read").value(true))
                 .andExpect(jsonPath("$.data.readAt").exists());
+
+        mockMvc.perform(post("/api/reviews")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(customerToken))
+                        .content("""
+                                {
+                                  "bookingId": %d,
+                                  "rating": 5,
+                                  "comment": null
+                                }
+                                """.formatted(bookingId)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.bookingId").value(bookingId));
+
+        mockMvc.perform(get("/api/me/notifications")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(customerToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].id").value(notificationId))
+                .andExpect(jsonPath("$.data[0].read").value(true))
+                .andExpect(jsonPath("$.data[0].title").value("Cảm ơn bạn đã đánh giá Partner Complete Hotel"))
+                .andExpect(jsonPath("$.data[0].message").value("Đánh giá của bạn cho booking #" + bookingId + " đã được ghi nhận."));
     }
 
     @Test
