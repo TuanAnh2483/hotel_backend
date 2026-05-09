@@ -1,38 +1,28 @@
 version: "3.9"
 
 services:
-  pg:
-    image: postgres:15
-    container_name: pg
-    restart: always
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: 123456
-      POSTGRES_DB: hotel_mvp
-    ports:
-      - "5432:5432"
-    volumes:
-      - pg_data:/var/lib/postgresql/data
-
   redis:
     image: redis:7
     container_name: redis
+    restart: always
     ports:
       - "6379:6379"
 
   app:
     build: .
-    container_name: booking_app
+    container_name: hotel_backend_app
     depends_on:
-      - pg
       - redis
-    environment:
-      DB_URL: jdbc:postgresql://pg:5432/hotel_mvp
-      DB_USERNAME: postgres
-      DB_PASSWORD: 123456
-      JWT_SECRET: super-secret-key-123456789
     ports:
       - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://aws-1-ap-northeast-2.pooler.supabase.com:6543/postgres?sslmode=require
+      SPRING_DATASOURCE_USERNAME: postgres.phvslymvmusnxvnrjads
+      SPRING_DATASOURCE_PASSWORD: Ta0966927203
 
-volumes:
-  pg_data:
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+
+      JWT_SECRET: your-super-secret-key-must-be-at-least-32-characters-long-12345678

@@ -1,11 +1,12 @@
 spring:
   datasource:
-    url: ${DB_URL:jdbc:postgresql://localhost:5432/hotel_mvp}
-    username: ${DB_USERNAME:postgres}
-    password: ${DB_PASSWORD:123456}
+    url:  jdbc:postgresql://aws-1-ap-northeast-2.pooler.supabase.com:6543/postgres?sslmode=require&prepareThreshold=0
+    username: postgres.phvslymvmusnxvnrjads
+    password: Ta0966927203
     driver-class-name: org.postgresql.Driver
+
   mail:
-    host: ${MAIL_HOST:smtp.gmail.com}
+    host: ${MAIL_HOST:://gmail.com}
     port: ${MAIL_PORT:587}
     username: ${MAIL_USERNAME:trananhtodien@gmail.com}
     password: ${MAIL_PASSWORD:pkbrrvnosbdvuuiq}
@@ -23,6 +24,7 @@ spring:
     properties:
       hibernate:
         format_sql: true
+
   servlet:
     multipart:
       max-file-size: ${MULTIPART_MAX_FILE_SIZE:10MB}
