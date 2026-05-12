@@ -1,0 +1,351 @@
+/* ── Partner Calendar ─────────────────────────────────────────────────
+   Palette: #BE1E2E (primary) → #F87171 → #FECDD3 → #FFF1F2 + gray scale
+   ──────────────────────────────────────────────────────────────────── */
+
+/* Header row */
+.partner-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.partner-calendar-day-header {
+  text-align: center;
+  font-size: 11px;
+  font-weight: 900;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  padding: 9px 0;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.partner-calendar-day-header-weekend {
+  color: #BE1E2E;
+  background: #FFF1F2;
+}
+
+/* Days grid */
+.partner-calendar-days-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+}
+
+/* Base cell */
+.partner-calendar-cell {
+  border-radius: 16px;
+  min-height: 158px;
+  padding: 12px;
+  text-align: left;
+  position: relative;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  background: var(--cell-bg, #fff);
+  border: var(--cell-border, 1px solid #f1f5f9);
+  box-shadow: 0 1px 4px rgba(190,30,46,0.04);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+  overflow: hidden;
+}
+
+/* top accent stripe */
+.partner-calendar-cell::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: var(--cell-accent, #f1f5f9);
+  border-radius: 16px 16px 0 0;
+}
+
+.partner-calendar-cell:hover {
+  transform: scale(1.035);
+  box-shadow: 0 10px 28px -4px rgba(190,30,46,0.14);
+  z-index: 1;
+}
+
+/* weekend: clearly distinct rose */
+.partner-calendar-cell-weekend {
+  background: #FFF1F2 !important;
+  border-color: #FDA4AF !important;
+  box-shadow: 0 1px 4px rgba(190,30,46,0.07) !important;
+}
+
+/* Empty cell */
+.partner-calendar-empty-cell {
+  border-radius: 16px;
+  min-height: 158px;
+  background: repeating-linear-gradient(
+    -45deg,
+    #f8fafc 0px, #f8fafc 4px,
+    #f1f5f9 4px, #f1f5f9 8px
+  );
+  opacity: 0.4;
+}
+
+/* ── Cell internals ── */
+
+.pc-day-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.pc-day-num {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.pc-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px 7px;
+  border-radius: 99px;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.pc-price {
+  font-size: 14px;
+  font-weight: 900;
+  letter-spacing: -0.3px;
+  margin-bottom: 10px;
+}
+
+.pc-divider {
+  height: 1px;
+  background: #f1f5f9;
+  margin-bottom: 9px;
+}
+
+.pc-avail-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  margin-bottom: 5px;
+}
+
+.pc-avail-track {
+  height: 4px;
+  border-radius: 99px;
+  background: #f1f5f9;
+  overflow: hidden;
+  margin-bottom: 5px;
+  flex-shrink: 0;
+}
+
+.pc-avail-fill {
+  height: 100%;
+  border-radius: 99px;
+  transition: width 0.35s ease;
+}
+
+.pc-avail-nums {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+  margin-bottom: 6px;
+}
+
+.pc-minstay {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: auto;
+  padding: 4px 8px;
+  border-radius: 99px;
+  background: #FFF1F2;
+  border: 1px solid #FECDD3;
+  color: #BE1E2E;
+  font-size: 10px;
+  font-weight: 800;
+  width: fit-content;
+}
+
+/* Loading */
+.partner-calendar-loading {
+  text-align: center;
+  padding: 120px;
+  color: #94a3b8;
+}
+
+.partner-calendar-spinner {
+  width: 44px;
+  height: 44px;
+  border: 4px solid #f1f5f9;
+  border-top-color: #BE1E2E;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 20px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes warnIn {
+  from { opacity: 0; transform: scale(0.92) translateY(12px); }
+  to   { opacity: 1; transform: scale(1)    translateY(0); }
+}
+
+.partner-calendar-month-rate-btn,
+.partner-calendar-range-rate-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 0 16px;
+  border: none;
+  border-radius: 14px;
+  background: #BE1E2E;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 10px 24px rgba(190, 30, 46, 0.16);
+}
+
+.partner-calendar-range-rate-btn {
+  background: #0f172a;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
+}
+
+.partner-calendar-month-rate-btn:disabled,
+.partner-calendar-range-rate-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+  box-shadow: none;
+}
+
+.partner-calendar-error {
+  margin-bottom: 18px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.partner-calendar-rate-form {
+  display: grid;
+  gap: 18px;
+}
+
+.partner-calendar-rate-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  padding: 16px;
+  border-radius: 16px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+.partner-calendar-rate-label {
+  margin-bottom: 5px;
+  font-size: 11px;
+  font-weight: 900;
+  color: #94a3b8;
+  text-transform: uppercase;
+}
+
+.partner-calendar-rate-value {
+  font-size: 14px;
+  font-weight: 900;
+  color: #0f172a;
+}
+
+.partner-calendar-rate-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.partner-calendar-rate-field {
+  display: grid;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 900;
+  color: #64748b;
+}
+
+.partner-calendar-rate-field input {
+  width: 100%;
+  min-height: 42px;
+  padding: 10px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #fff;
+  color: #0f172a;
+  font-size: 14px;
+  font-weight: 800;
+  outline: none;
+}
+
+.partner-calendar-rate-field input:focus {
+  border-color: #BE1E2E;
+  box-shadow: 0 0 0 3px rgba(190, 30, 46, 0.1);
+}
+
+.partner-calendar-rate-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 42px;
+  padding: 12px;
+  border-radius: 12px;
+  background: #fff7ed;
+  color: #9a3412;
+  border: 1px solid #fed7aa;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.partner-calendar-rate-toggle input {
+  width: 16px;
+  height: 16px;
+  accent-color: #BE1E2E;
+}
+
+.partner-calendar-rate-toggle-weekend {
+  grid-column: 1 / -1;
+  background: #eff6ff;
+  color: #1d4ed8;
+  border-color: #bfdbfe;
+}
+
+.partner-calendar-rate-note {
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.partner-calendar-rate-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}

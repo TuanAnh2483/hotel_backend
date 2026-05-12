@@ -1,0 +1,31 @@
+@host = http://localhost:8080
+@partnerToken = REPLACE_PARTNER_JWT
+@bookingId = 1
+@hotelId = 1
+@checkInFrom = 2026-04-20
+@checkInTo = 2026-04-30
+
+### 1. List partner bookings
+GET {{host}}/api/partner/bookings
+Authorization: Bearer {{partnerToken}}
+
+### 2. Get booking detail
+GET {{host}}/api/partner/bookings/{{bookingId}}
+Authorization: Bearer {{partnerToken}}
+
+### 3. Mark a finished stay as COMPLETED
+POST {{host}}/api/partner/bookings/{{bookingId}}/complete
+Authorization: Bearer {{partnerToken}}
+
+### 4. Refund a paid booking with idempotent clientRequestId
+POST {{host}}/api/partner/bookings/{{bookingId}}/refund
+Authorization: Bearer {{partnerToken}}
+Content-Type: application/json
+
+{
+  "clientRequestId": "partner-refund-demo-001"
+}
+
+### 5. Read analytics summary for one hotel and check-in range
+GET {{host}}/api/partner/analytics/summary?hotelId={{hotelId}}&checkInFrom={{checkInFrom}}&checkInTo={{checkInTo}}
+Authorization: Bearer {{partnerToken}}

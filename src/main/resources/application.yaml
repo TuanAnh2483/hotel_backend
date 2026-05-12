@@ -1,0 +1,87 @@
+spring:
+  datasource:
+    url:  jdbc:postgresql://aws-1-ap-northeast-2.pooler.supabase.com:6543/postgres?sslmode=require&prepareThreshold=0
+    username: postgres.phvslymvmusnxvnrjads
+    password: Ta0966927203
+    driver-class-name: org.postgresql.Driver
+
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:trananhtodien@gmail.com}
+    password: ${MAIL_PASSWORD:pkbrrvnosbdvuuiq}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+  jpa:
+    hibernate:
+      ddl-auto: ${JPA_DDL_AUTO:update}
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+
+  servlet:
+    multipart:
+      max-file-size: ${MULTIPART_MAX_FILE_SIZE:10MB}
+      max-request-size: ${MULTIPART_MAX_REQUEST_SIZE:20MB}
+
+server:
+  port: 8080
+
+app:
+  payment:
+    provider: ${PAYMENT_PROVIDER:sepay-vietqr}
+    transfer-prefix: ${PAYMENT_TRANSFER_PREFIX:HHB}
+    qr-image-url: ${PAYMENT_QR_IMAGE_URL:/payments/QR_Code.png}
+    bank:
+      account-no: ${PAYMENT_BANK_ACCOUNT_NO:0966927203}
+      account-name: ${PAYMENT_BANK_ACCOUNT_NAME:Tran Tuan Anh}
+      bank-name: ${PAYMENT_BANK_NAME:MB Bank}
+    sepay:
+      webhook-api-key: ${PAYMENT_SEPAY_WEBHOOK_API_KEY:hhb_sepay_webhook_2026}
+  jwt:
+    secret: ${JWT_SECRET:change-this-secret-in-env-32chars-minimum}
+    exp-seconds: 86400
+  admin-seed:
+    enabled: ${ADMIN_SEED_ENABLED:true}
+    email: ${ADMIN_EMAIL:admin@example.com}
+    password: ${ADMIN_PASSWORD:Password123}
+  password-reset:
+    frontend-reset-url: ${PASSWORD_RESET_FRONTEND_URL:http://localhost:8080/reset-password}
+  email-verification:
+    frontend-verify-url: ${EMAIL_VERIFICATION_FRONTEND_URL:http://localhost:8080/verify-email}
+  mail:
+    enabled: ${MAIL_ENABLED:true}
+    from: ${MAIL_FROM:trananhtodien@gmail.com}
+    expose-debug-tokens: ${MAIL_EXPOSE_DEBUG_TOKENS:false}
+  uploads:
+    provider: ${UPLOAD_PROVIDER:local}
+    storage-root: ${UPLOAD_STORAGE_ROOT:./uploads}
+    public-base-path: ${UPLOAD_PUBLIC_BASE_PATH:/uploads}
+    max-file-size-bytes: ${UPLOAD_MAX_FILE_SIZE_BYTES:10485760}
+    cloudinary:
+      enabled: true
+      cloud-name: dil5uloh5
+      api-key: 332893713659699
+      api-secret: aHn_CFkZNfAbrSIah4dejcYkCoU
+      folder-prefix: hotel-backend
+    s3:
+      enabled: ${UPLOAD_S3_ENABLED:false}
+      bucket: ${UPLOAD_S3_BUCKET:}
+      region: ${UPLOAD_S3_REGION:ap-southeast-1}
+      access-key: ${UPLOAD_S3_ACCESS_KEY:}
+      secret-key: ${UPLOAD_S3_SECRET_KEY:}
+      key-prefix: ${UPLOAD_S3_KEY_PREFIX:hotel-backend}
+      public-base-url: ${UPLOAD_S3_PUBLIC_BASE_URL:}
+  ai:
+    gemini-api-key: ${GEMINI_API_KEY:AIzaSyA3BML9MrLyfm1iHL_qTRwoGCOnRStI5_E}
+    model: ${GEMINI_MODEL:gemini-2.0-flash}
+
+logging:
+  level:
+    org.springframework.web: INFO

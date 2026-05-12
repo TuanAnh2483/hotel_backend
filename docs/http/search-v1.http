@@ -1,0 +1,85 @@
+### Search V1 manual smoke test
+### Open this file in IntelliJ IDEA / JetBrains HTTP Client and run requests one by one.
+
+@host = http://localhost:8080
+@province = Bangkok
+@district = District 1
+@checkIn = 2026-04-25
+@checkOut = 2026-04-27
+@adults = 2
+@rooms = 1
+@page = 1
+@size = 10
+
+### 1. Catalog options
+GET {{host}}/api/catalog/options
+Accept: application/json
+
+###
+
+### 2. Search with recommended sort
+GET {{host}}/api/hotels/search?province={{province}}&district={{district}}&checkIn={{checkIn}}&checkOut={{checkOut}}&adults={{adults}}&rooms={{rooms}}&page={{page}}&size={{size}}&sort=recommended
+Accept: application/json
+
+###
+
+### 3. Search with price ascending
+GET {{host}}/api/hotels/search?province={{province}}&district={{district}}&checkIn={{checkIn}}&checkOut={{checkOut}}&adults={{adults}}&rooms={{rooms}}&page={{page}}&size={{size}}&sort=price_asc
+Accept: application/json
+
+###
+
+### 4. Search with price descending
+GET {{host}}/api/hotels/search?province={{province}}&district={{district}}&checkIn={{checkIn}}&checkOut={{checkOut}}&adults={{adults}}&rooms={{rooms}}&page={{page}}&size={{size}}&sort=price_desc
+Accept: application/json
+
+###
+
+### 5. Search with rating descending
+GET {{host}}/api/hotels/search?province={{province}}&district={{district}}&checkIn={{checkIn}}&checkOut={{checkOut}}&adults={{adults}}&rooms={{rooms}}&page={{page}}&size={{size}}&sort=rating_desc
+Accept: application/json
+
+###
+
+### 6. Search without district
+GET {{host}}/api/hotels/search?province={{province}}&checkIn={{checkIn}}&checkOut={{checkOut}}&adults={{adults}}&rooms={{rooms}}&page={{page}}&size={{size}}&sort=recommended
+Accept: application/json
+
+###
+
+### 7. Search with hotel type + room filters
+GET {{host}}/api/hotels/search?province={{province}}&checkIn={{checkIn}}&checkOut={{checkOut}}&adults={{adults}}&rooms={{rooms}}&page={{page}}&size={{size}}&sort=recommended&hotelTypes=RESORT&roomCategories=SUITE&bedTypes=DOUBLE&roomAmenities=BALCONY
+Accept: application/json
+
+###
+
+### 8. Search with hotel + room amenities
+GET {{host}}/api/hotels/search?province={{province}}&checkIn={{checkIn}}&checkOut={{checkOut}}&adults={{adults}}&rooms={{rooms}}&page={{page}}&size={{size}}&sort=recommended&hotelAmenities=POOL&roomAmenities=BALCONY
+Accept: application/json
+
+###
+
+### 9. Search page 2
+GET {{host}}/api/hotels/search?province={{province}}&district={{district}}&checkIn={{checkIn}}&checkOut={{checkOut}}&adults={{adults}}&rooms={{rooms}}&page=2&size={{size}}&sort=recommended
+Accept: application/json
+
+###
+
+### 10. Validation check: invalid date range
+GET {{host}}/api/hotels/search?province={{province}}&district={{district}}&checkIn={{checkOut}}&checkOut={{checkIn}}&adults={{adults}}&rooms={{rooms}}&page={{page}}&size={{size}}&sort=recommended
+Accept: application/json
+
+###
+
+### 11. Hotel detail
+### Replace 1 with a hotelId returned from a search response.
+GET {{host}}/api/hotels/1
+Accept: application/json
+
+###
+
+### 12. Available rooms for a hotel
+### Replace 1 with a hotelId returned from a search response.
+GET {{host}}/api/hotels/1/available-rooms?checkIn={{checkIn}}&checkOut={{checkOut}}&adults={{adults}}&rooms={{rooms}}
+Accept: application/json
+

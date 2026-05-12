@@ -1,0 +1,11 @@
+ALTER TABLE users
+    ADD COLUMN IF NOT EXISTS status VARCHAR(30) NOT NULL DEFAULT 'ACTIVE';
+
+ALTER TABLE users
+    ADD COLUMN IF NOT EXISTS token_version BIGINT NOT NULL DEFAULT 0;
+
+UPDATE users
+SET email = LOWER(TRIM(email))
+WHERE email <> LOWER(TRIM(email));
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_users_email_lower ON users (LOWER(email));
