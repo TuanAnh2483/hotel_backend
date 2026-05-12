@@ -5,10 +5,10 @@ import Footer from "../components/Footer";
 import { getToken } from "../services/authService";
 import { useLang } from "../contexts/LanguageContext";
 import "../styles/pages/BecomePartnerPage.css";
-
+import { buildApiUrl } from "../config/apiConfig";
 async function onboardingFetch(path, options = {}) {
   const token = getToken();
-  const res = await fetch(path, {
+  const res = await fetch(buildApiUrl(path), {
     headers: {
       "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),

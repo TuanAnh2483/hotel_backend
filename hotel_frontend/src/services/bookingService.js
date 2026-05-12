@@ -1,10 +1,11 @@
 ﻿import { getToken } from "./authService";
+import { buildApiUrl } from "../config/apiConfig";
 
-const BASE = "";
+
 
 async function authedFetch(path, options = {}) {
   const token = getToken();
-  const res = await fetch(`${BASE}${path}`, {
+  const res = await fetch(buildApiUrl(path), {
     headers: {
       "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),

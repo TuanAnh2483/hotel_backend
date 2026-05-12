@@ -1,3 +1,8 @@
+
+
+
+import { buildApiUrl } from "../config/apiConfig";
+
 const AMENITY_MAP = {
   WIFI:        { icon: "📶", label: "WiFi miễn phí" },
   POOL:        { icon: "🏊", label: "Hồ bơi" },
@@ -18,7 +23,7 @@ const HOTEL_TYPE_MAP = {
   GUEST_HOUSE: "Nhà nghỉ",
 };
 
-const BASE = "";
+
 
 function isoDate(dt) {
   return dt.toISOString().split("T")[0];
@@ -43,7 +48,7 @@ function nightsBetween(checkIn, checkOut) {
 }
 
 async function apiFetch(path) {
-  const res = await fetch(`${BASE}${path}`);
+  const res = await fetch(buildApiUrl(path));
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const json = await res.json();
   return json.data ?? json;

@@ -1,11 +1,12 @@
 import { getToken } from "./authService";
+import { buildApiUrl } from "../config/apiConfig";
 
 async function profileFetch(path, options = {}) {
   const token = getToken();
   const { headers: extraHeaders, body, ...restOptions } = options;
   const isFormData = body instanceof FormData;
 
-  const res = await fetch(path, {
+  const res = await fetch(buildApiUrl(path), {
     headers: {
       ...(isFormData ? {} : { "Content-Type": "application/json" }),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),

@@ -1,6 +1,9 @@
-﻿async function request(path, options = {}) {
+﻿
+
+import { buildApiUrl } from "../config/apiConfig";
+async function request(path, options = {}) {
   const { headers: extraHeaders, ...restOptions } = options;
-  const res = await fetch(path, {
+  const res = await fetch(buildApiUrl(path), {
     headers: { "Content-Type": "application/json", ...extraHeaders },
     ...restOptions,
   });
@@ -36,7 +39,7 @@ export function clearSession() {
 async function authedRequest(path, options = {}) {
   const token = getToken();
   const { headers: extraHeaders, ...restOptions } = options;
-  const res = await fetch(path, {
+  const res = await fetch(buildApiUrl(path), {
     headers: {
       "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
