@@ -4,6 +4,7 @@ import AdminLayout, {
 } from "../../components/admin/AdminLayout";
 import { adminService } from "../../services/adminService";
 import { Star, Trash2, Eye } from "lucide-react";
+import { useLang } from "../../contexts/LanguageContext";
 
 function StarRating({ rating, size = 14 }) {
   return (
@@ -25,6 +26,7 @@ const RATING_OPTIONS = ["", "5", "4", "3", "2", "1"];
 const RATING_LABEL   = { "": "Tất cả", "5": "⭐⭐⭐⭐⭐", "4": "⭐⭐⭐⭐", "3": "⭐⭐⭐", "2": "⭐⭐", "1": "⭐" };
 
 export default function AdminReviews({ navigate, user, onLogout }) {
+  const { t } = useLang();
   const [reviews, setReviews]       = useState([]);
   const [search, setSearch]         = useState("");
   const [ratingFilter, setRating]   = useState("");
@@ -47,6 +49,7 @@ export default function AdminReviews({ navigate, user, onLogout }) {
   useEffect(() => { load(); }, []);
 
   const handleDelete = async (id) => {
+    if (!window.confirm(t("adm_rv_del_confirm"))) return;
     setDeleting(id);
     try {
       await adminService.deleteReview(id);
@@ -75,11 +78,17 @@ export default function AdminReviews({ navigate, user, onLogout }) {
   return (
     <AdminLayout page="admin-reviews" navigate={navigate} user={user} onLogout={onLogout}>
       <PageHeader
+        title={t("adm_rv_title")}
+        subtitle={t("adm_rv_subtitle")}
       />
 
       {/* Summary cards */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, marginBottom: 24 }}>
         {[
+          { label: t("adm_rv_total"),    value: counts.total,    icon: "⭐", color: "#f59e0b" },
+          { label: t("adm_rv_avg"),      value: counts.avg,      icon: "📊", color: "#4361ee" },
+          { label: t("adm_rv_five_star"),value: counts.fivestar, icon: "🌟", color: "#2e7d32" },
+          { label: t("adm_rv_one_star"), value: counts.onestar,  icon: "😞", color: "#c62828" },
         ].map(c => (
           <div key={c.label} style={{
             background: "#fff", borderRadius: 12, padding: "16px 20px",
@@ -103,6 +112,7 @@ export default function AdminReviews({ navigate, user, onLogout }) {
       <Card>
         {/* Filters */}
         <div style={{ display: "flex", gap: 12, marginBottom: 18, flexWrap: "wrap", alignItems: "center" }}>
+          <SearchInput value={search} onChange={setSearch} placeholder={t("adm_rv_search_ph")} />
           <div style={{ display: "flex", gap: 6 }}>
             {RATING_OPTIONS.map(r => (
               <button
@@ -123,6 +133,7 @@ export default function AdminReviews({ navigate, user, onLogout }) {
             ))}
           </div>
           <span style={{ fontSize: 12, color: "#aaa", fontWeight: 600, marginLeft: "auto" }}>
+            {t("adm_rv_count").replace("{count}", filtered.length)}
           </span>
         </div>
 
@@ -133,9 +144,11 @@ export default function AdminReviews({ navigate, user, onLogout }) {
         )}
 
         {loading ? (
+          <div style={{ textAlign: "center", padding: 48, color: "#bbb" }}>{t("adm_loading")}</div>
         ) : (
           <>
             <Table
+              headers={[t("adm_id"), t("adm_rv_col_hotel"), t("adm_rv_col_user"), t("adm_rv_col_rating"), t("adm_rv_col_comment"), t("adm_rv_col_date"), t("adm_actions")]}
               rows={filtered.slice((page - 1) * pageSize, page * pageSize).map(r => [
               <span style={{ color: "#bbb", fontSize: 12, fontFamily: "monospace" }}>#{r.id}</span>,
               <span style={{ fontWeight: 700, color: "#1a1a1a", fontSize: 13 }}>{r.hotelName || "—"}</span>,
@@ -152,13 +165,16 @@ export default function AdminReviews({ navigate, user, onLogout }) {
               </span>,
               <div style={{ display: "flex", gap: 6 }}>
                 <Btn small variant="action" onClick={() => setDetail(r)}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 4 }}><Eye size={13} /> {t("adm_view")}</div>
                 </Btn>
                 <Btn small variant="danger" disabled={deleting === r.id} onClick={() => handleDelete(r.id)}>
                   <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                    <Trash2 size={13} /> {deleting === r.id ? t("adm_rv_deleting") : t("adm_rv_delete")}
                   </div>
                 </Btn>
               </div>,
             ])}
+              empty={t("adm_rv_empty")}
             />
 
             {/* Pagination */}
@@ -186,9 +202,13 @@ export default function AdminReviews({ navigate, user, onLogout }) {
 
       {/* Detail modal */}
       {detailModal && (
+        <Modal title={t("adm_rv_detail_title")} onClose={() => setDetail(null)} width={500}>
           <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
             {[
-              ["ID",          `#${detailModal.id}`],
+              ["ID",                    `#${detailModal.id}`],
+              [t("adm_rv_col_hotel"),   detailModal.hotelName || "—"],
+              [t("adm_rv_col_user"),    detailModal.userEmail || "—"],
+              [t("adm_rv_col_date"),    detailModal.createdAt
                 ? new Date(detailModal.createdAt).toLocaleString("vi-VN")
                 : "—"],
             ].map(([k, v]) => (
@@ -201,19 +221,24 @@ export default function AdminReviews({ navigate, user, onLogout }) {
               </div>
             ))}
             <div style={{ padding: "10px 0", borderBottom: "1px solid #f5f5f5" }}>
+              <div style={{ color: "#888", fontWeight: 600, fontSize: 13, marginBottom: 6 }}>{t("adm_rv_score")}</div>
               <StarRating rating={detailModal.rating} size={18} />
             </div>
             <div style={{ padding: "12px 0" }}>
+              <div style={{ color: "#888", fontWeight: 600, fontSize: 13, marginBottom: 8 }}>{t("adm_rv_comment_label")}</div>
               <div style={{
                 background: "#f8f9fa", borderRadius: 10, padding: "12px 14px",
                 fontSize: 13, color: detailModal.comment ? "#333" : "#999", lineHeight: 1.6,
               }}>
+                {detailModal.comment || t("adm_rv_no_comment")}
               </div>
             </div>
           </div>
           <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 16 }}>
             <Btn variant="danger" disabled={deleting === detailModal.id} onClick={() => { handleDelete(detailModal.id); setDetail(null); }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}><Trash2 size={14} /> {t("adm_rv_del_btn")}</div>
             </Btn>
+            <Btn variant="ghost" onClick={() => setDetail(null)}>{t("adm_close")}</Btn>
           </div>
         </Modal>
       )}

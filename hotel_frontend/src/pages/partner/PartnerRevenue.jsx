@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
 import { partnerService } from "../../services/partnerService";
 import { PageHeader, Card } from "../../components/admin/AdminLayout";
-import { 
+import { useLang } from "../../contexts/LanguageContext";
+import {
+  CheckCircle2, XCircle, TrendingUp,
   Calendar, Download, Filter
 } from "lucide-react";
 import "../../styles/pages/PartnerRevenue.css";
@@ -29,6 +31,7 @@ function groupByMonth(bookings) {
 }
 
 export default function PartnerRevenue() {
+  const { t } = useLang();
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [year, setYear] = useState(new Date().getFullYear());
@@ -80,13 +83,16 @@ export default function PartnerRevenue() {
 
   return (
     <div style={{ paddingBottom: 60 }}>
-      <PageHeader 
+      <PageHeader
+        title={t("pt_rev_title")}
+        subtitle={t("pt_rev_subtitle")}
         action={
-          <button style={{ 
-            padding: "10px 18px", borderRadius: 10, background: "#fff", color: "#475569", 
-            border: "1px solid #e2e8f0", fontWeight: 700, fontSize: 13, cursor: "pointer", 
-            display: "flex", alignItems: "center", gap: 8 
+          <button style={{
+            padding: "10px 18px", borderRadius: 10, background: "#fff", color: "#475569",
+            border: "1px solid #e2e8f0", fontWeight: 700, fontSize: 13, cursor: "pointer",
+            display: "flex", alignItems: "center", gap: 8
           }}>
+            <Download size={16} /> {t("pt_rev_export")}
           </button>
         }
       />
@@ -94,11 +100,17 @@ export default function PartnerRevenue() {
       {/* Summary Cards */}
       <div className="partner-revenue-stat-grid">
         {[
-          { 
+          {
+            label: t("pt_rev_total"), value: fmtPrice(totalRevenue) + " ₫",
+            sub: t("pt_rev_total_sub"), Icon: TrendingUp, color: "#7C3AED", bg: "#F5F3FF"
           },
-          { 
+          {
+            label: t("pt_rev_completed"), value: confirmedAll.length,
+            sub: t("pt_rev_completed_sub"), Icon: CheckCircle2, color: "#059669", bg: "#ecfdf5"
           },
-          { 
+          {
+            label: t("pt_rev_cancel_rate"), value: cancellationRate,
+            sub: t("pt_rev_cancel_sub").replace("{n}", cancelledAll.length), Icon: XCircle, color: "#ef4444", bg: "#fef2f2"
           },
         ].map((c) => (
           <div key={c.label} style={{ 
@@ -123,6 +135,8 @@ export default function PartnerRevenue() {
       <Card style={{ marginBottom: 32, padding: 32 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 40 }}>
           <div>
+            <h3 style={{ fontSize: 18, fontWeight: 800, color: "#1e293b", margin: 0 }}>{t("pt_rev_chart_title")}</h3>
+            <p style={{ fontSize: 14, color: "#64748b", marginTop: 4 }}>{t("pt_rev_chart_sub").replace("{year}", year)}</p>
           </div>
           <div style={{ display: "flex", gap: 12 }}>
             <div style={{ position: "relative" }}>
@@ -132,6 +146,7 @@ export default function PartnerRevenue() {
                 value={year}
                 onChange={e => setYear(Number(e.target.value))}
               >
+                {years.map(y => <option key={y} value={y}>{t("pt_rev_year").replace("{year}", y)}</option>)}
               </select>
             </div>
           </div>
@@ -139,6 +154,7 @@ export default function PartnerRevenue() {
 
         <Card title="Phân tích doanh thu 12 tháng" icon={TrendingUp}>
         {loading ? (
+          <div style={{ textAlign: "center", padding: 60, color: "#94a3b8" }}>{t("pt_rev_analyzing")}</div>
         ) : (
           <div className="partner-revenue-chart-container">
             <div className="partner-revenue-chart-grid">
@@ -178,12 +194,15 @@ export default function PartnerRevenue() {
     {/* Detailed Table */}
       <div className="partner-revenue-table-wrapper">
         <div className="partner-revenue-table-header">
+          <h3 className="partner-revenue-table-title">{t("pt_rev_table_title")}</h3>
           <div className="partner-revenue-table-filter">
+            <Filter size={14} /> {t("pt_rev_filter")}
           </div>
         </div>
         <table className="partner-revenue-table">
           <thead>
             <tr style={{ background: "#f8fafc" }}>
+              {[t("pt_rev_col_month"), t("pt_rev_col_bookings"), t("pt_rev_col_revenue"), t("pt_rev_col_avg")].map(h => (
                 <th key={h} style={{ padding: "14px 24px", textAlign: "left", fontWeight: 700, color: "#94a3b8", fontSize: 11, letterSpacing: 0.5 }}>{h}</th>
               ))}
             </tr>

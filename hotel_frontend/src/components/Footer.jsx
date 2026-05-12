@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { C, LOGO_IMG } from "./auth/AuthShared";
+import { useLang } from "../contexts/LanguageContext";
 
 const H4 = { fontSize: 15, fontWeight: 800, color: "#111", marginBottom: 24, textTransform: "uppercase", letterSpacing: 1 };
 
@@ -16,17 +17,27 @@ function FooterLink({ text, onClick }) {
 }
 
 export default function Footer({ navigate }) {
+  const { t } = useLang();
   return (
     <footer style={{ background: "#fcfcfc", marginTop: "auto", borderTop: "1px solid #eaeaea", fontFamily: "'Segoe UI', 'Be Vietnam Pro', sans-serif" }}>
       {/* ── Top Section: Links ── */}
       <div style={{ maxWidth: 1300, margin: "0 auto", padding: "60px 40px", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 40, boxSizing: "border-box" }}>
         <div>
+          <h4 style={H4}>{t("footer_support")}</h4>
+          {[t("footer_contact"), t("footer_trips"), t("footer_security")].map(text => <FooterLink key={text} text={text} />)}
         </div>
         <div>
+          <h4 style={H4}>{t("footer_terms")}</h4>
+          {[t("footer_seasonal"), t("footer_privacy"), t("footer_tos"), t("footer_complaints")].map(text => <FooterLink key={text} text={text} />)}
         </div>
         <div>
+          <h4 style={H4}>{t("footer_policy")}</h4>
+          <FooterLink text={t("footer_list_property")} onClick={() => navigate && navigate("become-partner")} />
+          <FooterLink text={t("footer_partner_help")} />
+          <FooterLink text={t("footer_accessibility")} />
         </div>
         <div>
+          <h4 style={H4}>{t("footer_about")}</h4>
           <FooterLink text="Email: abc@gmail.com" />
           <FooterLink text="Hotline: 0000000000" />
           
@@ -52,9 +63,11 @@ export default function Footer({ navigate }) {
         <img src={LOGO_IMG} alt="VLU Hotel Hub" style={{ height: 140, objectFit: "contain", marginBottom: 32, filter: "drop-shadow(0 8px 16px rgba(0,0,0,0.06))" }} />
         
         <h3 style={{ fontSize: 22, fontWeight: 800, color: C.primary, margin: "0 0 12px", letterSpacing: 0.5, textTransform: "uppercase" }}>
+          {t("footer_tagline")}
         </h3>
-        
+
         <p style={{ fontSize: 13, color: "#888", margin: 0, fontWeight: 500 }}>
+          {t("footer_copyright")}
         </p>
       </div>
     </footer>

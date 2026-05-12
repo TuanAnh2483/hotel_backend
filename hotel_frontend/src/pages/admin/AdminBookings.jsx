@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import AdminLayout, { AP, PageHeader, Card, Badge, Btn, Table, Modal } from "../../components/admin/AdminLayout";
 import { adminService } from "../../services/adminService";
+import { useLang } from "../../contexts/LanguageContext";
 import "../../styles/pages/admin/AdminCommon.css";
 
 const STATUSES = ["", "CONFIRMED", "PENDING_PAYMENT", "CANCELLED", "COMPLETED"];
@@ -11,6 +12,14 @@ function fmt(n) {
 }
 
 export default function AdminBookings({ navigate, user, onLogout }) {
+  const { t } = useLang();
+  const STATUS_LABEL = {
+    "":              t("adm_bk_tab_all"),
+    CONFIRMED:       t("adm_bk_tab_confirmed"),
+    PENDING_PAYMENT: t("adm_bk_tab_pending"),
+    CANCELLED:       t("adm_bk_tab_cancelled"),
+    COMPLETED:       t("adm_bk_tab_completed"),
+  };
   const [bookings, setBookings] = useState([]);
   const [filter, setFilter]     = useState("");
   const [loading, setLoading]   = useState(true);
@@ -46,10 +55,16 @@ export default function AdminBookings({ navigate, user, onLogout }) {
 
   return (
     <AdminLayout page="admin-bookings" navigate={navigate} user={user} onLogout={onLogout}>
+      <PageHeader title={t("adm_bk_title")} subtitle={t("adm_bk_subtitle")} />
 
       {/* Summary */}
       <div className="admin-summary-grid admin-summary-grid-5">
         {[
+          { label: t("adm_bk_total"),     value: counts.total,        color: "#4361ee", icon: "📋" },
+          { label: t("adm_bk_confirmed"), value: counts.confirmed,    color: "#2e7d32", icon: "✅" },
+          { label: t("adm_bk_pending"),   value: counts.pending,      color: "#f57f17", icon: "⏳" },
+          { label: t("adm_bk_cancelled"), value: counts.cancelled,    color: "#888",    icon: "❌" },
+          { label: t("adm_bk_revenue"),   value: fmt(counts.revenue), color: AP,        icon: "💰", isStr: true },
         ].map(c => (
           <div key={c.label} className="admin-summary-card">
             <span className="admin-summary-card-icon">{c.icon}</span>
@@ -78,23 +93,29 @@ export default function AdminBookings({ navigate, user, onLogout }) {
           <input
             value={search}
             onChange={e => setSearch(e.target.value)}
+            placeholder={`🔍 ${t("adm_bk_search_ph")}`}
             className="admin-table-search"
           />
         </div>
 
         {loading ? (
+          <div className="admin-loading">{t("adm_loading")}</div>
         ) : (
           <>
             <Table
+              headers={[t("adm_id"), t("adm_bk_col_user"), t("adm_bk_col_hotel"), t("adm_bk_col_checkin"), t("adm_bk_col_checkout"), t("adm_bk_col_nights"), t("adm_bk_col_total"), t("adm_status"), ""]}
               rows={filtered.slice((page - 1) * pageSize, page * pageSize).map(b => [
               <span className="admin-cell-id">#{b.id}</span>,
               <span className="admin-cell-text">{b.userEmail}</span>,
               <span className="admin-cell-name">{b.hotelName || "—"}</span>,
               <span className="admin-cell-text">{b.checkIn}</span>,
               <span className="admin-cell-text">{b.checkOut}</span>,
+              <span className="admin-cell-text">{t("adm_bk_nights").replace("{n}", b.nights)}</span>,
               <span className="admin-cell-amount">{fmt(b.totalPrice)}</span>,
               <Badge status={b.status} />,
+              <Btn small variant="action" onClick={() => setDetail(b)}>{t("adm_detail")}</Btn>,
             ])}
+              empty={t("adm_bk_empty")}
             />
 
             {/* Pagination */}
@@ -117,11 +138,18 @@ export default function AdminBookings({ navigate, user, onLogout }) {
 
       {/* Detail modal */}
       {detail && (
+        <Modal title={`📋 ${t("adm_bk_detail_title")} #${detail.id}`} onClose={() => setDetail(null)}>
           <div className="admin-modal-info">
             <div className="admin-modal-info-title">{detail.hotelName || "—"}</div>
             <div className="admin-modal-info-sub">{detail.userEmail}</div>
           </div>
           {[
+            [t("adm_bk_checkin"),    detail.checkIn],
+            [t("adm_bk_checkout"),   detail.checkOut],
+            [t("adm_bk_night_count"), t("adm_bk_nights").replace("{n}", detail.nights)],
+            [t("adm_bk_price"),      fmt(detail.totalPrice)],
+            [t("adm_bk_booked_at"),  detail.createdAt],
+            [t("adm_status"),        <Badge status={detail.status} />],
           ].map(([k, v]) => (
             <div key={k} className="admin-modal-row">
               <span className="admin-modal-row-key">{k}</span>
@@ -129,6 +157,7 @@ export default function AdminBookings({ navigate, user, onLogout }) {
             </div>
           ))}
           <div className="admin-modal-actions-right">
+            <Btn variant="ghost" onClick={() => setDetail(null)}>{t("adm_close")}</Btn>
           </div>
         </Modal>
       )}

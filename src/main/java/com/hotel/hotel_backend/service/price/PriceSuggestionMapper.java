@@ -63,6 +63,7 @@ public class PriceSuggestionMapper {
                             p.dayName(),
                             p.displayDate(),
                             p.occupancy(),
+                            p.demand(),
                             p.isWeekend(),
                             p.isHoliday(),
                             p.holidayTier(),
@@ -76,6 +77,9 @@ public class PriceSuggestionMapper {
                             factors,
                             p.activeBookings(),
                             p.totalRooms(),
+                            aiGenerated,
+                            p.velocity(),
+                            p.daysUntil()
                     );
                 })
                 .toList();

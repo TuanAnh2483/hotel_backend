@@ -36,4 +36,7 @@ public record CreateRoomRequest(
 
         Set<RoomAmenity> amenities,
 
+        List<@NotBlank(message = "imageUrl must not be blank") String> imageUrls,
+
+        String description
 ) {}

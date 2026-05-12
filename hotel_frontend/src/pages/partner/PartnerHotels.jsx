@@ -15,6 +15,7 @@ import {
   Wifi, Waves, Car, Dumbbell, Sparkles, Utensils, Dog, Search, Plus, ArrowRight, Layout
 } from "lucide-react";
 import "../../styles/pages/partner/PartnerHotels.css";
+import { useLang } from "../../contexts/LanguageContext";
 
 // --- Configuration & Helpers ---
 const HOTEL_TYPES = ["HOTEL", "APARTMENT", "RESORT", "VILLA", "HOMESTAY", "HOSTEL", "GUEST_HOUSE"];
@@ -64,6 +65,11 @@ function Field({ label, children, required }) {
 }
 
 function HotelForm({ form, setForm, onSubmit, onCancel, saving, title, hotelTypes, amenities }) {
+  const { t } = useLang();
+  const HOTEL_TYPE_LABELS = {
+    HOTEL: t("pt_type_hotel"), APARTMENT: t("pt_type_apartment"), RESORT: t("pt_type_resort"),
+    VILLA: t("pt_type_villa"), HOMESTAY: t("pt_type_homestay"), HOSTEL: t("pt_type_hostel"), GUEST_HOUSE: t("pt_type_guest_house"),
+  };
   function toggleAmenity(key) {
     setForm(f => ({
       ...f,
@@ -76,21 +82,34 @@ function HotelForm({ form, setForm, onSubmit, onCancel, saving, title, hotelType
   return (
     <Modal title={title} onClose={onCancel} width={640}>
       <div style={{ display: "flex", flexDirection: "column", gap: 4, maxHeight: "80vh", overflowY: "auto", paddingRight: 8 }}>
+        <Field label={t("pt_hotels_name")} required>
+          <input className="partner-hotel-form-input" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder={t("pt_hotels_name_ph")} />
         </Field>
 
         <div className="partner-hotel-form-grid">
+          <Field label={t("pt_hotels_province")}>
+            <input className="partner-hotel-form-input" value={form.province} onChange={e => setForm(f => ({ ...f, province: e.target.value }))} placeholder={t("pt_hotels_province_ph")} />
           </Field>
+          <Field label={t("pt_hotels_district")}>
+            <input className="partner-hotel-form-input" value={form.district} onChange={e => setForm(f => ({ ...f, district: e.target.value }))} placeholder={t("pt_hotels_district_ph")} />
           </Field>
         </div>
 
+        <Field label={t("pt_hotels_address")}>
+          <input className="partner-hotel-form-input" value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))} placeholder={t("pt_hotels_address_ph")} />
         </Field>
 
+        <Field label={t("pt_hotels_type")}>
           <select className="partner-hotel-form-input" value={form.hotelType} onChange={e => setForm(f => ({ ...f, hotelType: e.target.value }))}>
+            {hotelTypes.map(ht => <option key={ht} value={ht}>{HOTEL_TYPE_LABELS[ht] || ht}</option>)}
           </select>
         </Field>
 
+        <Field label={t("pt_hotels_desc")}>
+          <textarea className="partner-hotel-form-input" style={{ height: 120, resize: "vertical" }} value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder={t("pt_hotels_desc_ph")} />
         </Field>
 
+        <Field label={t("pt_hotels_amenities")}>
           <div className="partner-hotel-amenity-wrap">
             {amenities.map(a => (
               <label key={a.key} className={`partner-hotel-amenity-label${form.amenities.includes(a.key) ? " selected" : ""}`}>
@@ -102,6 +121,7 @@ function HotelForm({ form, setForm, onSubmit, onCancel, saving, title, hotelType
           </div>
         </Field>
 
+        <Field label={t("pt_hotels_images")}>
           <div className="partner-hotel-img-grid">
             {form.images?.map((img, idx) => {
               const url = imageItemUrl(img);
@@ -124,6 +144,7 @@ function HotelForm({ form, setForm, onSubmit, onCancel, saving, title, hotelType
             })}
             <label className="partner-hotel-img-add">
               <Plus size={24} />
+              <div className="partner-hotel-img-add-label">{t("pt_hotels_img_add")}</div>
               <input
                 type="file" multiple accept="image/png,image/jpeg,image/webp,image/gif" style={{ display: "none" }}
                 onChange={e => {
@@ -134,10 +155,13 @@ function HotelForm({ form, setForm, onSubmit, onCancel, saving, title, hotelType
               />
             </label>
           </div>
+          <p className="partner-hotel-img-hint">{t("pt_hotels_img_hint")}</p>
         </Field>
 
         <div className="partner-hotel-form-actions">
+          <Btn variant="ghost" onClick={onCancel}>{t("adm_cancel")}</Btn>
           <Btn onClick={onSubmit} disabled={saving || !form.name.trim()}>
+            {saving ? t("adm_processing") : t("adm_save")}
           </Btn>
         </div>
       </div>
@@ -146,7 +170,21 @@ function HotelForm({ form, setForm, onSubmit, onCancel, saving, title, hotelType
 }
 
 export default function PartnerHotels() {
+  const { t } = useLang();
   const rrNavigate = useNavigate();
+  const HOTEL_TYPE_LABELS = {
+    HOTEL: t("pt_type_hotel"), APARTMENT: t("pt_type_apartment"), RESORT: t("pt_type_resort"),
+    VILLA: t("pt_type_villa"), HOMESTAY: t("pt_type_homestay"), HOSTEL: t("pt_type_hostel"), GUEST_HOUSE: t("pt_type_guest_house"),
+  };
+  const AMENITIES = [
+    { key: "WIFI",        label: t("pt_am_wifi"),        Icon: Wifi },
+    { key: "POOL",        label: t("pt_am_pool"),        Icon: Waves },
+    { key: "PARKING",     label: t("pt_am_parking"),     Icon: Car },
+    { key: "GYM",         label: t("pt_am_gym"),         Icon: Dumbbell },
+    { key: "SPA",         label: t("pt_am_spa"),         Icon: Sparkles },
+    { key: "RESTAURANT",  label: t("pt_am_restaurant"),  Icon: Utensils },
+    { key: "PET_ALLOWED", label: t("pt_am_pet"),         Icon: Dog },
+  ];
   const [hotels, setHotels] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState(null); 
@@ -269,8 +307,11 @@ export default function PartnerHotels() {
   return (
     <div className="partner-hotel-root">
       <PageHeader
+        title={t("pt_hotels_title")}
+        subtitle={t("pt_hotels_subtitle")}
         action={
           <button onClick={openAdd} className="partner-hotel-add-btn">
+            <Plus size={20} /> {t("pt_hotels_add_btn")}
           </button>
         }
       />
@@ -282,12 +323,14 @@ export default function PartnerHotels() {
           <input
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
+            placeholder={t("pt_hotels_search_ph")}
             className="partner-hotel-filter-search-input"
           />
         </div>
         <div className="partner-hotel-filter-count-wrap">
           <div className="partner-hotel-filter-divider" />
           <div className="partner-hotel-filter-count">
+            <span className="partner-hotel-filter-count-num">{filteredHotels.length}</span> {t("pt_hotels_results")}
           </div>
         </div>
       </div>
@@ -301,10 +344,14 @@ export default function PartnerHotels() {
       {loading ? (
         <div className="partner-hotel-loading">
           <div className="ui-spinner" />
+          {t("pt_hotels_loading")}
         </div>
       ) : filteredHotels.length === 0 ? (
         <div className="partner-hotel-empty">
           <Building2 size={64} color="#e2e8f0" style={{ marginBottom: 20 }} />
+          <h3 className="partner-hotel-empty-title">{t("pt_hotels_empty_title")}</h3>
+          <p className="partner-hotel-empty-desc">{t("pt_hotels_empty_desc")}</p>
+          <Btn onClick={openAdd}>{t("pt_hotels_add_now")}</Btn>
         </div>
       ) : (
         <div className="partner-hotel-grid">
@@ -320,6 +367,7 @@ export default function PartnerHotels() {
                   </div>
                 )}
                 <span className="partner-hotel-card-type-badge">
+                  {(HOTEL_TYPE_LABELS[h.hotelType] || h.hotelType || t("pt_type_hotel")).toUpperCase()}
                 </span>
                 <button onClick={() => openEdit(h)} className="partner-hotel-card-edit-btn">
                   <Edit2 size={18} color="#475569" />
@@ -337,6 +385,7 @@ export default function PartnerHotels() {
                 </div>
 
                 <div className="partner-hotel-card-location">
+                  <MapPin size={16} color="#64748b" />
                   {h.district}, {h.province}
                 </div>
 
@@ -345,6 +394,7 @@ export default function PartnerHotels() {
                     const am = AMENITIES.find(x => x.key === a);
                     return (
                       <span key={a} className="partner-hotel-card-chip">
+                        {am && <am.Icon size={14} color="#64748b" />}
                         {am?.label || a}
                       </span>
                     );
@@ -358,11 +408,13 @@ export default function PartnerHotels() {
                     onClick={() => rrNavigate(`/partner/rooms?hotelId=${h.id}`)}
                     className="partner-hotel-card-btn partner-hotel-card-btn-manage"
                   >
+                    <Layout size={18} /> {t("pt_hotels_manage_rooms")}
                   </button>
                   <button
                     onClick={() => openDelete(h)}
                     className="partner-hotel-card-btn partner-hotel-card-btn-delete"
                   >
+                    <Trash2 size={18} /> {t("adm_delete")}
                   </button>
                 </div>
               </div>
@@ -389,6 +441,7 @@ export default function PartnerHotels() {
       {/* Modals */}
       {(modal === "add" || modal === "edit") && (
         <HotelForm
+          title={modal === "add" ? t("pt_hotels_form_add") : t("pt_hotels_form_edit")}
           form={form} setForm={setForm} onSubmit={handleSave} onCancel={closeFormModal} saving={saving}
           hotelTypes={hotelTypeOptions}
           amenities={amenityOptions.length ? amenityOptions : AMENITIES}
@@ -396,12 +449,19 @@ export default function PartnerHotels() {
       )}
 
       {modal === "delete" && (
+        <Modal title={t("pt_hotels_del_title")} onClose={() => setModal(null)} width={440}>
           <div>
             <div className="partner-hotel-delete-icon-wrap">
               <Trash2 size={32} color="#ef4444" />
             </div>
+            <h3 className="partner-hotel-delete-title">{t("pt_hotels_del_confirm")}</h3>
+            <p className="partner-hotel-delete-desc"
+              dangerouslySetInnerHTML={{ __html: t("pt_hotels_del_desc").replace("{name}", `<strong>"${selected?.name}"</strong>`) }}
+            />
             <div className="partner-hotel-delete-actions">
+              <button onClick={() => setModal(null)} className="partner-hotel-delete-cancel-btn">{t("adm_cancel")}</button>
               <button onClick={handleDelete} disabled={saving} className="partner-hotel-delete-confirm-btn">
+                {saving ? t("pt_hotels_deleting") : t("pt_hotels_del_submit")}
               </button>
             </div>
           </div>

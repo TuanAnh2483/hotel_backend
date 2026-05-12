@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import AdminLayout, { AP, PageHeader, Card, Badge, Btn, Table, Modal } from "../../components/admin/AdminLayout";
 import { adminService } from "../../services/adminService";
+import { useLang } from "../../contexts/LanguageContext";
 import "../../styles/pages/admin/AdminCommon.css";
 
 const STATUSES = ["", "PENDING", "APPROVED", "REJECTED"];
@@ -11,6 +12,8 @@ function fmt(n) {
 }
 
 export default function AdminRefunds({ navigate, user, onLogout }) {
+  const { t } = useLang();
+  const STATUS_LABEL = { "": t("adm_rf_tab_all"), PENDING: t("adm_rf_tab_pending"), APPROVED: t("adm_rf_tab_approved"), REJECTED: t("adm_rf_tab_rejected") };
   const [refunds, setRefunds] = useState([]);
   const [filter, setFilter]   = useState("");
   const [loading, setLoading] = useState(true);
@@ -30,12 +33,15 @@ export default function AdminRefunds({ navigate, user, onLogout }) {
   const handleFilter = s => { setPage(1); setFilter(s); };
 
   const handleAction = async (id, newStatus) => {
+    const actionKey = newStatus === "APPROVED" ? "adm_rf_confirm_approve" : "adm_rf_confirm_reject";
+    if (!window.confirm(t("adm_rf_confirm_msg").replace("{action}", t(actionKey)))) return;
     setActing(id);
     try {
       const updated = await adminService.updateRefundStatus(id, newStatus);
       setRefunds(prev => prev.map(r => r.id === id ? { ...r, ...updated } : r));
       if (detail?.id === id) setDetail(d => ({ ...d, ...updated }));
     } catch (e) {
+      alert(e.message || t("adm_rf_err_update"));
     } finally {
       setActing(null);
     }
@@ -48,10 +54,15 @@ export default function AdminRefunds({ navigate, user, onLogout }) {
 
   return (
     <AdminLayout page="admin-refunds" navigate={navigate} user={user} onLogout={onLogout}>
+      <PageHeader title={t("adm_rf_title")} subtitle={t("adm_rf_subtitle")} />
 
       {/* Summary */}
       <div className="admin-summary-grid admin-summary-grid-4">
         {[
+          { label: t("adm_rf_pending"),       value: pending,           color: "#f57f17", icon: "⏳" },
+          { label: t("adm_rf_approved"),      value: approved,          color: "#2e7d32", icon: "✅" },
+          { label: t("adm_rf_rejected"),      value: rejected,          color: "#c62828", icon: "❌" },
+          { label: t("adm_rf_total_pending"), value: fmt(totalPending), color: AP,        icon: "💰", isStr: true },
         ].map(c => (
           <div key={c.label} className="admin-summary-card">
             <span className="admin-summary-card-icon">{c.icon}</span>
@@ -81,9 +92,11 @@ export default function AdminRefunds({ navigate, user, onLogout }) {
         </div>
 
         {loading ? (
+          <div className="admin-loading">{t("adm_loading")}</div>
         ) : (
           <>
             <Table
+              headers={[t("adm_id"), t("adm_rf_col_booking"), t("adm_rf_col_user"), t("adm_rf_col_hotel"), t("adm_rf_col_amount"), t("adm_status"), t("adm_actions")]}
               rows={refunds.slice((page - 1) * pageSize, page * pageSize).map(r => [
               <span className="admin-cell-id">#{r.id}</span>,
               <span className="admin-cell-id">#B{r.bookingId}</span>,
@@ -92,12 +105,16 @@ export default function AdminRefunds({ navigate, user, onLogout }) {
               <span className="admin-cell-amount">{fmt(r.amount)}</span>,
               <Badge status={r.status} />,
               <div className="admin-cell-actions">
+                <Btn small variant="action" onClick={() => setDetail(r)}>{t("adm_view")}</Btn>
                 {r.status === "PENDING" && (
                   <>
+                    <Btn small variant="success" disabled={acting === r.id} onClick={() => handleAction(r.id, "APPROVED")}>{t("adm_rf_approve")}</Btn>
+                    <Btn small variant="danger"  disabled={acting === r.id} onClick={() => handleAction(r.id, "REJECTED")}>{t("adm_rf_reject")}</Btn>
                   </>
                 )}
               </div>,
             ])}
+              empty={t("adm_rf_empty")}
             />
 
             {/* Pagination */}
@@ -120,11 +137,18 @@ export default function AdminRefunds({ navigate, user, onLogout }) {
 
       {/* Detail modal */}
       {detail && (
+        <Modal title={`💰 ${t("adm_rf_detail_title")} #${detail.id}`} onClose={() => setDetail(null)}>
           <div className="admin-modal-info">
             <div className="admin-modal-info-title">{detail.hotelName}</div>
             <div className="admin-modal-info-sub">{detail.userEmail}</div>
           </div>
           {[
+            [t("adm_rf_booking_id"),   `#B${detail.bookingId}`],
+            [t("adm_rf_amount"),        fmt(detail.amount)],
+            [t("adm_rf_booking_date"),  detail.bookingDate || "—"],
+            [t("adm_rf_request_date"),  detail.requestedAt || "—"],
+            [t("adm_rf_reason"),        detail.reason],
+            [t("adm_status"),           <Badge status={detail.status} />],
           ].map(([k, v]) => (
             <div key={k} className="admin-modal-row">
               <span className="admin-modal-row-key">{k}</span>
@@ -133,10 +157,13 @@ export default function AdminRefunds({ navigate, user, onLogout }) {
           ))}
           {detail.status === "PENDING" && (
             <div className="admin-modal-actions">
+              <Btn variant="danger"  onClick={() => handleAction(detail.id, "REJECTED")}>❌ {t("adm_rf_reject")}</Btn>
+              <Btn variant="success" onClick={() => handleAction(detail.id, "APPROVED")}>✅ {t("adm_rf_approve")}</Btn>
             </div>
           )}
           {detail.status !== "PENDING" && (
             <div className="admin-modal-actions-right">
+              <Btn variant="ghost" onClick={() => setDetail(null)}>{t("adm_close")}</Btn>
             </div>
           )}
         </Modal>

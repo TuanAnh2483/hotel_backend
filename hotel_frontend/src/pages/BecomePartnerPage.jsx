@@ -3,6 +3,7 @@ import { C } from "../components/auth/AuthShared";
 import MainNavbar from "../components/MainNavbar";
 import Footer from "../components/Footer";
 import { getToken } from "../services/authService";
+import { useLang } from "../contexts/LanguageContext";
 import "../styles/pages/BecomePartnerPage.css";
 
 async function onboardingFetch(path, options = {}) {
@@ -20,8 +21,11 @@ async function onboardingFetch(path, options = {}) {
 }
 
 function StepIndicator({ current }) {
+  const { t } = useLang();
+  const steps = [t("bp_step_info"), t("bp_step_confirm"), t("bp_step_done")];
   return (
     <div className="bp-stepper">
+      {steps.map((label, i) => {
         const done   = i < current;
         const active = i === current;
         return (
@@ -46,6 +50,7 @@ function StepIndicator({ current }) {
                 {label}
               </span>
             </div>
+            {i < steps.length - 1 && (
               <div
                 className="bp-step-connector"
                 style={{ background: done ? C.primary : "#e5e7eb" }}
@@ -69,6 +74,7 @@ function Field({ label, required, children, hint }) {
 }
 
 export default function BecomePartnerPage({ navigate, user, onLogout }) {
+  const { t } = useLang();
   const [step, setStep]       = useState(0);
   const [form, setForm]       = useState({ businessName: "", email: user?.email || "", phone: "" });
   const [loading, setLoading] = useState(false);
@@ -83,6 +89,9 @@ export default function BecomePartnerPage({ navigate, user, onLogout }) {
         <MainNavbar active="become-partner" navigate={navigate} user={user} onLogout={onLogout} />
         <div className="bp-login-gate">
           <div className="bp-login-icon">🏨</div>
+          <h2 className="bp-login-title">{t("bp_login_title")}</h2>
+          <p className="bp-login-desc">{t("bp_login_desc")}</p>
+          <button className="bp-login-btn" onClick={() => navigate("login")}>{t("bp_login_btn")}</button>
         </div>
       </div>
     );
@@ -91,9 +100,11 @@ export default function BecomePartnerPage({ navigate, user, onLogout }) {
   async function handleStartAndSubmit() {
     setError("");
     if (!form.businessName.trim() || !form.email.trim() || !form.phone.trim()) {
+      setError(t("bp_err_required"));
       return;
     }
     if (form.phone.length < 8 || form.phone.length > 10) {
+      setError(t("bp_err_phone"));
       return;
     }
     setLoading(true);
@@ -113,6 +124,13 @@ export default function BecomePartnerPage({ navigate, user, onLogout }) {
     }
   }
 
+  const benefits = [
+    { icon: "📊", tkey_title: "bp_benefit_1_title", tkey_desc: "bp_benefit_1_desc" },
+    { icon: "🌐", tkey_title: "bp_benefit_2_title", tkey_desc: "bp_benefit_2_desc" },
+    { icon: "💰", tkey_title: "bp_benefit_3_title", tkey_desc: "bp_benefit_3_desc" },
+    { icon: "🛡️", tkey_title: "bp_benefit_4_title", tkey_desc: "bp_benefit_4_desc" },
+  ];
+
   return (
     <div className="bp-root">
       <MainNavbar active="become-partner" navigate={navigate} user={user} onLogout={onLogout} />
@@ -120,6 +138,8 @@ export default function BecomePartnerPage({ navigate, user, onLogout }) {
       {/* Hero */}
       <div className="bp-hero">
         <div className="bp-hero-icon">🏨</div>
+        <h1 className="bp-hero-title">{t("bp_hero_title")}</h1>
+        <p className="bp-hero-subtitle">{t("bp_hero_sub")}</p>
       </div>
 
       <div className="bp-content">
@@ -128,27 +148,37 @@ export default function BecomePartnerPage({ navigate, user, onLogout }) {
         {/* Step 0 — Fill form */}
         {step === 0 && (
           <div className="bp-card">
+            <h2 className="bp-card-title">{t("bp_info_title")}</h2>
+            <p className="bp-card-subtitle">{t("bp_info_sub")}</p>
 
+            <Field label={t("bp_biz_name")} required hint={t("bp_biz_name_hint")}>
+              <input className="bp-input" value={form.businessName} onChange={upd("businessName")} placeholder={t("bp_biz_name_ph")} />
             </Field>
 
+            <Field label={t("bp_email")} required hint={t("bp_email_hint")}>
               <input className="bp-input" type="email" value={form.email} onChange={upd("email")} placeholder="business@example.com" />
             </Field>
 
+            <Field label={t("bp_phone")} required hint={t("bp_phone_hint")}>
+              <input className="bp-input" value={form.phone} onChange={upd("phone")} placeholder={t("bp_phone_ph")} maxLength={10} />
             </Field>
 
             {error && <div className="bp-error-alert">{error}</div>}
 
             <div className="bp-form-actions">
+              <button className="bp-back-btn" onClick={() => navigate("home")}>{t("bp_back")}</button>
               <button
                 className="bp-next-btn"
                 onClick={() => {
                   if (!form.businessName.trim() || !form.email.trim() || !form.phone.trim()) {
+                    setError(t("bp_err_required"));
                     return;
                   }
                   setError("");
                   setStep(1);
                 }}
               >
+                {t("bp_next")}
               </button>
             </div>
           </div>
@@ -157,8 +187,13 @@ export default function BecomePartnerPage({ navigate, user, onLogout }) {
         {/* Step 1 — Confirm */}
         {step === 1 && (
           <div className="bp-card">
+            <h2 className="bp-card-title">{t("bp_confirm_title")}</h2>
+            <p className="bp-card-subtitle">{t("bp_confirm_sub")}</p>
 
             {[
+              { label: t("bp_field_biz_name"), value: form.businessName },
+              { label: t("bp_field_email"),    value: form.email },
+              { label: t("bp_field_phone"),    value: form.phone },
             ].map(({ label, value }) => (
               <div key={label} className="bp-review-row">
                 <span className="bp-review-key">{label}</span>
@@ -166,18 +201,21 @@ export default function BecomePartnerPage({ navigate, user, onLogout }) {
               </div>
             ))}
 
+            <div className="bp-success-note">{t("bp_review_note")}</div>
 
             {error && (
               <div className="bp-error-alert" style={{ marginTop: 16, marginBottom: 0 }}>{error}</div>
             )}
 
             <div className="bp-confirm-actions">
+              <button className="bp-edit-btn" onClick={() => { setStep(0); setError(""); }}>{t("bp_edit")}</button>
               <button
                 className="bp-submit-btn"
                 onClick={handleStartAndSubmit}
                 disabled={loading}
                 style={{ background: loading ? "#ccc" : C.primary, cursor: loading ? "not-allowed" : "pointer" }}
               >
+                {loading ? t("bp_submitting") : t("bp_submit")}
               </button>
             </div>
           </div>
@@ -187,21 +225,30 @@ export default function BecomePartnerPage({ navigate, user, onLogout }) {
         {step === 2 && (
           <div className="bp-card bp-card-success">
             <div className="bp-success-icon">🎉</div>
+            <h2 className="bp-success-title">{t("bp_success_title")}</h2>
             <p className="bp-success-desc">
+              {t("bp_success_desc")} <strong style={{ color: "#1a1a1a" }}>{form.email}</strong>
             </p>
 
             <div className="bp-success-id-box">
+              <div className="bp-success-id-label">{t("bp_app_id_lbl")}</div>
               <div className="bp-success-id-val">#{appId || "—"}</div>
             </div>
 
+            <button className="bp-home-btn" onClick={() => navigate("home")}>{t("bp_home_btn")}</button>
           </div>
         )}
 
         {/* Benefits */}
         {step === 0 && (
           <div className="bp-benefits">
+            <h3 className="bp-benefits-title">{t("bp_benefits_title")}</h3>
             <div className="bp-benefits-grid">
+              {benefits.map(b => (
+                <div key={b.tkey_title} className="bp-benefit-card">
                   <div className="bp-benefit-icon">{b.icon}</div>
+                  <div className="bp-benefit-title">{t(b.tkey_title)}</div>
+                  <div className="bp-benefit-desc">{t(b.tkey_desc)}</div>
                 </div>
               ))}
             </div>

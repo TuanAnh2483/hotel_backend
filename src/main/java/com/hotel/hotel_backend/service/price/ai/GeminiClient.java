@@ -1,15 +1,19 @@
 package com.hotel.hotel_backend.service.price.ai;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 @Service
+@Slf4j
 public class GeminiClient {
 
     @Value("${app.ai.gemini-api-key:}")
@@ -18,6 +22,17 @@ public class GeminiClient {
     @Value("${app.ai.model:gemini-2.0-flash}")
     private String model;
 
+    private final RestClient restClient;
+
+    public GeminiClient() {
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(Duration.ofSeconds(5));
+        factory.setReadTimeout(Duration.ofSeconds(30));
+        this.restClient = RestClient.builder()
+                .baseUrl("https://generativelanguage.googleapis.com")
+                .requestFactory(factory)
+                .build();
+    }
 
     /**
      * Gọi Gemini API. Ném IllegalStateException nếu chưa cấu hình API key
@@ -44,10 +59,14 @@ public class GeminiClient {
 
         String url = "/v1beta/models/" + model + ":generateContent?key=" + geminiApiKey;
 
+        log.debug("[Gemini] Calling model={} promptLen={}", model, prompt.length());
+        String response = restClient.post()
                 .uri(url)
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(body)
                 .retrieve()
                 .body(String.class);
+        log.debug("[Gemini] Response received, len={}", response != null ? response.length() : 0);
+        return response;
     }
 }

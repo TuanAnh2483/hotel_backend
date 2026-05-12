@@ -137,11 +137,13 @@ ModelTrainingService {
 
         OptionalDouble avgRatio = feedbacks.stream()
                 .filter(f -> f.getAppliedPrice() != null && f.getSuggestedPrice() > 0
-                          && f.getOutcome().startsWith("APPLIED"))
+                        && f.getOutcome().startsWith("APPLIED"))
                 .mapToDouble(f -> (double) f.getAppliedPrice() / f.getSuggestedPrice())
                 .average();
 
         if (avgRatio.isPresent()) {
+            // Cho phép học cả trường hợp partner giảm sâu (>12%) hoặc tăng nhẹ
+            double observed = Math.max(0.75, Math.min(1.10, avgRatio.getAsDouble()));
             double newAdj = 0.70 * model.getPartnerPriceAdjustment() + 0.30 * observed;
             model.setPartnerPriceAdjustment(newAdj);
         }
@@ -222,9 +224,11 @@ ModelTrainingService {
         int    epochs = 300;
 
         double[] w = { model.getLrW0(), model.getLrW1(), model.getLrW2(),
-                       model.getLrW3(), model.getLrW4(), model.getLrW5() };
+                model.getLrW3(), model.getLrW4(), model.getLrW5() };
 
-        double finalLoss = 1.0;
+        double finalLoss  = 1.0;
+        double prevLoss   = Double.MAX_VALUE;
+        int    noImprove  = 0;
         for (int epoch = 0; epoch < epochs; epoch++) {
             double[] grad = new double[6];
             double   loss = 0.0;
@@ -240,6 +244,16 @@ ModelTrainingService {
                 w[j] -= lr * (grad[j] / n + reg);
             }
             finalLoss = loss / n;
+            // Early stopping: dừng nếu loss không cải thiện sau 10 epoch liên tiếp
+            if (prevLoss - finalLoss < 1e-6) {
+                if (++noImprove >= 10) {
+                    log.debug("[LR] Early stopping tại epoch {} loss={}", epoch, String.format("%.4f", finalLoss));
+                    break;
+                }
+            } else {
+                noImprove = 0;
+            }
+            prevLoss = finalLoss;
         }
 
         model.setLrW0(w[0]); model.setLrW1(w[1]); model.setLrW2(w[2]);
@@ -258,7 +272,7 @@ ModelTrainingService {
         if (!model.isLrReady() || basePrice <= 0) return null;
 
         double[] w = { model.getLrW0(), model.getLrW1(), model.getLrW2(),
-                       model.getLrW3(), model.getLrW4(), model.getLrW5() };
+                model.getLrW3(), model.getLrW4(), model.getLrW5() };
 
         LocalDate date = LocalDate.parse(dateIso);
         int    dow    = date.getDayOfWeek().getValue();
@@ -272,7 +286,7 @@ ModelTrainingService {
             long   candidate   = Math.round((double) basePrice * pct / 100.0 / 1000) * 1000L;
             double priceUplift = (double) candidate / basePrice - 1.0;
             double[] x = { 1.0, priceUplift, isWeekend ? 1.0 : 0.0,
-                           isHoliday ? 1.0 : 0.0, dowSin, dowCos };
+                    isHoliday ? 1.0 : 0.0, dowSin, dowCos };
             double pAccept = sigmoid(dot(w, x));
             double expRev  = candidate * pAccept;
             if (expRev > bestExpRev) { bestExpRev = expRev; bestPrice = candidate; }
@@ -291,7 +305,7 @@ ModelTrainingService {
         double  dowSin = Math.sin(2 * Math.PI * dow / 7.0);
         double  dowCos = Math.cos(2 * Math.PI * dow / 7.0);
         return new double[]{ 1.0, priceUplift, wkend ? 1.0 : 0.0,
-                             hol ? 1.0 : 0.0, dowSin, dowCos };
+                hol ? 1.0 : 0.0, dowSin, dowCos };
     }
 
     private static double sigmoid(double z) { return 1.0 / (1.0 + Math.exp(-z)); }

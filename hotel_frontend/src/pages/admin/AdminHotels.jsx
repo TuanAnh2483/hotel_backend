@@ -4,11 +4,17 @@ import AdminLayout, {
   Table, Modal, FormField, Input, Select,
 } from "../../components/admin/AdminLayout";
 import { adminService } from "../../services/adminService";
+import { useLang } from "../../contexts/LanguageContext";
 
 const HOTEL_TYPES = ["HOTEL", "RESORT", "VILLA", "APARTMENT", "HOMESTAY", "HOSTEL", "GUEST_HOUSE"];
 const EMPTY_FORM = { name: "", province: "", district: "", address: "", hotelType: "HOTEL", description: "" };
 
 export default function AdminHotels({ navigate, user, onLogout }) {
+  const { t } = useLang();
+  const HOTEL_TYPE_LABEL = {
+    HOTEL: t("pt_type_hotel"), RESORT: t("pt_type_resort"), VILLA: t("pt_type_villa"),
+    APARTMENT: t("pt_type_apartment"), HOMESTAY: t("pt_type_homestay"), HOSTEL: t("pt_type_hostel"), GUEST_HOUSE: t("pt_type_guesthouse"),
+  };
   const [hotels, setHotels]   = useState([]);
   const [search, setSearch]   = useState("");
   const [loading, setLoading] = useState(true);
@@ -50,6 +56,7 @@ export default function AdminHotels({ navigate, user, onLogout }) {
       setHotels(prev => prev.map(h => h.id === selected.id ? updated : h));
       setModal(null);
     } catch (e) {
+      setError(e.message || t("adm_hotels_err_update"));
     } finally {
       setActing(false);
     }
@@ -63,6 +70,7 @@ export default function AdminHotels({ navigate, user, onLogout }) {
       setHotels(prev => prev.filter(h => h.id !== selected.id));
       setModal(null);
     } catch (e) {
+      setError(e.message || t("adm_hotels_err_delete"));
     } finally {
       setActing(false);
     }
@@ -77,6 +85,8 @@ export default function AdminHotels({ navigate, user, onLogout }) {
   return (
     <AdminLayout page="admin-hotels" navigate={navigate} user={user} onLogout={onLogout}>
       <PageHeader
+        title={t("adm_hotels_title")}
+        subtitle={t("adm_hotels_subtitle")}
       />
 
       {error && (
@@ -88,6 +98,9 @@ export default function AdminHotels({ navigate, user, onLogout }) {
       {/* Summary */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14, marginBottom: 24 }}>
         {[
+          { label: t("adm_hotels_total"),      value: counts.total,  color: AP,        icon: "🏨" },
+          { label: t("adm_users_active"),      value: counts.active, color: "#2e7d32", icon: "✅" },
+          { label: t("adm_hotels_avg_rating"), value: counts.avg,    color: "#f5a623", icon: "⭐" },
         ].map(c => (
           <div key={c.label} style={{
             background: "#fff", borderRadius: 12, padding: "16px 20px",
@@ -106,19 +119,25 @@ export default function AdminHotels({ navigate, user, onLogout }) {
       <Card>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18, flexWrap: "wrap", gap: 10 }}>
           <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+            <SearchInput value={search} onChange={setSearch} placeholder={t("adm_hotels_search_ph")} />
             <select
               value={filterType}
               onChange={e => setFilterType(e.target.value)}
               style={{ padding: "9px 12px", borderRadius: 9, border: "1px solid #e5e5e5", fontSize: 13, background: "#f8f9fa", cursor: "pointer" }}
             >
+              <option value="">{t("adm_hotels_filter_type")}</option>
+              {HOTEL_TYPES.map(ht => <option key={ht} value={ht}>{HOTEL_TYPE_LABEL[ht]}</option>)}
             </select>
           </div>
+          <span style={{ fontSize: 12, color: "#aaa", fontWeight: 600 }}>{t("adm_hotels_count").replace("{count}", filtered.length)}</span>
         </div>
 
         {loading ? (
+          <div style={{ textAlign: "center", padding: 48, color: "#bbb" }}>{t("adm_loading")}</div>
         ) : (
           <>
             <Table
+              headers={[t("adm_id"), t("adm_hotels_col_name"), t("adm_hotels_col_loc"), t("adm_hotels_col_type"), t("adm_hotels_col_rating"), t("adm_status"), t("adm_actions")]}
               rows={filtered.slice((page - 1) * pageSize, page * pageSize).map(h => [
               <span style={{ color: "#bbb", fontSize: 12, fontFamily: "monospace" }}>#{h.id}</span>,
               <div>
@@ -138,8 +157,11 @@ export default function AdminHotels({ navigate, user, onLogout }) {
               </span>,
               <Badge status={h.status || "ACTIVE"} />,
               <div style={{ display: "flex", gap: 6 }}>
+                <Btn small variant="action" onClick={() => openEdit(h)}>{t("adm_edit")}</Btn>
+                <Btn small variant="danger" onClick={() => openDel(h)}>{t("adm_delete")}</Btn>
               </div>,
             ])}
+              empty={t("adm_hotels_empty")}
             />
 
             {/* Pagination */}
@@ -167,28 +189,41 @@ export default function AdminHotels({ navigate, user, onLogout }) {
 
       {/* Edit modal */}
       {modal === "edit" && (
+        <Modal title={t("adm_hotels_edit_title")} onClose={() => setModal(null)} width={520}>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 0 }}>
             <div style={{ gridColumn: "1/-1" }}>
+              <FormField label={t("adm_hotels_col_name")} required>
+                <Input value={form.name} onChange={upd("name")} placeholder={t("adm_hotels_name_ph")} />
               </FormField>
             </div>
             <div style={{ paddingRight: 8 }}>
+              <FormField label={t("adm_hotels_province")} required>
+                <Input value={form.province} onChange={upd("province")} placeholder={t("adm_hotels_province_ph")} />
               </FormField>
             </div>
             <div style={{ paddingLeft: 8 }}>
+              <FormField label={t("adm_hotels_district")} required>
+                <Input value={form.district} onChange={upd("district")} placeholder={t("adm_hotels_district_ph")} />
               </FormField>
             </div>
             <div style={{ gridColumn: "1/-1" }}>
+              <FormField label={t("adm_hotels_address")} required>
+                <Input value={form.address} onChange={upd("address")} placeholder={t("adm_hotels_address_ph")} />
               </FormField>
             </div>
             <div style={{ gridColumn: "1/-1" }}>
+              <FormField label={t("adm_hotels_type")}>
                 <Select value={form.hotelType} onChange={upd("hotelType")}>
+                  {HOTEL_TYPES.map(ht => <option key={ht} value={ht}>{HOTEL_TYPE_LABEL[ht]}</option>)}
                 </Select>
               </FormField>
             </div>
             <div style={{ gridColumn: "1/-1" }}>
+              <FormField label={t("adm_hotels_desc")}>
                 <textarea
                   value={form.description}
                   onChange={upd("description")}
+                  placeholder={t("adm_hotels_desc_ph")}
                   rows={3}
                   style={{
                     width: "100%", padding: "9px 12px", borderRadius: 8,
@@ -200,7 +235,9 @@ export default function AdminHotels({ navigate, user, onLogout }) {
             </div>
           </div>
           <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 4 }}>
+            <Btn variant="ghost" onClick={() => setModal(null)}>{t("adm_cancel")}</Btn>
             <Btn disabled={acting || !form.name.trim() || !form.province.trim() || !form.district.trim() || !form.address.trim()} onClick={handleSave}>
+              {acting ? t("adm_saving") : t("adm_hotels_save")}
             </Btn>
           </div>
         </Modal>
@@ -208,14 +245,19 @@ export default function AdminHotels({ navigate, user, onLogout }) {
 
       {/* Delete confirm */}
       {modal === "delete" && (
+        <Modal title={t("adm_hotels_del_title")} onClose={() => setModal(null)}>
           <div style={{ textAlign: "center", padding: "12px 0 20px" }}>
             <div style={{ fontSize: 48, marginBottom: 12 }}>⚠️</div>
             <p style={{ fontSize: 14, color: "#333", margin: "0 0 6px" }}>
+              {t("adm_hotels_del_confirm")}
             </p>
             <p style={{ fontSize: 15, fontWeight: 800, color: AP, margin: 0 }}>"{selected?.name}"?</p>
+            <p style={{ fontSize: 12, color: "#aaa", marginTop: 8 }}>{t("adm_hotels_del_warning")}</p>
           </div>
           <div style={{ display: "flex", justifyContent: "center", gap: 12 }}>
+            <Btn variant="ghost" onClick={() => setModal(null)}>{t("adm_cancel")}</Btn>
             <Btn variant="danger" disabled={acting} onClick={handleDelete}>
+              {acting ? t("adm_deleting") : t("adm_hotels_del_submit")}
             </Btn>
           </div>
         </Modal>

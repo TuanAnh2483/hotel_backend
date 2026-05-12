@@ -5,19 +5,29 @@ import AdminLayout, {
 } from "../../components/admin/AdminLayout";
 import { adminService } from "../../services/adminService";
 import { Users, CheckCircle, Lock, Unlock, Handshake } from "lucide-react";
+import { useLang } from "../../contexts/LanguageContext";
 import "../../styles/pages/admin/AdminUsers.css";
 
 const EMPTY_FORM = { email: "", password: "", confirmPassword: "", userType: "CUSTOMER", avatarPreview: null };
 
-function validateField(key, value, form) {
-  if (key === "email") {
+export default function AdminUsers({ navigate, user, onLogout }) {
+  const { t } = useLang();
+
+  function validateField(key, value, form) {
+    if (key === "email") {
+      if (!value) return t("adm_users_err_email_empty");
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return t("adm_users_err_email_invalid");
+    }
+    if (key === "password") {
+      if (!value) return t("adm_users_err_pass_empty");
+      if (value.length < 8) return t("adm_users_err_pass_min");
+      if (!/(?=.*[A-Za-z])(?=.*\d)/.test(value)) return t("adm_users_err_pass_format");
+    }
+    if (key === "confirmPassword") {
+      if (value !== form.password) return t("adm_users_err_pass_cf");
+    }
+    return "";
   }
-  if (key === "password") {
-  }
-  if (key === "confirmPassword") {
-  }
-  return "";
-}
   const [users, setUsers]       = useState([]);
   const [search, setSearch]     = useState("");
   const [loading, setLoading]   = useState(true);
@@ -79,6 +89,7 @@ function validateField(key, value, form) {
       setUsers(prev => [created, ...prev]);
       setModal(false); setForm(EMPTY_FORM); setFieldErrors({});
     } catch (e) {
+      setError(e.message || t("adm_users_err_generic"));
     }
     setSaving(false);
   };
@@ -101,8 +112,11 @@ function validateField(key, value, form) {
   return (
     <AdminLayout page="admin-users" navigate={navigate} user={user} onLogout={onLogout}>
       <PageHeader
+        title={t("adm_users_title")}
+        subtitle={t("adm_users_subtitle")}
         action={
           <Btn onClick={() => { setForm(EMPTY_FORM); setError(""); setFieldErrors({}); setModal(true); }}>
+            {t("adm_users_add_btn")}
           </Btn>
         }
       />
@@ -110,6 +124,10 @@ function validateField(key, value, form) {
       {/* Summary cards */}
       <div className="admin-users-summary-grid">
         {[
+          { label: t("adm_users_total"),    value: counts.total,    icon: <Users size={24} color={AP} /> },
+          { label: t("adm_users_active"),   value: counts.active,   icon: <CheckCircle size={24} color={AP} /> },
+          { label: t("adm_users_locked"),   value: counts.locked,   icon: <Lock size={24} color={AP} /> },
+          { label: t("adm_users_partners"), value: counts.partners, icon: <Handshake size={24} color={AP} /> },
         ].map(c => (
           <div key={c.label} className="admin-users-summary-card">
             <div className="admin-users-summary-icon">{c.icon}</div>
@@ -123,12 +141,16 @@ function validateField(key, value, form) {
 
       <Card>
         <div className="admin-users-toolbar">
+          <SearchInput value={search} onChange={setSearch} placeholder={t("adm_users_search_ph")} />
+          <span className="admin-users-count">{t("adm_users_count").replace("{count}", filtered.length)}</span>
         </div>
 
         {loading ? (
+          <div style={{ textAlign: "center", padding: 48, color: "#bbb" }}>{t("adm_loading")}</div>
         ) : (
           <>
             <Table
+              headers={[t("adm_id"), t("adm_email"), t("adm_users_col_type"), t("adm_status"), t("adm_created_at"), t("adm_actions")]}
               rows={filtered.slice((page - 1) * pageSize, page * pageSize).map(u => [
               <span className="admin-users-cell-id">#{u.id}</span>,
               <div className="admin-users-cell-email">{u.email}</div>,
@@ -142,9 +164,11 @@ function validateField(key, value, form) {
                 onClick={() => handleToggle(u.id)}
               >
                 <div style={{ display: "flex", alignItems: "center", gap: 6, justifyContent: "center" }}>
+                  {toggling === u.id ? "..." : u.status === "ACTIVE" ? t("adm_users_lock") : t("adm_users_unlock")}
                 </div>
               </Btn>,
             ])}
+              empty={t("adm_users_empty")}
             />
 
             {/* Pagination */}
@@ -167,6 +191,7 @@ function validateField(key, value, form) {
 
       {/* Add user modal */}
       {modal && (
+        <Modal title={t("adm_users_modal_title")} onClose={() => setModal(false)}>
           {error && (
             <div style={{ background: "#ffebee", color: "#c62828", padding: "10px 14px", borderRadius: 8, fontSize: 13, marginBottom: 16 }}>
               ⚠️ {error}
@@ -187,28 +212,40 @@ function validateField(key, value, form) {
             </div>
             <input ref={avatarInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleAvatarChange} />
             <div className="admin-users-modal-avatar-hint">
+              {form.avatarPreview ? t("adm_users_avatar_click") : t("adm_users_avatar_ph")}
             </div>
             {form.avatarPreview && (
               <button
                 onClick={() => setForm(prev => ({ ...prev, avatarPreview: null }))}
                 className="admin-users-modal-avatar-remove-btn"
               >
+                {t("adm_users_avatar_del")}
               </button>
             )}
           </div>
 
+          <FormField label={t("adm_email")} required>
             <Input value={form.email} onChange={upd("email")} type="email" placeholder="example@email.com" />
             {fieldErrors.email && <div style={{ color: "#c62828", fontSize: 12, marginTop: 4 }}>{fieldErrors.email}</div>}
           </FormField>
+          <FormField label={t("adm_users_password")} required>
+            <Input value={form.password} onChange={upd("password")} type="password" placeholder={t("adm_users_password_hint")} />
             {fieldErrors.password && <div style={{ color: "#c62828", fontSize: 12, marginTop: 4 }}>{fieldErrors.password}</div>}
           </FormField>
+          <FormField label={t("adm_users_password_cf")} required>
+            <Input value={form.confirmPassword} onChange={upd("confirmPassword")} type="password" placeholder={t("adm_users_password_ph")} />
             {fieldErrors.confirmPassword && <div style={{ color: "#c62828", fontSize: 12, marginTop: 4 }}>{fieldErrors.confirmPassword}</div>}
           </FormField>
+          <FormField label={t("adm_users_col_type")} required>
             <Select value={form.userType} onChange={upd("userType")}>
+              <option value="CUSTOMER">{t("adm_users_role_customer")}</option>
+              <option value="PARTNER">{t("adm_users_role_partner")}</option>
             </Select>
           </FormField>
           <div className="admin-users-modal-actions">
+            <Btn variant="ghost" onClick={() => setModal(false)}>{t("adm_cancel")}</Btn>
             <Btn disabled={saving || !form.email || !form.password || Object.values(fieldErrors).some(Boolean)} onClick={handleCreate}>
+              {saving ? t("adm_processing") : t("adm_users_submit")}
             </Btn>
           </div>
         </Modal>

@@ -3,6 +3,7 @@ import { C, ActionBtn } from "../components/auth/AuthShared";
 import MainNavbar from "../components/MainNavbar";
 import Footer from "../components/Footer";
 import { bookingService } from "../services/bookingService";
+import { useLang } from "../contexts/LanguageContext";
 import { ChevronLeft } from "lucide-react";
 import "../styles/pages/BookingPage.css";
 
@@ -39,6 +40,8 @@ function fmtDate(s) {
 
 // ── Stepper ─────────────────────────────────────────────────────────
 function Stepper({ current }) {
+  const { t } = useLang();
+  const steps = [t("step_room"), t("step_confirm"), t("step_payment"), t("step_done")];
   return (
     <div className="bkp-stepper">
       {steps.map((s, i) => {
@@ -117,6 +120,7 @@ function Field({ label, icon, children }) {
 }
 
 export default function BookingPage({ navigate, user, params = {}, onLogout }) {
+  const { t } = useLang();
   const { hotelId, hotelName, room, checkin, checkout, guests = 1, nights = 1 } = params;
 
   const [contact, setContact] = useState({ fullName: "", email: user?.email || "", phone: "" });
@@ -167,6 +171,8 @@ export default function BookingPage({ navigate, user, params = {}, onLogout }) {
             <div className="bkp-login-avatar">
               <SvgIcon k="person" size={32} color={P} />
             </div>
+            <p className="bkp-login-text">{t("booking_login_msg")}</p>
+            <ActionBtn onClick={() => navigate("login")} style={{ padding: "12px 36px" }}>{t("booking_login_btn")}</ActionBtn>
           </div>
         </div>
       </div>
@@ -190,23 +196,36 @@ export default function BookingPage({ navigate, user, params = {}, onLogout }) {
         <div className="bkp-left">
           {/* Back */}
           <button className="bkp-back-btn" onClick={() => navigate("hotel", { hotelId })}>
+            <ChevronLeft size={18} /> {t("booking_back")}
           </button>
 
+          <h1 className="bkp-page-title">{t("booking_title")}</h1>
 
           {/* Booking summary card */}
+          <Card title={t("booking_info_title")} icon="bed">
             {hotelName && <div className="bkp-hotel-name">{hotelName}</div>}
+            <div className="bkp-room-name">{room?.name || t("booking_room_selected")}</div>
 
+            <InfoRow icon="calendar" label={t("booking_checkin_full")} value={fmtDate(checkin)} />
+            <InfoRow icon="calendar" label={t("booking_checkout_full")} value={fmtDate(checkout)} />
+            <InfoRow icon="moon"     label={t("booking_duration")} value={`${nights}${t("night")}`} />
+            <InfoRow icon="people"   label={t("booking_guests")}   value={`${guests}${t("guests")}`} />
             {room?.beds && (
+              <InfoRow icon="bed" label={t("booking_bed")} value={room.beds} />
             )}
           </Card>
 
           {/* Contact form */}
+          <Card title={t("booking_contact")} icon="person">
             <p className="bkp-contact-note">
+              {t("booking_contact_note")}
             </p>
             <div className="bkp-contact-form">
+              <Field label={t("booking_name")} icon="person">
                 <input
                   className="bkp-input"
                   style={inp(focusField === "fullName")}
+                  placeholder={t("booking_name_ph")}
                   value={contact.fullName}
                   onChange={upd("fullName")}
                   onFocus={() => setFocusField("fullName")}
@@ -214,6 +233,7 @@ export default function BookingPage({ navigate, user, params = {}, onLogout }) {
                 />
               </Field>
               <div className="bkp-contact-grid">
+                <Field label={t("booking_email")} icon="email">
                   <input
                     className="bkp-input"
                     style={inp(focusField === "email")}
@@ -225,9 +245,11 @@ export default function BookingPage({ navigate, user, params = {}, onLogout }) {
                     onBlur={() => setFocusField(null)}
                   />
                 </Field>
+                <Field label={t("booking_phone")} icon="phone">
                   <input
                     className="bkp-input"
                     style={inp(focusField === "phone")}
+                    placeholder={t("booking_phone_ph")}
                     value={contact.phone}
                     onChange={upd("phone")}
                     onFocus={() => setFocusField("phone")}
@@ -245,6 +267,8 @@ export default function BookingPage({ navigate, user, params = {}, onLogout }) {
                 <SvgIcon k="shield" size={18} color="#2e7d32" />
               </div>
               <div>
+                <div className="bkp-policy-title">{t("booking_cancel_policy_title")}</div>
+                <div className="bkp-policy-text">{t("booking_cancel_policy_text")}</div>
               </div>
             </div>
           </Card>
@@ -254,25 +278,31 @@ export default function BookingPage({ navigate, user, params = {}, onLogout }) {
         <div className="bkp-right">
           {/* Price breakdown */}
           <div className="bkp-price-box">
+            <h3 className="bkp-price-title">{t("booking_price_title")}</h3>
 
             {roomPrice > 0 ? (
               <>
                 <div className="bkp-price-row">
+                  <span>{fmt(roomPrice)} × {nights}{t("night")}</span>
                   <span className="bkp-price-row-val">{fmt(subtotal)}</span>
                 </div>
                 <div className="bkp-price-row bkp-price-row-tax">
+                  <span>{t("booking_tax")}</span>
                   <span className="bkp-price-row-val">{fmt(tax)}</span>
                 </div>
                 <div className="bkp-price-total-row">
+                  <span className="bkp-price-total-label">{t("booking_total")}</span>
                   <span className="bkp-price-total-value">{fmt(total)}</span>
                 </div>
               </>
             ) : (
+              <p className="bkp-price-empty">{t("booking_no_price")}</p>
             )}
 
             {/* Payment note */}
             <div className="bkp-payment-note">
               <SvgIcon k="info" size={14} color="#aaa" />
+              <span>{t("booking_payment_note")}</span>
             </div>
           </div>
 
@@ -283,6 +313,7 @@ export default function BookingPage({ navigate, user, params = {}, onLogout }) {
             disabled={loading}
             style={{ width: "100%", padding: "15px", fontSize: 15, borderRadius: 12, boxSizing: "border-box" }}
           >
+            {loading ? t("booking_processing") : `${t("booking_confirm_btn")} →`}
           </ActionBtn>
 
           <p className="bkp-terms">

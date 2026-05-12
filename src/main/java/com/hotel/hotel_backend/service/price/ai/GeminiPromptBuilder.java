@@ -34,16 +34,16 @@ public class GeminiPromptBuilder {
             sb.append("Thông tin mô hình AI đã học cho phòng này:\n");
             sb.append("- Số vòng huấn luyện: ").append(model.getTrainingRound()).append("\n");
             sb.append("- Tỉ lệ partner chấp nhận đề xuất: ")
-              .append(String.format("%.0f%%", model.getLastAcceptanceRate() * 100)).append("\n");
+                    .append(String.format("%.0f%%", model.getLastAcceptanceRate() * 100)).append("\n");
             sb.append("- Hệ số tích cực giá học được: ")
-              .append(String.format("%.2f", model.getPriceAggressiveness()))
-              .append(" (1.0=mặc định, <1=thận trọng, >1=có thể đẩy cao hơn)\n");
+                    .append(String.format("%.2f", model.getPriceAggressiveness()))
+                    .append(" (1.0=mặc định, <1=thận trọng, >1=có thể đẩy cao hơn)\n");
             if (model.getAvgWeekdayOcc() != null)
                 sb.append("- Công suất TB ngày thường (lịch sử 8 tuần): ")
-                  .append(String.format("%.0f%%", model.getAvgWeekdayOcc() * 100)).append("\n");
+                        .append(String.format("%.0f%%", model.getAvgWeekdayOcc() * 100)).append("\n");
             if (model.getAvgWeekendOcc() != null)
                 sb.append("- Công suất TB cuối tuần (lịch sử 8 tuần): ")
-                  .append(String.format("%.0f%%", model.getAvgWeekendOcc() * 100)).append("\n");
+                        .append(String.format("%.0f%%", model.getAvgWeekendOcc() * 100)).append("\n");
             sb.append("→ Hãy ưu tiên dữ liệu lịch sử này khi đề xuất giá.\n\n");
         }
 
@@ -63,7 +63,7 @@ public class GeminiPromptBuilder {
             sb.append("Lịch sử quyết định gần đây của partner (học từ đây):\n");
             for (PriceFeedback f : recentFeedback) {
                 sb.append("- ").append(f.getDate())
-                  .append(": đề xuất ").append(String.format("%,d", f.getSuggestedPrice())).append("đ");
+                        .append(": đề xuất ").append(String.format("%,d", f.getSuggestedPrice())).append("đ");
                 if (f.getAppliedPrice() != null)
                     sb.append(" → áp dụng ").append(String.format("%,d", f.getAppliedPrice())).append("đ");
                 sb.append(" [").append(f.getOutcome()).append("]\n");
@@ -76,8 +76,11 @@ public class GeminiPromptBuilder {
         sb.append("Dữ liệu từng ngày:\n");
         for (PricingSuggestion p : pricing) {
             sb.append("- date=").append(p.date())
-              .append(" currentPrice=").append(String.format("%,d", p.currentPrice())).append("VND")
-              .append(" occupancy=").append(String.format("%.0f%%", p.occupancy() * 100))
+                    .append(" currentPrice=").append(String.format("%,d", p.currentPrice())).append("VND")
+                    .append(" occupancy=").append(String.format("%.0f%%", p.occupancy() * 100))
+                    .append(" demand=").append(p.demand())
+                    .append(" velocity=").append(p.velocity())
+                    .append(" daysUntil=").append(p.daysUntil());
             if (p.isWeekend())  sb.append(" weekend=true");
             if (p.isHoliday())  sb.append(" holiday=").append(p.holidayTier());
             if (p.suggestedPrice() != null)

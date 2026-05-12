@@ -1,18 +1,33 @@
 import { useState, useEffect, useRef } from "react";
 import { C, S, LOGO_IMG } from "./auth/AuthShared";
-import { 
-  User, 
-  LogOut, 
-  LayoutDashboard, 
-  Moon, 
-  Sun, 
-  Globe, 
+import {
+  User,
+  LogOut,
+  LayoutDashboard,
+  Moon,
+  Sun,
+  Globe,
   ChevronDown,
   ClipboardList
 } from "lucide-react";
+import { useLang } from "../contexts/LanguageContext";
 
+const BASE_LINK_PAGES = [
+  { key: "nav_home",           page: "home"                                       },
+  { key: "nav_hotels",         page: "hotels"                                     },
+  { key: "nav_mybookings",     page: "my-bookings",      role: "CUSTOMER"         },
+  { key: "nav_reviews",        page: "customer-reviews", role: "CUSTOMER", authOnly: true },
 ];
 
+const PARTNER_LINK_PAGES = [
+  { vi: "Trang chủ",        en: "Dashboard",      page: "partner-dashboard" },
+  { vi: "Khách sạn của tôi", en: "My Hotels",      page: "partner-hotels"    },
+  { vi: "Loại phòng",       en: "Room Types",     page: "partner-rooms"     },
+  { vi: "Lịch & Vận hành",  en: "Calendar",       page: "partner-calendar"  },
+  { vi: "Booking",           en: "Bookings",       page: "partner-bookings"  },
+  { vi: "Đánh giá",         en: "Reviews",        page: "partner-reviews"   },
+  { vi: "Doanh thu",         en: "Revenue",        page: "partner-revenue"   },
+  { vi: "AI Dự báo",        en: "AI Forecast",    page: "partner-forecast"  },
 ];
 
 const ROLE_LABEL = {
@@ -33,12 +48,20 @@ export default function MainNavbar({ active, navigate, user, onLogout }) {
   const [showMenu, setShowMenu]     = useState(false);
   const [isDark, setIsDark]         = useState(() => localStorage.getItem("theme") === "dark");
   const menuRef                     = useRef(null);
+  const { lang, toggleLang, t }     = useLang();
 
   const isPartner = user?.userType === "PARTNER";
   const canApplyPartner = !isPartner && user?.userType !== "ADMIN";
 
+  const baseLinks = BASE_LINK_PAGES.map(l => ({ ...l, label: t(l.key) }));
+  const partnerLinks = PARTNER_LINK_PAGES.map(l => ({ ...l, label: lang === "en" ? l.en : l.vi }));
+
   const navLinks = isPartner
+    ? partnerLinks
     : [
+        ...baseLinks.filter(l => (!l.authOnly || user) && (!l.role || !user || user.userType === l.role)),
+        ...(canApplyPartner ? [{ label: t("nav_become_partner"), page: "become-partner" }] : []),
+        ...(user?.userType === "ADMIN" ? [{ label: t("nav_admin"), page: "admin-dashboard" }] : []),
       ];
 
   useEffect(() => {
@@ -52,7 +75,10 @@ export default function MainNavbar({ active, navigate, user, onLogout }) {
 
   useEffect(() => {
     if (isDark) {
+      // invert(0.92) đổi #ffffff thành ~#141414 (xám tối nhẹ)
+      // contrast(0.9) làm mềm chữ tránh quá tương phản
       document.documentElement.style.filter = "invert(0.92) hue-rotate(180deg) contrast(0.9)";
+      document.documentElement.style.background = "#fff"; // sẽ bị invert thành màu tối
       
       let style = document.getElementById("dark-mode-fixes");
       if (!style) {
@@ -60,6 +86,7 @@ export default function MainNavbar({ active, navigate, user, onLogout }) {
         style.id = "dark-mode-fixes";
         style.innerHTML = `
           img, video, iframe {
+            /* Đảo ngược invert của thẻ cha để giữ màu thật của ảnh/video */
             filter: contrast(1.11) hue-rotate(180deg) invert(1) !important;
           }
           input { background-color: transparent !important; }
@@ -118,6 +145,15 @@ export default function MainNavbar({ active, navigate, user, onLogout }) {
           {isDark ? <Sun size={20} color="#1a1a1a" /> : <Moon size={20} color="#1a1a1a" />}
         </button>
 
+        <button
+          style={{ ...S.iconBtn, display: "flex", alignItems: "center", gap: 4, padding: "6px 10px", borderRadius: 8 }}
+          onClick={toggleLang}
+          title={lang === "vi" ? "Switch to English" : "Chuyển sang tiếng Việt"}
+        >
+          <Globe size={16} color="#1a1a1a" />
+          <span style={{ fontSize: 12, fontWeight: 700, color: "#1a1a1a", letterSpacing: 0.5 }}>
+            {lang === "vi" ? "VI" : "EN"}
+          </span>
         </button>
 
         {user ? (
@@ -148,6 +184,7 @@ export default function MainNavbar({ active, navigate, user, onLogout }) {
                   .menu-item:hover { background: #f8f9fa !important; }
                 `}</style>
                 <div style={{ padding: "16px 20px", borderBottom: "1px solid #f0f0f0", background: "linear-gradient(to bottom, #fff, #fdfdfd)" }}>
+                  <p style={{ fontSize: 10, color: "#aaa", margin: 0, textTransform: "uppercase", letterSpacing: 1.2, fontWeight: 700 }}>{t("nav_account")}</p>
                   <p style={{ fontSize: 13, fontWeight: 700, color: "#1a1a1a", margin: "4px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{user.email}</p>
                   {user.userType && (
                     <span style={{ fontSize: 10, borderRadius: 6, padding: "2px 10px", fontWeight: 800, display: "inline-block", marginTop: 6, textTransform: "uppercase", ...(ROLE_STYLE[user.userType] || { background: "#f0f0f0", color: "#555" }) }}>
@@ -164,9 +201,10 @@ export default function MainNavbar({ active, navigate, user, onLogout }) {
                       onClick={() => { navigate("partner-dashboard"); setShowMenu(false); }}
                     >
                       <LayoutDashboard size={16} color="#555" />
+                      <span style={{ fontWeight: 500 }}>{t("nav_dashboard")}</span>
                     </button>
                   )}
-                  
+
                   {user?.userType === "ADMIN" && (
                     <button
                       className="menu-item"
@@ -174,6 +212,7 @@ export default function MainNavbar({ active, navigate, user, onLogout }) {
                       onClick={() => { navigate("admin-dashboard"); setShowMenu(false); }}
                     >
                       <LayoutDashboard size={16} color="#555" />
+                      <span style={{ fontWeight: 500 }}>{t("nav_admin_sys")}</span>
                     </button>
                   )}
 
@@ -184,6 +223,7 @@ export default function MainNavbar({ active, navigate, user, onLogout }) {
                       onClick={() => { navigate("become-partner"); setShowMenu(false); }}
                     >
                       <ClipboardList size={16} color="#555" />
+                      <span style={{ fontWeight: 500 }}>{t("nav_become_partner")}</span>
                     </button>
                   )}
 
@@ -193,6 +233,7 @@ export default function MainNavbar({ active, navigate, user, onLogout }) {
                     onClick={() => { navigate("profile"); setShowMenu(false); }}
                   >
                     <User size={16} color="#555" />
+                    <span style={{ fontWeight: 500 }}>{t("nav_profile")}</span>
                   </button>
                 </div>
 
@@ -202,6 +243,7 @@ export default function MainNavbar({ active, navigate, user, onLogout }) {
                   onClick={() => { if (onLogout) onLogout(); setShowMenu(false); }}
                 >
                   <LogOut size={16} />
+                  {t("nav_logout")}
                 </button>
               </div>
             )}
@@ -218,6 +260,7 @@ export default function MainNavbar({ active, navigate, user, onLogout }) {
               onClick={() => navigate("login")}
               onMouseEnter={() => setHovBtn("login")}
               onMouseLeave={() => setHovBtn(null)}
+            >{t("nav_login")}</button>
             <button
               style={{
                 ...S.btnDefault,
@@ -230,6 +273,7 @@ export default function MainNavbar({ active, navigate, user, onLogout }) {
               onClick={() => navigate("register")}
               onMouseEnter={() => setHovBtn("register")}
               onMouseLeave={() => setHovBtn(null)}
+            >{t("nav_register")}</button>
           </>
         )}
       </div>

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { partnerService } from "../../services/partnerService";
+import { useLang } from "../../contexts/LanguageContext";
 import { 
   AlertCircle, Building2, ClipboardList, CircleDollarSign, BarChart3,
   Bed, Calendar, ArrowRight, User
@@ -46,7 +47,18 @@ function endOfCurrentMonth() {
 
 export default function PartnerDashboard() {
   const { user } = useAuth();
+  const { t } = useLang();
   const rrNavigate = useNavigate();
+
+  function statusConfig(status) {
+    const STATUS_LABELS = {
+      CONFIRMED:       { label: t("pt_status_confirmed"),       color: "#10b981", bg: "#ecfdf5" },
+      PENDING_PAYMENT: { label: t("pt_status_pending_payment"), color: "#f59e0b", bg: "#fffbeb" },
+      CANCELLED:       { label: t("pt_status_cancelled"),       color: "#94a3b8", bg: "#f8fafc" },
+      COMPLETED:       { label: t("pt_status_completed"),       color: "#BE1E2E", bg: "#FFF1F2" },
+    };
+    return STATUS_LABELS[status] || { label: status || t("pt_status_unknown"), color: "#475569", bg: "#f8fafc" };
+  }
   const [hotels, setHotels] = useState([]);
   const [rooms, setRooms] = useState([]);
   const [bookings, setBookings] = useState([]);
@@ -94,6 +106,7 @@ export default function PartnerDashboard() {
         setBookings([]);
         setBookingTotal(0);
         setAnalytics(null);
+        setError(e.message || t("pt_loading"));
       } finally {
         setLoading(false);
       }
@@ -107,6 +120,10 @@ export default function PartnerDashboard() {
   const monthlyRevenue = Number(analytics?.netRevenue ?? analytics?.grossRevenue ?? 0);
   
   const stats = [
+    { label: t("pt_dash_hotels"),  value: hotels.length,          hint: t("pt_dash_hotels_hint"),                                              Icon: Building2,         color: "#BE1E2E", path: "/partner/hotels"   },
+    { label: t("pt_dash_bookings"),value: bookingTotal,            hint: t("pt_dash_bookings_hint"),                                            Icon: ClipboardList,     color: "#0EA5E9", path: "/partner/bookings" },
+    { label: t("pt_dash_revenue"), value: fmtPrice(monthlyRevenue),hint: t("pt_dash_revenue_hint"),                                             Icon: CircleDollarSign,  color: "#7C3AED", path: "/partner/revenue"  },
+    { label: t("pt_dash_rooms"),   value: totalPhysicalRooms,      hint: t("pt_dash_rooms_hint").replace("{n}", totalRoomTypes),                 Icon: Bed,               color: "#059669", path: "/partner/rooms"    },
   ];
 
   return (
@@ -122,19 +139,23 @@ export default function PartnerDashboard() {
             <div style={{ width: 44, height: 44, borderRadius: "50%", background: "rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center" }}>
               <User size={24} color="#fff" />
             </div>
+            {t("pt_dash_greeting").replace("{name}", formatDisplayName(user))}
           </h1>
           <p style={{ fontSize: 14, color: "rgba(255,255,255,0.7)", maxWidth: 600, lineHeight: 1.6 }}>
+            {t("pt_dash_subtitle")}
           </p>
           <div style={{ display: "flex", gap: 12, marginTop: 20 }}>
-            <button 
+            <button
               onClick={() => rrNavigate("/partner/calendar")}
               style={{ padding: "10px 20px", borderRadius: 8, background: "#BE1E2E", color: "#fff", border: "none", fontWeight: 700, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 8 }}
             >
+              {t("pt_dash_manage_price")} <ArrowRight size={16} />
             </button>
-            <button 
+            <button
               onClick={() => rrNavigate("/partner/revenue")}
               style={{ padding: "10px 20px", borderRadius: 8, background: "rgba(255,255,255,0.1)", color: "#fff", border: "none", fontWeight: 700, fontSize: 13, cursor: "pointer" }}
             >
+              {t("pt_dash_finance")}
             </button>
           </div>
         </div>
@@ -176,8 +197,11 @@ export default function PartnerDashboard() {
         <div style={{ background: "#fff", borderRadius: 16, padding: "24px", border: "1px solid #f1f5f9", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <Calendar size={18} color="#0EA5E9" />
+              <h2 style={{ fontSize: 16, fontWeight: 800, color: "#1e293b", margin: 0, userSelect: "none", cursor: "default" }}>{t("pt_dash_recent")}</h2>
             </div>
             <button onClick={() => rrNavigate("/partner/bookings")} style={{ fontSize: 13, color: "#BE1E2E", background: "none", border: "none", cursor: "pointer", fontWeight: 700 }}>
+              {t("pt_view_all")}
             </button>
           </div>
 
@@ -185,6 +209,7 @@ export default function PartnerDashboard() {
             <table className="partner-dashboard-table">
               <thead>
                   <tr className="partner-dashboard-table-header">
+                    {[t("pt_dash_col_customer"), t("pt_dash_col_hotel"), t("pt_dash_col_stay"), t("pt_dash_col_amount"), t("pt_dash_col_status")].map(h => (
                       <th key={h} className="partner-dashboard-table-th">{h}</th>
                     ))}
                   </tr>
@@ -193,12 +218,14 @@ export default function PartnerDashboard() {
                 {!loading && bookings.length === 0 && (
                   <tr>
                     <td colSpan={5} style={{ padding: "36px 16px", textAlign: "center", color: "#94a3b8", fontWeight: 700 }}>
+                      {t("pt_dash_no_bookings")}
                     </td>
                   </tr>
                 )}
                 {loading && (
                   <tr>
                     <td colSpan={5} style={{ padding: "36px 16px", textAlign: "center", color: "#94a3b8", fontWeight: 700 }}>
+                      {t("pt_dash_loading_bk")}
                     </td>
                   </tr>
                 )}
@@ -212,6 +239,7 @@ export default function PartnerDashboard() {
                             {b.customerName?.[0] || "C"}
                           </div>
                           <div>
+                            <div style={{ fontWeight: 700, color: "#1e293b" }}>{b.customerName || t("pt_unknown_guest")}</div>
                             <div style={{ fontSize: 11, color: "#94a3b8" }}>#{b.bookingId}</div>
                           </div>
                         </div>
@@ -243,8 +271,12 @@ export default function PartnerDashboard() {
         {/* Quick Actions & Tips */}
         <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
           <div style={{ background: "#fff", borderRadius: 16, padding: "24px", border: "1px solid #f1f5f9", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
+            <h2 style={{ fontSize: 16, fontWeight: 800, color: "#1e293b", marginBottom: 20, userSelect: "none", cursor: "default" }}>{t("pt_dash_quick")}</h2>
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               {[
+                { title: t("pt_dash_qa_hotels"),   Icon: Building2, color: "#BE1E2E", path: "/partner/hotels"   },
+                { title: t("pt_dash_qa_calendar"), Icon: Calendar,  color: "#0EA5E9", path: "/partner/calendar" },
+                { title: t("pt_dash_qa_revenue"),  Icon: BarChart3, color: "#7C3AED", path: "/partner/revenue"  },
               ].map(item => (
                 <button key={item.title} onClick={() => rrNavigate(item.path)} 
                 className="partner-dashboard-quick-action"
@@ -264,14 +296,18 @@ export default function PartnerDashboard() {
               <div style={{ width: 32, height: 32, borderRadius: "50%", background: "#BE1E2E", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <BarChart3 size={16} color="#fff" />
               </div>
+              <h3 style={{ fontSize: 14, fontWeight: 800, color: "#991B1B", margin: 0, userSelect: "none", cursor: "default" }}>{t("pt_dash_monthly")}</h3>
             </div>
             <p style={{ fontSize: 13, color: "#1e40af", lineHeight: 1.5, margin: 0 }}>
               {monthlyBookings > 0
+                ? t("pt_dash_monthly_msg").replace("{n}", monthlyBookings).replace("{revenue}", fmtPrice(monthlyRevenue))
+                : t("pt_dash_monthly_empty")}
             </p>
-            <button 
+            <button
               onClick={() => rrNavigate("/partner/revenue")}
               style={{ marginTop: 16, background: "none", border: "none", color: "#1d4ed8", fontSize: 13, fontWeight: 700, cursor: "pointer", padding: 0, display: "flex", alignItems: "center", gap: 4 }}
             >
+              {t("pt_dash_see_report")} <ArrowRight size={14} />
             </button>
           </div>
         </div>

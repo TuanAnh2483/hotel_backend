@@ -5,6 +5,7 @@ import {
   Menu, Search, Star, ChevronDown, UserPlus
 } from "lucide-react";
 import { LOGO_IMG } from "../auth/AuthShared";
+import { useLang } from "../../contexts/LanguageContext";
 import "../../layouts/admin/AdminLayout.css";
 
 // ── Brand colours ────────────────────────────────────────────────────
@@ -15,14 +16,26 @@ const SIDEBAR_ACT  = AP;
 const SIDEBAR_TEXT = "#5a1a22";
 const SIDEBAR_DIV  = "rgba(190,30,46,0.14)";
 
-const NAV = [
-  {
-    key: "admin-users-group",
-    icon: <Users size={18} />,
-    children: [
-    ],
-  },
-];
+// ── Sidebar ───────────────────────────────────────────────────────────
+function Sidebar({ page, navigate, user, onLogout, open, onClose }) {
+  const { t } = useLang();
+  const NAV = [
+    { key: "admin-dashboard", icon: <LayoutDashboard size={18} />, label: t("adm_nav_dashboard") },
+    {
+      key: "admin-users-group",
+      icon: <Users size={18} />,
+      label: t("adm_users_title"),
+      children: [
+        { key: "admin-users",    icon: <UserPlus size={15} />,   label: t("adm_users_add_btn").replace("+ ", "") },
+        { key: "admin-partners", icon: <Handshake size={15} />,  label: t("adm_dash_tile_partners") },
+      ],
+    },
+    { key: "admin-hotels",   icon: <Building2 size={18} />,        label: t("adm_hotels_title") },
+    { key: "admin-bookings", icon: <ClipboardList size={18} />,    label: t("adm_nav_bookings") },
+    { key: "admin-refunds",  icon: <CircleDollarSign size={18} />, label: t("adm_dash_tile_refunds") },
+    { key: "admin-reviews",  icon: <Star size={18} />,             label: t("adm_rv_title") },
+    { key: "admin-system",   icon: <Settings size={18} />,         label: t("adm_sys_title") },
+  ];
   const initialOpen = NAV
     .filter(item => item.children?.some(c => c.key === page))
     .map(item => item.key);
@@ -41,10 +54,12 @@ const NAV = [
           <div className="admin-sidebar-logo-box">
             <img src={LOGO_IMG} alt="VLU Hotel Hub" />
           </div>
+          <div className="admin-sidebar-logo-tag">{t("adm_sidebar_tag")}</div>
         </div>
 
         {/* Nav */}
         <nav className="admin-sidebar-nav">
+          <div className="admin-nav-section-label">{t("adm_sidebar_cat")}</div>
           {NAV.map(item => {
             if (item.children) {
               const isOpen    = expanded.includes(item.key);
@@ -99,6 +114,7 @@ const NAV = [
           <div className="admin-nav-divider">
             <button onClick={() => navigate("home")} className="admin-nav-home-btn">
               <span className="admin-nav-icon"><Home size={18} /></span>
+              {t("adm_dash_home")}
             </button>
           </div>
         </nav>
@@ -111,9 +127,11 @@ const NAV = [
             </div>
             <div className="admin-sidebar-user-info">
               <div className="admin-sidebar-user-email">{user?.email || "admin"}</div>
+              <div className="admin-sidebar-user-role">{t("adm_sidebar_role")}</div>
             </div>
           </div>
           <button onClick={onLogout} className="admin-sidebar-logout-btn">
+            <LogOut size={14} /> {t("nav_logout")}
           </button>
         </div>
       </aside>
@@ -123,7 +141,18 @@ const NAV = [
 
 // ── Main layout ───────────────────────────────────────────────────────
 export default function AdminLayout({ page, navigate, user, onLogout, children }) {
+  const { t } = useLang();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const PAGE_TITLES = {
+    "admin-dashboard": t("adm_nav_dashboard"),
+    "admin-users":     t("adm_users_title"),
+    "admin-partners":  t("adm_partners_title"),
+    "admin-hotels":    t("adm_hotels_title"),
+    "admin-bookings":  t("adm_bk_title"),
+    "admin-refunds":   t("adm_rf_title"),
+    "admin-reviews":   t("adm_rv_title"),
+    "admin-system":    t("adm_sys_title"),
+  };
 
   return (
     <div className="admin-root">
@@ -143,6 +172,7 @@ export default function AdminLayout({ page, navigate, user, onLogout, children }
             <Menu size={20} color={AP} />
           </button>
           <div className="admin-topbar-breadcrumb">
+            <span className="admin-topbar-parent">{t("adm_sidebar_role")}</span>
             <span className="admin-topbar-sep">/</span>
             <span className="admin-topbar-title">{PAGE_TITLES[page] || page}</span>
           </div>

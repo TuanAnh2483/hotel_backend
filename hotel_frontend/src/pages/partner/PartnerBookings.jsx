@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { partnerService } from "../../services/partnerService";
 import { PageHeader, Card, Badge, Btn, Table, Modal } from "../../components/admin/AdminLayout";
 import { Filter, Calendar, Download, User, Building2, Eye, CheckCircle2 } from "lucide-react";
+import { useLang } from "../../contexts/LanguageContext";
 
 const fmtPrice = (n) => new Intl.NumberFormat("vi-VN").format(n) + " ₫";
 
@@ -16,6 +17,7 @@ function canCheckoutBooking(booking) {
 
 export default function PartnerBookings() {
   const navigate = useNavigate();
+  const { t } = useLang();
   const [hotels, setHotels] = useState([]);
   const [filters, setFilters] = useState({ hotelId: "", status: "", checkInFrom: "", checkInTo: "", page: 1 });
   const [pageData, setPageData] = useState(null);
@@ -38,6 +40,7 @@ export default function PartnerBookings() {
     } catch (e) {
       setHotels([]);
       setPageData({ items: [], totalPages: 0, totalItems: 0 });
+      setError(e.message || t("pt_bk_err_load"));
     } finally {
       setLoading(false);
     }
@@ -50,10 +53,12 @@ export default function PartnerBookings() {
       const res = await partnerService.getBooking(id);
       setDetail(res);
     } catch (e) {
+      setError(e.message || t("pt_bk_err_detail"));
     }
   };
 
   const handleCheckout = async (booking) => {
+    if (!booking || !window.confirm(t("pt_bk_confirm_checkout"))) return;
     setCheckoutId(booking.bookingId);
     setError("");
     setMessage("");
@@ -86,7 +91,9 @@ export default function PartnerBookings() {
       if (filters.status && filters.status !== String(updated.status) && pageData?.items?.length === 1 && filters.page > 1) {
         setFilters((current) => ({ ...current, page: current.page - 1 }));
       }
+      setMessage(t("pt_bk_checkout_msg").replace("{id}", updated.bookingId));
     } catch (e) {
+      setError(e.message || t("pt_bk_err_checkout"));
     } finally {
       setCheckoutId(null);
     }
@@ -108,6 +115,7 @@ export default function PartnerBookings() {
         <div style={{ width: 28, height: 28, borderRadius: "50%", background: "#f1f5f9", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: "#475569" }}>
           {b.customerName?.[0] || "C"}
         </div>
+        <span style={{ fontWeight: 500, color: "#334155" }}>{b.customerName || t("pt_unknown_guest")}</span>
       </div>,
       <div style={{ fontSize: 13, color: "#1e293b" }}>{b.checkIn}</div>,
       <div style={{ fontSize: 13, color: "#1e293b" }}>{b.checkOut}</div>,
@@ -117,6 +125,7 @@ export default function PartnerBookings() {
         onClick={() => openDetail(b.bookingId)}
         style={{ padding: "8px 16px", borderRadius: 10, background: "#f1f5f9", border: "none", color: "#475569", fontSize: 12, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}
       >
+        <Eye size={14} /> {t("pt_bk_detail")}
       </button>,
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
         {canCheckout && (
@@ -125,16 +134,19 @@ export default function PartnerBookings() {
             disabled={isCheckingOut}
             style={{ alignItems: "center", background: "#10b981", border: "none", borderRadius: 10, color: "#fff", cursor: isCheckingOut ? "not-allowed" : "pointer", display: "flex", fontSize: 12, fontWeight: 800, gap: 6, opacity: isCheckingOut ? 0.7 : 1, padding: "8px 12px" }}
           >
+            <CheckCircle2 size={14} /> {isCheckingOut ? t("pt_bk_checking_out") : t("pt_bk_checkout_btn")}
           </button>
         )}
         {b.status === "COMPLETED" && (
           <span style={{ alignItems: "center", background: "#ecfdf5", border: "1px solid #bbf7d0", borderRadius: 10, color: "#047857", display: "flex", fontSize: 12, fontWeight: 800, gap: 6, padding: "7px 10px" }}>
+            <CheckCircle2 size={14} /> {t("pt_bk_checked_out")}
           </span>
         )}
         <button
           onClick={() => navigate(`/partner/bookings/${b.bookingId}`)}
           style={{ padding: "8px 16px", borderRadius: 10, background: "#BE1E2E", color: "#fff", border: "none", fontSize: 12, fontWeight: 700, cursor: "pointer", boxShadow: "0 4px 10px rgba(190, 30, 46, 0.2)" }}
         >
+          {t("pt_bk_view_full")}
         </button>
       </div>,
     ];
@@ -143,12 +155,15 @@ export default function PartnerBookings() {
   return (
     <div style={{ paddingBottom: 60 }}>
       <PageHeader
+        title={t("pt_bk_title")}
+        subtitle={t("pt_bk_subtitle")}
         action={
-          <button style={{ 
-            padding: "10px 18px", borderRadius: 10, background: "#fff", color: "#475569", 
-            border: "1px solid #e2e8f0", fontWeight: 700, fontSize: 13, cursor: "pointer", 
-            display: "flex", alignItems: "center", gap: 8 
+          <button style={{
+            padding: "10px 18px", borderRadius: 10, background: "#fff", color: "#475569",
+            border: "1px solid #e2e8f0", fontWeight: 700, fontSize: 13, cursor: "pointer",
+            display: "flex", alignItems: "center", gap: 8
           }}>
+            <Download size={16} /> {t("pt_bk_export")}
           </button>
         }
       />
@@ -161,29 +176,38 @@ export default function PartnerBookings() {
       }}>
         <div>
           <div style={{ fontSize: 12, fontWeight: 700, color: "#64748b", marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
+            <Building2 size={14} /> {t("pt_bk_hotel_label")}
           </div>
-          <select 
-            style={selectSt} 
-            value={filters.hotelId} 
+          <select
+            style={selectSt}
+            value={filters.hotelId}
             onChange={e => setFilters({ ...filters, hotelId: e.target.value, page: 1 })}
           >
+            <option value="">{t("pt_all_hotels")}</option>
             {hotels.map(h => <option key={h.id} value={h.id}>{h.name}</option>)}
           </select>
         </div>
 
         <div>
           <div style={{ fontSize: 12, fontWeight: 700, color: "#64748b", marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
+            <Filter size={14} /> {t("pt_bk_status_label")}
           </div>
-          <select 
-            style={selectSt} 
-            value={filters.status} 
+          <select
+            style={selectSt}
+            value={filters.status}
             onChange={e => setFilters({ ...filters, status: e.target.value, page: 1 })}
           >
+            <option value="">{t("pt_all_statuses")}</option>
+            <option value="CONFIRMED">{t("pt_bk_s_confirmed")}</option>
+            <option value="PENDING_PAYMENT">{t("pt_bk_s_pending")}</option>
+            <option value="COMPLETED">{t("pt_bk_s_completed")}</option>
+            <option value="CANCELLED">{t("pt_bk_s_cancelled")}</option>
           </select>
         </div>
 
         <div>
           <div style={{ fontSize: 12, fontWeight: 700, color: "#64748b", marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
+            <Calendar size={14} /> {t("pt_bk_from_label")}
           </div>
           <input 
             type="date" style={selectSt} value={filters.checkInFrom} 
@@ -193,6 +217,7 @@ export default function PartnerBookings() {
 
         <div>
           <div style={{ fontSize: 12, fontWeight: 700, color: "#64748b", marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
+            <Calendar size={14} /> {t("pt_bk_to_label")}
           </div>
           <input 
             type="date" style={selectSt} value={filters.checkInTo} 
@@ -204,6 +229,7 @@ export default function PartnerBookings() {
           onClick={() => setFilters({ hotelId: "", status: "", checkInFrom: "", checkInTo: "", page: 1 })}
           style={{ padding: "10px 16px", borderRadius: 10, background: "#f1f5f9", border: "none", color: "#475569", fontWeight: 700, fontSize: 13, cursor: "pointer", height: 42 }}
         >
+          {t("pt_bk_reset")}
         </button>
       </div>
 
@@ -219,9 +245,12 @@ export default function PartnerBookings() {
           </div>
         )}
         {loading
+          ? <div style={{ textAlign: "center", padding: 60, color: "#94a3b8" }}>{t("pt_bk_loading")}</div>
           : <>
               <Table
+                headers={[t("pt_bk_col_code"), t("pt_bk_col_hotel"), t("pt_bk_col_customer"), t("pt_bk_col_checkin"), t("pt_bk_col_checkout"), t("pt_bk_col_total"), t("pt_bk_col_status"), "", t("pt_bk_col_actions")]}
                 rows={rows}
+                empty={t("pt_all")}
               />
               
               {/* Pagination */}
@@ -286,8 +315,10 @@ export default function PartnerBookings() {
                   style={{ width: "100%", marginBottom: 10 }}
                   onClick={() => handleCheckout(detail)}
                 >
+                  <CheckCircle2 size={15} /> {t("pt_bk_checkout_btn")}
                 </Btn>
               )}
+              <Btn style={{ width: "100%" }} onClick={() => setDetail(null)}>{t("pt_close")}</Btn>
             </div>
           </div>
         </Modal>

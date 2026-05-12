@@ -1,8 +1,10 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { C, S, EyeOpen, EyeOff, SubmitButton, ImgSide } from "../components/auth/AuthShared";
 import { authService } from "../services/authService";
+import { useLang } from "../contexts/LanguageContext";
 
 const Login = ({ setPage, onSuccess }) => {
+  const { t } = useLang();
   const [showPw, setShowPw] = useState(false);
   const [remember, setRemember] = useState(false);
   const [f, setF] = useState({ email: "", pw: "" });
@@ -28,13 +30,18 @@ const Login = ({ setPage, onSuccess }) => {
       <ImgSide />
       <div style={S.formSide}>
         <div style={S.formBox}>
+          <h1 style={S.title}>{t("login_title")}</h1>
+          <p style={S.sub}>{t("login_sub")}</p>
 
           <div style={S.fg}>
+            <label style={S.label}>{t("auth_email")}</label>
             <input style={S.input} type="email" placeholder="concierge@luminous.com" value={f.email} onChange={upd("email")} />
           </div>
 
           <div style={{ ...S.fg, marginBottom: 10 }}>
+            <label style={S.label}>{t("auth_password")}</label>
             <div style={S.inputWrap}>
+              <input style={S.input} type={showPw ? "text" : "password"} placeholder={t("auth_password_ph")} value={f.pw} onChange={upd("pw")} />
               <button style={S.eyeBtn} onClick={() => setShowPw(!showPw)}>{showPw ? <EyeOff /> : <EyeOpen />}</button>
             </div>
           </div>
@@ -42,16 +49,20 @@ const Login = ({ setPage, onSuccess }) => {
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
             <label style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 13, color: C.textMuted, cursor: "pointer" }}>
               <input style={S.checkBox} type="checkbox" checked={remember} onChange={e => setRemember(e.target.checked)} />
+              {t("login_remember")}
             </label>
+            <a style={S.redLink} onClick={() => setPage("forgot")}>{t("login_forgot")}</a>
           </div>
 
           {error && <p style={{ color: C.primary, fontSize: 13, marginBottom: 10, textAlign: "center" }}>{error}</p>}
 
           <SubmitButton
+            label={loading ? t("login_loading") : t("login_submit")}
             onClick={handleLogin}
             disabled={!f.email || !f.pw || loading}
           />
 
+          <div style={S.orRow}><div style={S.divLine} /><span>{t("login_or")}</span><div style={S.divLine} /></div>
           <div style={S.socialRow}>
             <button style={S.socialBtn}>
               <svg width="22" height="22" viewBox="0 0 48 48">
@@ -68,6 +79,7 @@ const Login = ({ setPage, onSuccess }) => {
             </button>
           </div>
 
+          <p style={S.bottomTxt}>{t("login_no_account")} <a style={S.redLink} onClick={() => setPage("register")}>{t("login_register_link")}</a></p>
         </div>
       </div>
     </div>

@@ -3,14 +3,18 @@ import { Routes, Route, Navigate, useParams, useSearchParams, useLocation, useNa
 
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { ToastProvider } from "./contexts/ToastContext";
+import { LanguageProvider } from "./contexts/LanguageContext";
 import { useAppNavigate } from "./hooks/useAppNavigate";
 import ProtectedRoute from "./routes/ProtectedRoute";
 
+// Layout
 import PartnerLayout from "./layouts/PartnerLayout";
 import CustomerLayout from "./layouts/CustomerLayout";
 
+// Style dùng chung cho trang xác thực
 import { S, Navbar } from "./components/auth/AuthShared";
 
+// Trang xác thực
 import Login          from "./pages/Login";
 import Register       from "./pages/Register";
 import ForgotPassword from "./pages/ForgotPassword";
@@ -21,12 +25,15 @@ import HotelListPage   from "./pages/HotelListPage";
 import HotelDetailPage from "./pages/HotelDetailPage";
 import BookingPage     from "./pages/BookingPage";
 
+// Trang khách hàng
 import MyBookingsPage    from "./pages/MyBookingsPage";
 import BookingDetailPage from "./pages/BookingDetailPage";
 
+// Trang tài khoản khách hàng (có sidebar)
 import ProfilePage from "./pages/customer/ProfilePage";
 import ReviewsPage from "./pages/customer/ReviewsPage";
 
+// Trang quản trị (mỗi trang tự nhúng AdminLayout)
 import PaymentPage    from "./pages/PaymentPage";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminUsers     from "./pages/admin/AdminUsers";
@@ -37,6 +44,7 @@ import AdminRefunds   from "./pages/admin/AdminRefunds";
 import AdminReviews   from "./pages/admin/AdminReviews";
 import AdminSystem    from "./pages/admin/AdminSystem";
 
+// Trang đối tác
 import PartnerDashboard from "./pages/partner/PartnerDashboard";
 import PartnerHotels    from "./pages/partner/PartnerHotels";
 import PartnerRooms     from "./pages/partner/PartnerRooms";
@@ -67,6 +75,8 @@ function AuthWrapper({ active, children }) {
   );
 }
 
+// ── Các route component ───────────────────────────────────────────────────────
+// Mỗi route đọc URL/search params rồi truyền đúng props mà page component cần.
 
 function LoginRoute() {
   const navigate    = useAppNavigate();
@@ -242,6 +252,7 @@ function ProfileRoute() {
   return <ProfilePage navigate={navigate} user={user} onLogout={logout} />;
 }
 
+// Wrapper cho trang admin — truyền props cần thiết; mỗi trang tự nhúng AdminLayout.
 function AdminRoute({ page }) {
   const navigate       = useAppNavigate();
   const { user, logout } = useAuth();
@@ -366,11 +377,13 @@ import ScrollToTop from "./components/ScrollToTop";
 
 export default function App() {
   return (
-    <ToastProvider>
-      <AuthProvider>
-        <AppRoutes />
-        <ScrollToTop />
-      </AuthProvider>
-    </ToastProvider>
+    <LanguageProvider>
+      <ToastProvider>
+        <AuthProvider>
+          <AppRoutes />
+          <ScrollToTop />
+        </AuthProvider>
+      </ToastProvider>
+    </LanguageProvider>
   );
 }

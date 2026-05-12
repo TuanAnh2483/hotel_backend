@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { C } from "../auth/AuthShared";
 import { hotelService } from "../../services/hotelService";
+import { useLang } from "../../contexts/LanguageContext";
 
 function Img({ src, alt = "", h = 160, r = 0 }) {
   const [failed, setFailed] = useState(false);
@@ -39,12 +40,30 @@ function FIcon({ k, size = 14, color = C.primary }) {
 }
 
 const HOTEL_TYPE_OPTIONS = [
+  { value: "HOTEL",     tkey: "hotel_type_hotel"     },
+  { value: "APARTMENT", tkey: "hotel_type_apartment" },
+  { value: "RESORT",    tkey: "hotel_type_resort"    },
+  { value: "VILLA",     tkey: "hotel_type_villa"     },
+  { value: "HOMESTAY",  tkey: "hotel_type_homestay"  },
+  { value: "HOSTEL",    tkey: "hotel_type_hostel"    },
 ];
 
 const ROOM_CATEGORY_OPTIONS = [
+  { value: "STANDARD", tkey: "room_cat_standard" },
+  { value: "DELUXE",   tkey: "room_cat_deluxe"   },
+  { value: "SUITE",    tkey: "room_cat_suite"     },
+  { value: "FAMILY",   tkey: "room_cat_family"    },
 ];
 
 const AMENITY_FILTER_OPTIONS = [
+  { value: "WIFI",       tkey: "amenity_wifi",       target: "hotelAmenities" },
+  { value: "POOL",       tkey: "amenity_pool",       target: "hotelAmenities" },
+  { value: "PARKING",    tkey: "amenity_parking",    target: "hotelAmenities" },
+  { value: "SPA",        tkey: "amenity_spa",        target: "hotelAmenities" },
+  { value: "RESTAURANT", tkey: "amenity_restaurant", target: "hotelAmenities" },
+  { value: "MINI_BAR",   tkey: "amenity_minibar",    target: "roomAmenities"  },
+  { value: "SEA_VIEW",   tkey: "amenity_seaview",    target: "roomAmenities"  },
+  { value: "BREAKFAST",  tkey: "amenity_breakfast",  target: "roomAmenities"  },
 ];
 
 function FilterOption({ label, checked, onClick, isRadio }) {
@@ -86,6 +105,8 @@ function FilterOption({ label, checked, onClick, isRadio }) {
 }
 
 function FilterSidebar({ filters, onChange, onApply }) {
+  const { t } = useLang();
+
   const Section = ({ iconKey, title, children }) => (
     <div style={{ marginBottom: 18, paddingBottom: 18, borderBottom: "1px solid #f5f5f5" }}>
       <p style={{ fontSize: 12, fontWeight: 700, color: "#1a1a1a", marginBottom: 10, display: "flex", alignItems: "center", gap: 7, textTransform: "uppercase", letterSpacing: 0.8 }}>
@@ -106,38 +127,49 @@ function FilterSidebar({ filters, onChange, onApply }) {
     <div style={{ background: "#fff", borderRadius: 14, padding: "20px 16px", border: "1.5px solid #edd8da", position: "sticky", top: 20 }}>
       <h3 style={{ fontSize: 14, fontWeight: 800, color: "#1a1a1a", marginBottom: 16, display: "flex", alignItems: "center", gap: 8 }}>
         <FIcon k="pin" size={16} color={C.primary} />
+        {t("filter_title")}
       </h3>
 
+      <Section iconKey="hotel" title={t("filter_hotel_type")}>
         {HOTEL_TYPE_OPTIONS.map((option) => (
+          <FilterOption key={option.value} label={t(option.tkey)} isRadio
             checked={filters.hotelTypes === option.value}
             onClick={() => onChange({ ...filters, hotelTypes: filters.hotelTypes === option.value ? "" : option.value })} />
         ))}
       </Section>
 
+      <Section iconKey="star" title={t("filter_rating")}>
         {[5, 4, 3, 2, 1].map(s => (
+          <FilterOption key={s} label={`${s}${t("filter_rating_suffix")}`} isRadio
             checked={filters.stars === s}
             onClick={() => onChange({ ...filters, stars: filters.stars === s ? null : s })} />
         ))}
       </Section>
 
+      <Section iconKey="layers" title={t("filter_room_cat")}>
         {ROOM_CATEGORY_OPTIONS.map((option) => (
+          <FilterOption key={option.value} label={t(option.tkey)} isRadio
             checked={filters.roomCategories === option.value}
             onClick={() => onChange({ ...filters, roomCategories: filters.roomCategories === option.value ? "" : option.value })} />
         ))}
       </Section>
 
+      <Section iconKey="wifi" title={t("filter_amenities")}>
         {(showMoreAmenities ? AMENITY_FILTER_OPTIONS : AMENITY_FILTER_OPTIONS.slice(0, 5)).map((option) => (
+          <FilterOption key={`${option.target}-${option.value}`} label={t(option.tkey)}
             checked={(filters[option.target] || []).includes(option.value)}
             onClick={() => toggleEnumList(option.target, option.value)} />
         ))}
         <a style={{ fontSize: 12, color: C.primary, cursor: "pointer", fontWeight: 600 }}
           onClick={() => setShowMoreAmenities(p => !p)}>
+          {showMoreAmenities ? t("filter_show_less") : t("filter_show_more")}
         </a>
       </Section>
 
       <div style={{ marginBottom: 16 }}>
         <p style={{ fontSize: 12, fontWeight: 700, color: "#1a1a1a", marginBottom: 8, display: "flex", alignItems: "center", gap: 7, textTransform: "uppercase", letterSpacing: 0.8 }}>
           <FIcon k="wallet" size={14} color={C.primary} />
+          {t("filter_budget")}
         </p>
         <input type="range" min="1000000" max="10000000" step="100000"
           value={filters.priceMax || 10000000}
@@ -151,12 +183,14 @@ function FilterSidebar({ filters, onChange, onApply }) {
 
       <button onClick={onApply}
         style={{ width: "100%", padding: "11px", background: C.primary, color: "#fff", border: "none", borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+        {t("filter_apply")}
       </button>
     </div>
   );
 }
 
 function HotelResultCard({ hotel, onView }) {
+  const { t } = useLang();
   return (
     <div 
       style={{ 
@@ -192,13 +226,15 @@ function HotelResultCard({ hotel, onView }) {
         
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginTop: 24 }}>
           <div>
+            <div style={{ fontSize: 12, color: "#94a3b8", fontWeight: 600, marginBottom: 2 }}>{t("price_label")}</div>
             <div style={{ fontSize: 22, fontWeight: 900, color: C.primary }}>
                {hotel.price > 0 ? hotel.price.toLocaleString("vi-VN") : "1.250.000"} ₫
+               <span style={{ fontSize: 13, fontWeight: 500, color: "#94a3b8", marginLeft: 4 }}>{t("detail_per_night")}</span>
             </div>
           </div>
           <button
-            style={{ 
-              background: C.primary, color: "#fff", border: "none", borderRadius: 14, 
+            style={{
+              background: C.primary, color: "#fff", border: "none", borderRadius: 14,
               display: "flex", alignItems: "center", gap: 10,
               padding: "12px 28px", fontSize: 14, fontWeight: 800, cursor: "pointer",
               boxShadow: `0 8px 16px ${C.primary}33`, transition: "all 0.2s"
@@ -206,6 +242,7 @@ function HotelResultCard({ hotel, onView }) {
             onClick={(e) => { e.stopPropagation(); onView(); }}
             onMouseEnter={e => e.currentTarget.style.transform = "scale(1.02)"}
             onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
+          >{t("view_detail")}</button>
         </div>
       </div>
     </div>
@@ -233,7 +270,41 @@ function Pagination({ page, totalPages, onPage }) {
 }
 
 function FeaturedBanner() {
+  const { t } = useLang();
   return (
+    <div style={{
+      borderRadius: 20, marginBottom: 20, overflow: "hidden", position: "relative",
+      background: "linear-gradient(120deg, #BE1E2E 0%, #7a0d1a 50%, #3d0009 100%)",
+      padding: "36px 40px",
+      boxShadow: "0 12px 40px rgba(190,30,46,0.30)",
+    }}>
+      <div style={{ position: "absolute", top: -40, right: -40, width: 200, height: 200, borderRadius: "50%", background: "rgba(255,255,255,0.04)", pointerEvents: "none" }} />
+      <div style={{ position: "absolute", bottom: -60, right: 100, width: 280, height: 280, borderRadius: "50%", background: "rgba(255,255,255,0.03)", pointerEvents: "none" }} />
+      <div style={{ position: "absolute", top: 20, right: 180, width: 80, height: 80, borderRadius: "50%", background: "rgba(255,255,255,0.05)", pointerEvents: "none" }} />
+
+      <div style={{ position: "relative", zIndex: 1 }}>
+        <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(255,255,255,0.12)", borderRadius: 100, padding: "4px 14px", marginBottom: 16 }}>
+          <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#f5b200" }} />
+          <span style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.9)", letterSpacing: 1.5, textTransform: "uppercase" }}>{t("banner_badge")}</span>
+        </div>
+
+        <h2 style={{ fontSize: 32, fontWeight: 900, color: "#fff", margin: "0 0 10px", lineHeight: 1.15, letterSpacing: -0.5 }}>
+          {t("banner_title_1")}<br />
+          <span style={{ color: "#fcd4d8" }}>{t("banner_title_2")}</span>
+        </h2>
+
+        <p style={{ fontSize: 13, color: "rgba(255,255,255,0.7)", margin: "0 0 24px", lineHeight: 1.7, maxWidth: 420 }}>
+          {t("banner_sub")}
+        </p>
+
+        <div style={{ display: "flex", gap: 28 }}>
+          {[["🏨", t("banner_feat_1")], ["⚡", t("banner_feat_2")], ["🛡️", t("banner_feat_3")]].map(([icon, label]) => (
+            <div key={label} style={{ display: "flex", alignItems: "center", gap: 7 }}>
+              <span style={{ fontSize: 15 }}>{icon}</span>
+              <span style={{ fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.8)" }}>{label}</span>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -277,7 +348,41 @@ function defaultStayParams(params = {}) {
   };
 }
 
+function SearchSummaryBar({ params, totalItems, loading }) {
+  const { t } = useLang();
+  const hasSearch = !!(params.province || params.checkIn || params.hotelTypes);
+  if (!hasSearch) return null;
+
+  const typeOption = HOTEL_TYPE_OPTIONS.find(o => o.value === params.hotelTypes);
+  const chips = [
+    params.province   && { icon: "📍", label: params.province + (params.district ? `, ${params.district}` : "") },
+    params.checkIn && params.checkOut && { icon: "📅", label: `${params.checkIn} → ${params.checkOut}` },
+    params.guests  && { icon: "👤", label: `${params.guests} ${t("guests").trim()}` },
+    params.rooms   && params.rooms > 1 && { icon: "🛏", label: `${params.rooms} ${t("search_rooms").toLowerCase()}` },
+    params.hotelTypes && { icon: "🏨", label: typeOption ? t(typeOption.tkey) : params.hotelTypes },
+  ].filter(Boolean);
+
+  return (
+    <div style={{ background: "#fff", borderRadius: 14, padding: "14px 20px", marginBottom: 16, boxShadow: "0 1px 6px rgba(0,0,0,0.07)", display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+      <span style={{ fontSize: 12, fontWeight: 700, color: "#888", textTransform: "uppercase", letterSpacing: 0.8, flexShrink: 0 }}>{t("search_summary_label")}</span>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", flex: 1 }}>
+        {chips.map(({ icon, label }) => (
+          <span key={label} style={{ display: "inline-flex", alignItems: "center", gap: 5, background: "#fdf4f5", border: "1px solid #f5d0d4", borderRadius: 100, padding: "4px 12px", fontSize: 13, fontWeight: 600, color: "#7a0d1a" }}>
+            {icon} {label}
+          </span>
+        ))}
+      </div>
+      {!loading && (
+        <span style={{ fontSize: 12, color: "#aaa", flexShrink: 0 }}>
+          {totalItems} {t("results_suffix")}
+        </span>
+      )}
+    </div>
+  );
+}
+
 export default function HotelSearchResults({ navigate, params = {}, hideBanner = false, hideResultText = false }) {
+  const { t } = useLang();
   const containerRef = useRef(null);
   const [filters, setFilters] = useState(() => createDefaultFilters(params));
   const [appliedFilters, setAppliedFilters] = useState(() => createDefaultFilters(params));
@@ -337,8 +442,13 @@ export default function HotelSearchResults({ navigate, params = {}, hideBanner =
       </div>
 
       <div style={{ flex: 1, minWidth: 0 }}>
+        {!hideBanner && !params.province && !params.checkIn && !params.hotelTypes && <FeaturedBanner />}
 
+        <SearchSummaryBar params={params} totalItems={totalItems} loading={loading} />
+
+        {!loading && !hideResultText && !params.province && !params.checkIn && !params.hotelTypes && (
           <h2 style={{ fontSize: 20, fontWeight: 800, color: "#1a1a1a", marginBottom: 16 }}>
+            {t("results_found")} {totalItems} {t("results_suffix")}
           </h2>
         )}
 
@@ -347,6 +457,7 @@ export default function HotelSearchResults({ navigate, params = {}, hideBanner =
               <div key={i} style={{ height: 200, background: "#fff", borderRadius: 14, border: "1.5px solid #edd8da", marginBottom: 16, opacity: 0.5 }} />
             ))
           : displayed.length === 0
+            ? <p style={{ color: "#888", textAlign: "center", padding: "40px 0" }}>{t("no_results")}</p>
             : displayed.map(h => (
                 <HotelResultCard key={h.id} hotel={h} onView={() => navigate("hotel", { hotelId: h.id, ...defaultStayParams(params) })} />
               ))
