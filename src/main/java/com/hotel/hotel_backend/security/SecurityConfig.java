@@ -11,6 +11,11 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import java.util.List;
+
+import org.springframework.security.config.Customizer;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 /**
  * SecurityConfig: nơi cấu hình Spring Security.
@@ -38,6 +43,50 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder(12);
     }
 
+//    //cấu hình deploy
+//    ấu hình này cho phép:
+//
+//    Local frontend: http://localhost:5173
+//    Cloudflare production: https://hotel-backend.pages.dev
+//    Cloudflare preview deployments: https://<hash>.hotel-backend.pages.dev
+    @Bean
+    UrlBasedCorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration config = new CorsConfiguration();
+
+        config.setAllowedOriginPatterns(List.of(
+                "http://localhost:5173",
+                "https://hotel-backend.pages.dev",
+                "https://*.hotel-backend.pages.dev"
+        ));
+
+        config.setAllowedMethods(List.of(
+                "GET",
+                "POST",
+                "PUT",
+                "DELETE",
+                "PATCH",
+                "OPTIONS"
+        ));
+
+        config.setAllowedHeaders(List.of(
+                "Authorization",
+                "Content-Type",
+                "Accept",
+                "Origin",
+                "X-Requested-With"
+        ));
+
+        config.setExposedHeaders(List.of(
+                "Authorization"
+        ));
+
+        config.setAllowCredentials(true);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", config);
+        return source;
+    }
+
     /**
      * SecurityFilterChain: pipeline security chạy trước controller.
      * - disable csrf vì API stateless
@@ -55,6 +104,7 @@ public class SecurityConfig {
     ) throws Exception {
 
         return http
+                .cors(Customizer.withDefaults())
                 // ❌ Không dùng CSRF vì API stateless
                 .csrf(csrf -> csrf.disable())
                 .httpBasic(httpBasic -> httpBasic.disable())
@@ -66,6 +116,7 @@ public class SecurityConfig {
 
                 // ✅ CẤU HÌNH ROUTE PUBLIC / ROUTE CẦN LOGIN
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(PathRequest.toStaticResources().atCommonLocations()).permitAll()
                         // public API
                         .requestMatchers(HttpMethod.POST, "/api/auth/register").permitAll()
