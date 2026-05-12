@@ -1,12 +1,12 @@
 spring:
   datasource:
-    url:  jdbc:postgresql://aws-1-ap-northeast-2.pooler.supabase.com:6543/postgres?sslmode=require&prepareThreshold=0
+    url: jdbc:postgresql://aws-1-ap-northeast-2.pooler.supabase.com:6543/postgres?sslmode=require&prepareThreshold=0
     username: postgres.phvslymvmusnxvnrjads
     password: Ta0966927203
     driver-class-name: org.postgresql.Driver
 
   mail:
-    host: ${MAIL_HOST:://gmail.com}
+    host: ${MAIL_HOST:smtp.gmail.com}
     port: ${MAIL_PORT:587}
     username: ${MAIL_USERNAME:trananhtodien@gmail.com}
     password: ${MAIL_PASSWORD:pkbrrvnosbdvuuiq}
@@ -79,7 +79,9 @@ app:
       key-prefix: ${UPLOAD_S3_KEY_PREFIX:hotel-backend}
       public-base-url: ${UPLOAD_S3_PUBLIC_BASE_URL:}
   ai:
+
     gemini-api-key: ${GEMINI_API_KEY:}
+    gemini-api-key: ${GEMINI_API_KEY:AIzaSyA3BML9MrLyfm1iHL_qTRwoGCOnRStI5_E}
     model: ${GEMINI_MODEL:gemini-2.0-flash}
 
 logging:

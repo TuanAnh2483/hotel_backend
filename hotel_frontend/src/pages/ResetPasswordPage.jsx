@@ -2,15 +2,17 @@ import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { C, S, SubmitButton, ImgSide } from "../components/auth/AuthShared";
 import { authService } from "../services/authService";
+import { useLang } from "../contexts/LanguageContext";
 
 export default function ResetPasswordPage({ setPage }) {
+  const { t } = useLang();
   const [sp] = useSearchParams();
   const token = sp.get("token") || "";
 
-  const [form, setForm]     = useState({ password: "", confirm: "" });
+  const [form, setForm]       = useState({ password: "", confirm: "" });
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [error, setError]   = useState("");
+  const [error, setError]     = useState("");
 
   const upd = k => e => setForm(f => ({ ...f, [k]: e.target.value }));
 
@@ -19,27 +21,27 @@ export default function ResetPasswordPage({ setPage }) {
       message.includes("Reset token") ||
       message.includes("Liên kết đặt lại mật khẩu")
     ) {
-      return "Liên kết đặt lại mật khẩu không hợp lệ, đã dùng hoặc đã hết hạn. Vui lòng yêu cầu liên kết mới.";
+      return t("reset_err_token");
     }
-    return message || "Không thể đặt lại mật khẩu.";
+    return message || t("reset_err_generic");
   };
 
   const handleReset = async () => {
     setError("");
     if (!form.password || form.password.length < 8) {
-      setError("Mật khẩu phải có ít nhất 8 ký tự.");
+      setError(t("reset_err_min"));
       return;
     }
     if (!/(?=.*[A-Za-z])(?=.*\d)/.test(form.password)) {
-      setError("Mật khẩu phải có ít nhất 1 chữ cái và 1 chữ số.");
+      setError(t("reset_err_format"));
       return;
     }
     if (form.password !== form.confirm) {
-      setError("Xác nhận mật khẩu không khớp.");
+      setError(t("reset_err_cf"));
       return;
     }
     if (!token) {
-      setError("Liên kết đặt lại mật khẩu không hợp lệ hoặc đã hết hạn.");
+      setError(t("reset_err_no_token"));
       return;
     }
     setLoading(true);
@@ -72,15 +74,13 @@ export default function ResetPasswordPage({ setPage }) {
           <div style={S.formBox}>
             <div style={{ textAlign: "center", padding: "20px 0" }}>
               <div style={{ fontSize: 48, marginBottom: 16 }}>⚠️</div>
-              <h2 style={{ fontSize: 20, fontWeight: 700, color: "#1a1a1a", marginBottom: 8 }}>Liên kết không hợp lệ</h2>
-              <p style={{ fontSize: 14, color: "#888", marginBottom: 24 }}>
-                Liên kết đặt lại mật khẩu này không hợp lệ hoặc đã hết hạn.
-              </p>
+              <h2 style={{ fontSize: 20, fontWeight: 700, color: "#1a1a1a", marginBottom: 8 }}>{t("reset_invalid_title")}</h2>
+              <p style={{ fontSize: 14, color: "#888", marginBottom: 24 }}>{t("reset_invalid_desc")}</p>
               <button
                 onClick={() => setPage("forgot")}
                 style={{ background: C.primary, color: "#fff", border: "none", borderRadius: 9, padding: "11px 28px", fontSize: 14, fontWeight: 700, cursor: "pointer" }}
               >
-                Yêu cầu liên kết mới
+                {t("reset_request_new")}
               </button>
             </div>
           </div>
@@ -97,15 +97,13 @@ export default function ResetPasswordPage({ setPage }) {
           <div style={S.formBox}>
             <div style={{ textAlign: "center", padding: "20px 0" }}>
               <div style={{ fontSize: 48, marginBottom: 16 }}>✅</div>
-              <h2 style={{ fontSize: 20, fontWeight: 700, color: "#1a1a1a", marginBottom: 8 }}>Đặt lại thành công!</h2>
-              <p style={{ fontSize: 14, color: "#888", lineHeight: 1.6, marginBottom: 28 }}>
-                Mật khẩu của bạn đã được cập nhật. Bạn có thể đăng nhập bằng mật khẩu mới.
-              </p>
+              <h2 style={{ fontSize: 20, fontWeight: 700, color: "#1a1a1a", marginBottom: 8 }}>{t("reset_success_title")}</h2>
+              <p style={{ fontSize: 14, color: "#888", lineHeight: 1.6, marginBottom: 28 }}>{t("reset_success_desc")}</p>
               <button
                 onClick={() => setPage("login")}
                 style={{ background: C.primary, color: "#fff", border: "none", borderRadius: 9, padding: "12px 36px", fontSize: 15, fontWeight: 800, cursor: "pointer" }}
               >
-                Đăng nhập ngay
+                {t("reset_login_now")}
               </button>
             </div>
           </div>
@@ -119,15 +117,15 @@ export default function ResetPasswordPage({ setPage }) {
       <ImgSide />
       <div style={S.formSide}>
         <div style={S.formBox}>
-          <h1 style={S.title}>Đặt lại mật khẩu</h1>
-          <p style={S.sub}>Nhập mật khẩu mới cho tài khoản của bạn</p>
+          <h1 style={S.title}>{t("reset_title")}</h1>
+          <p style={S.sub}>{t("reset_sub")}</p>
 
           <div style={{ marginBottom: 18 }}>
-            <label style={lbl}>Mật khẩu mới *</label>
+            <label style={lbl}>{t("reset_new_pw")}</label>
             <input
               style={inp}
               type="password"
-              placeholder="Tối thiểu 8 ký tự, gồm chữ và số"
+              placeholder={t("reset_pw_ph")}
               value={form.password}
               onChange={upd("password")}
               onFocus={e => (e.target.style.borderColor = C.primary)}
@@ -136,11 +134,11 @@ export default function ResetPasswordPage({ setPage }) {
           </div>
 
           <div style={{ marginBottom: 24 }}>
-            <label style={lbl}>Xác nhận mật khẩu *</label>
+            <label style={lbl}>{t("reset_cf_pw")}</label>
             <input
               style={inp}
               type="password"
-              placeholder="Nhập lại mật khẩu"
+              placeholder={t("reset_cf_ph")}
               value={form.confirm}
               onChange={upd("confirm")}
               onFocus={e => (e.target.style.borderColor = C.primary)}
@@ -155,18 +153,18 @@ export default function ResetPasswordPage({ setPage }) {
           )}
 
           <SubmitButton
-            label={loading ? "Đang xử lý..." : "Đặt lại mật khẩu"}
+            label={loading ? t("reset_loading") : t("reset_submit")}
             onClick={handleReset}
             disabled={loading}
           />
 
           <div style={{ textAlign: "center", marginTop: 18, fontSize: 13, color: "#888" }}>
-            Nhớ mật khẩu rồi?{" "}
+            {t("reset_remember")}{" "}
             <button
               onClick={() => setPage("login")}
               style={{ background: "none", border: "none", color: C.primary, fontWeight: 700, cursor: "pointer", padding: 0, fontSize: 13 }}
             >
-              Đăng nhập
+              {t("reset_login_link")}
             </button>
           </div>
         </div>

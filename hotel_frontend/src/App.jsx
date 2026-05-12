@@ -6,14 +6,11 @@ import { ToastProvider } from "./contexts/ToastContext";
 import { useAppNavigate } from "./hooks/useAppNavigate";
 import ProtectedRoute from "./routes/ProtectedRoute";
 
-// Layouts
 import PartnerLayout from "./layouts/PartnerLayout";
 import CustomerLayout from "./layouts/CustomerLayout";
 
-// Auth shared styles (keep existing auth design)
 import { S, Navbar } from "./components/auth/AuthShared";
 
-// Auth pages (UI unchanged)
 import Login          from "./pages/Login";
 import Register       from "./pages/Register";
 import ForgotPassword from "./pages/ForgotPassword";
@@ -24,15 +21,12 @@ import HotelListPage   from "./pages/HotelListPage";
 import HotelDetailPage from "./pages/HotelDetailPage";
 import BookingPage     from "./pages/BookingPage";
 
-// Customer pages (UI unchanged)
 import MyBookingsPage    from "./pages/MyBookingsPage";
 import BookingDetailPage from "./pages/BookingDetailPage";
 
-// Customer account pages (sidebar layout)
 import ProfilePage from "./pages/customer/ProfilePage";
 import ReviewsPage from "./pages/customer/ReviewsPage";
 
-// Admin pages (UI unchanged — each carries its own AdminLayout)
 import PaymentPage    from "./pages/PaymentPage";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminUsers     from "./pages/admin/AdminUsers";
@@ -43,7 +37,6 @@ import AdminRefunds   from "./pages/admin/AdminRefunds";
 import AdminReviews   from "./pages/admin/AdminReviews";
 import AdminSystem    from "./pages/admin/AdminSystem";
 
-// Partner pages
 import PartnerDashboard from "./pages/partner/PartnerDashboard";
 import PartnerHotels    from "./pages/partner/PartnerHotels";
 import PartnerRooms     from "./pages/partner/PartnerRooms";
@@ -74,10 +67,6 @@ function AuthWrapper({ active, children }) {
   );
 }
 
-// ── Individual route components ───────────────────────────────────────────────
-// Each reads URL params / search params / location state, then passes the
-// existing page component exactly the props it already expects. The pages
-// themselves are NOT modified — they still receive (navigate, user, onLogout, params).
 
 function LoginRoute() {
   const navigate    = useAppNavigate();
@@ -253,8 +242,6 @@ function ProfileRoute() {
   return <ProfilePage navigate={navigate} user={user} onLogout={logout} />;
 }
 
-// Admin route wrapper — passes (navigate, user, onLogout) to the page component.
-// Each admin page already renders its own <AdminLayout> internally, so no outer layout needed here.
 function AdminRoute({ page }) {
   const navigate       = useAppNavigate();
   const { user, logout } = useAuth();

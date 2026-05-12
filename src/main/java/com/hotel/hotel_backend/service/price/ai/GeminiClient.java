@@ -18,7 +18,6 @@ public class GeminiClient {
     @Value("${app.ai.model:gemini-2.0-flash}")
     private String model;
 
-    private final RestClient restClient = RestClient.create("https://generativelanguage.googleapis.com");
 
     /**
      * Gọi Gemini API. Ném IllegalStateException nếu chưa cấu hình API key
@@ -45,7 +44,6 @@ public class GeminiClient {
 
         String url = "/v1beta/models/" + model + ":generateContent?key=" + geminiApiKey;
 
-        return restClient.post()
                 .uri(url)
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(body)

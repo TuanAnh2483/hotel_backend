@@ -42,7 +42,6 @@ public class OccupancyForecastService {
                 .filter(b -> !b.getCheckIn().isAfter(today))
                 .count();
 
-        String confidence = computeConfidence((int) historicalCount);
 
         LocalDateTime sevenDaysAgo = LocalDateTime.now().minusDays(7);
 
@@ -109,20 +108,9 @@ public class OccupancyForecastService {
                 }
             }
 
-            // learned boost
-            double boost = isHoliday
-                    ? (
-                    "MAJOR".equals(holidayTier)
                             ? pricingModel.getMajorHolidayBoost()
-                            : pricingModel.getMinorHolidayBoost()
-            )
-                    : (
-                    isWeekend
                             ? pricingModel.getWeekendBoost()
-                            : pricingModel.getWeekdayBoost()
-            );
 
-            occ = Math.min(occ + boost, 1.0);
 
             // lễ thì tối thiểu 88%
             if (isHoliday) {

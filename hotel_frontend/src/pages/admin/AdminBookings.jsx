@@ -4,13 +4,6 @@ import { adminService } from "../../services/adminService";
 import "../../styles/pages/admin/AdminCommon.css";
 
 const STATUSES = ["", "CONFIRMED", "PENDING_PAYMENT", "CANCELLED", "COMPLETED"];
-const STATUS_LABEL = {
-  "": "Tất cả",
-  CONFIRMED:       "Đã xác nhận",
-  PENDING_PAYMENT: "Chờ thanh toán",
-  CANCELLED:       "Đã hủy",
-  COMPLETED:       "Hoàn thành",
-};
 
 function fmt(n) {
   if (!n && n !== 0) return "—";
@@ -53,16 +46,10 @@ export default function AdminBookings({ navigate, user, onLogout }) {
 
   return (
     <AdminLayout page="admin-bookings" navigate={navigate} user={user} onLogout={onLogout}>
-      <PageHeader title="Quản lý đặt phòng" subtitle="Theo dõi tất cả giao dịch đặt phòng trong hệ thống" />
 
       {/* Summary */}
       <div className="admin-summary-grid admin-summary-grid-5">
         {[
-          { label: "Tổng đặt phòng",    value: counts.total,        color: "#4361ee", icon: "📋" },
-          { label: "Đã xác nhận",       value: counts.confirmed,    color: "#2e7d32", icon: "✅" },
-          { label: "Chờ thanh toán",    value: counts.pending,      color: "#f57f17", icon: "⏳" },
-          { label: "Đã hủy",            value: counts.cancelled,    color: "#888",    icon: "❌" },
-          { label: "Doanh thu xác nhận",value: fmt(counts.revenue), color: AP,        icon: "💰", isStr: true },
         ].map(c => (
           <div key={c.label} className="admin-summary-card">
             <span className="admin-summary-card-icon">{c.icon}</span>
@@ -91,29 +78,23 @@ export default function AdminBookings({ navigate, user, onLogout }) {
           <input
             value={search}
             onChange={e => setSearch(e.target.value)}
-            placeholder="🔍 Tìm email, khách sạn..."
             className="admin-table-search"
           />
         </div>
 
         {loading ? (
-          <div className="admin-loading">Đang tải dữ liệu...</div>
         ) : (
           <>
             <Table
-              headers={["#ID", "Người dùng", "Khách sạn", "Nhận phòng", "Trả phòng", "Số đêm", "Tổng tiền", "Trạng thái", ""]}
               rows={filtered.slice((page - 1) * pageSize, page * pageSize).map(b => [
               <span className="admin-cell-id">#{b.id}</span>,
               <span className="admin-cell-text">{b.userEmail}</span>,
               <span className="admin-cell-name">{b.hotelName || "—"}</span>,
               <span className="admin-cell-text">{b.checkIn}</span>,
               <span className="admin-cell-text">{b.checkOut}</span>,
-              <span className="admin-cell-text">{b.nights} đêm</span>,
               <span className="admin-cell-amount">{fmt(b.totalPrice)}</span>,
               <Badge status={b.status} />,
-              <Btn small variant="action" onClick={() => setDetail(b)}>Chi tiết</Btn>,
             ])}
-              empty="Không có đặt phòng nào"
             />
 
             {/* Pagination */}
@@ -136,18 +117,11 @@ export default function AdminBookings({ navigate, user, onLogout }) {
 
       {/* Detail modal */}
       {detail && (
-        <Modal title={`📋 Chi tiết đặt phòng #${detail.id}`} onClose={() => setDetail(null)}>
           <div className="admin-modal-info">
             <div className="admin-modal-info-title">{detail.hotelName || "—"}</div>
             <div className="admin-modal-info-sub">{detail.userEmail}</div>
           </div>
           {[
-            ["Ngày nhận phòng", detail.checkIn],
-            ["Ngày trả phòng",  detail.checkOut],
-            ["Số đêm",          `${detail.nights} đêm`],
-            ["Tổng tiền",       fmt(detail.totalPrice)],
-            ["Ngày đặt",        detail.createdAt],
-            ["Trạng thái",      <Badge status={detail.status} />],
           ].map(([k, v]) => (
             <div key={k} className="admin-modal-row">
               <span className="admin-modal-row-key">{k}</span>
@@ -155,7 +129,6 @@ export default function AdminBookings({ navigate, user, onLogout }) {
             </div>
           ))}
           <div className="admin-modal-actions-right">
-            <Btn variant="ghost" onClick={() => setDetail(null)}>Đóng</Btn>
           </div>
         </Modal>
       )}

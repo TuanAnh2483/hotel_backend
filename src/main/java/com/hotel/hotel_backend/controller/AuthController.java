@@ -31,7 +31,6 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    // Registration queues email verification instead of issuing an access token.
     public ResponseEntity<ApiResponse<RegisterResponse>> register(@RequestBody @Valid RegisterRequest req) {
         return ResponseEntity.ok(ApiResponse.ok(authService.register(req)));
     }
@@ -56,7 +55,6 @@ public class AuthController {
     }
 
     @PostMapping("/verify-email")
-    // Public endpoint: the client sends only the opaque token copied from the email link.
     public ResponseEntity<ApiResponse<VerifyEmailResponse>> verifyEmail(
             @RequestBody @Valid VerifyEmailRequest request
     ) {
@@ -64,7 +62,6 @@ public class AuthController {
     }
 
     @PostMapping("/resend-verification")
-    // Response stays generic so callers cannot probe which emails exist in the system.
     public ResponseEntity<ApiResponse<ResendVerificationResponse>> resendVerification(
             @RequestBody @Valid ResendVerificationRequest request
     ) {

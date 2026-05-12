@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Calendar, Edit3, MessageSquare, Plus, Star, Trash2 } from "lucide-react";
 import { bookingService } from "../../services/bookingService";
 import { reviewService } from "../../services/reviewService";
+import { useLang } from "../../contexts/LanguageContext";
 
 function fmtDate(value) {
   if (!value) return "-";
@@ -26,6 +27,7 @@ function Stars({ value }) {
 }
 
 export default function ReviewsPage() {
+  const { t } = useLang();
   const [reviews, setReviews] = useState([]);
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -46,7 +48,7 @@ export default function ReviewsPage() {
       setReviews(Array.isArray(reviewData) ? reviewData : []);
       setBookings(Array.isArray(bookingData) ? bookingData : []);
     } catch (e) {
-      setError(e.message || "Không thể tải đánh giá.");
+      setError(e.message || t("rv_load_error"));
       setReviews([]);
       setBookings([]);
     } finally {
@@ -59,13 +61,13 @@ export default function ReviewsPage() {
   }, []);
 
   async function handleDelete(reviewId) {
-    if (!window.confirm("Xóa đánh giá này?")) return;
+    if (!window.confirm(t("rv_confirm_delete"))) return;
     setDeleting(reviewId);
     try {
       await reviewService.deleteReview(reviewId);
       setReviews((items) => items.filter((item) => item.reviewId !== reviewId));
     } catch (e) {
-      setError(e.message || "Không thể xóa đánh giá.");
+      setError(e.message || t("rv_delete_error"));
     } finally {
       setDeleting(null);
     }
@@ -84,9 +86,7 @@ export default function ReviewsPage() {
   }
 
   async function handleSaveReview() {
-    if (!reviewModal) {
-      return;
-    }
+    if (!reviewModal) return;
     const normalizedComment = reviewForm.comment.trim() || null;
     setSaving(true);
     setError("");
@@ -107,7 +107,7 @@ export default function ReviewsPage() {
       setReviewForm({ rating: 5, comment: "" });
       await load();
     } catch (e) {
-      setError(e.message || "Không thể lưu đánh giá.");
+      setError(e.message || t("rv_save_error"));
     } finally {
       setSaving(false);
     }
@@ -125,10 +125,8 @@ export default function ReviewsPage() {
   return (
     <div>
       <div style={{ marginBottom: 18 }}>
-        <h1 style={{ color: "#1a1a1a", fontSize: 22, fontWeight: 800, marginBottom: 6 }}>Đánh giá của tôi</h1>
-        <p style={{ color: "#64748b", fontSize: 13, margin: 0 }}>
-          Dữ liệu được lấy trực tiếp từ các đánh giá đã lưu trong hệ thống.
-        </p>
+        <h1 style={{ color: "#1a1a1a", fontSize: 22, fontWeight: 800, marginBottom: 6 }}>{t("rv_title")}</h1>
+        <p style={{ color: "#64748b", fontSize: 13, margin: 0 }}>{t("rv_subtitle")}</p>
       </div>
 
       {error && (
@@ -140,11 +138,11 @@ export default function ReviewsPage() {
       {!loading && reviewableBookings.length > 0 && (
         <div style={{ background: "#fff", border: "1px solid #f1f5f9", borderRadius: 20, boxShadow: "0 10px 30px rgba(0,0,0,0.04)", marginBottom: 18, overflow: "hidden" }}>
           <div style={{ borderBottom: "1px solid #f1f5f9", padding: "16px 20px" }}>
-            <div style={{ color: "#0f172a", fontSize: 16, fontWeight: 900 }}>Đặt phòng có thể đánh giá</div>
-            <div style={{ color: "#64748b", fontSize: 13, marginTop: 4 }}>Chỉ booking đã hoàn thành mới được gửi đánh giá.</div>
+            <div style={{ color: "#0f172a", fontSize: 16, fontWeight: 900 }}>{t("rv_reviewable_title")}</div>
+            <div style={{ color: "#64748b", fontSize: 13, marginTop: 4 }}>{t("rv_reviewable_sub")}</div>
           </div>
           {reviewableBookings.map((booking) => {
-            const roomNames = booking.items?.map((item) => item.roomTypeName).join(", ") || "Đặt phòng";
+            const roomNames = booking.items?.map((item) => item.roomTypeName).join(", ") || t("rv_booking_fb");
             return (
               <div key={booking.bookingId} style={{ alignItems: "center", borderBottom: "1px solid #f8fafc", display: "flex", justifyContent: "space-between", gap: 16, padding: 20 }}>
                 <div>
@@ -159,7 +157,7 @@ export default function ReviewsPage() {
                   onClick={() => openCreateReview(booking)}
                   style={{ alignItems: "center", background: "#BE1E2E", border: "none", borderRadius: 12, color: "#fff", cursor: "pointer", display: "flex", fontSize: 13, fontWeight: 800, gap: 8, padding: "10px 14px" }}
                 >
-                  <Plus size={15} /> Đánh giá
+                  <Plus size={15} /> {t("rv_write")}
                 </button>
               </div>
             );
@@ -170,13 +168,13 @@ export default function ReviewsPage() {
       <div style={{ background: "#fff", border: "1px solid #f1f5f9", borderRadius: 20, boxShadow: "0 10px 30px rgba(0,0,0,0.04)", overflow: "hidden" }}>
         {loading ? (
           <div style={{ color: "#94a3b8", fontWeight: 700, padding: 40, textAlign: "center" }}>
-            Đang tải đánh giá...
+            {t("rv_loading")}
           </div>
         ) : reviews.length === 0 ? (
           <div style={{ color: "#64748b", padding: 40, textAlign: "center" }}>
             <MessageSquare size={42} color="#cbd5e1" style={{ marginBottom: 12 }} />
-            <div style={{ color: "#0f172a", fontSize: 16, fontWeight: 800, marginBottom: 6 }}>Chưa có đánh giá nào</div>
-            <div style={{ fontSize: 13 }}>Các đánh giá sau khi bạn gửi sẽ hiển thị tại đây.</div>
+            <div style={{ color: "#0f172a", fontSize: 16, fontWeight: 800, marginBottom: 6 }}>{t("rv_empty_title")}</div>
+            <div style={{ fontSize: 13 }}>{t("rv_empty_sub")}</div>
           </div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column" }}>
@@ -184,7 +182,7 @@ export default function ReviewsPage() {
               <div key={review.reviewId} style={{ borderBottom: "1px solid #f1f5f9", padding: 20 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", gap: 16, marginBottom: 12 }}>
                   <div>
-                    <div style={{ color: "#0f172a", fontSize: 16, fontWeight: 800 }}>{review.hotelName || "Khách sạn"}</div>
+                    <div style={{ color: "#0f172a", fontSize: 16, fontWeight: 800 }}>{review.hotelName || t("rv_hotel_fb")}</div>
                     <div style={{ alignItems: "center", color: "#64748b", display: "flex", fontSize: 12, gap: 6, marginTop: 5 }}>
                       <Calendar size={14} />
                       {fmtDate(review.checkIn)} - {fmtDate(review.checkOut)}
@@ -196,7 +194,7 @@ export default function ReviewsPage() {
                       style={{ alignItems: "center", background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 10, color: "#1d4ed8", cursor: "pointer", display: "flex", fontSize: 12, fontWeight: 800, gap: 6, padding: "8px 10px" }}
                     >
                       <Edit3 size={14} />
-                      Sửa
+                      {t("rv_edit")}
                     </button>
                     <button
                       disabled={deleting === review.reviewId}
@@ -204,7 +202,7 @@ export default function ReviewsPage() {
                       style={{ alignItems: "center", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 10, color: "#b91c1c", cursor: deleting === review.reviewId ? "not-allowed" : "pointer", display: "flex", fontSize: 12, fontWeight: 800, gap: 6, opacity: deleting === review.reviewId ? 0.7 : 1, padding: "8px 10px" }}
                     >
                       <Trash2 size={14} />
-                      {deleting === review.reviewId ? "Đang xóa" : "Xóa"}
+                      {deleting === review.reviewId ? t("rv_deleting") : t("rv_delete")}
                     </button>
                   </div>
                 </div>
@@ -216,7 +214,7 @@ export default function ReviewsPage() {
                 )}
                 {review.partnerReply && (
                   <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 14, color: "#334155", fontSize: 13, lineHeight: 1.7, marginTop: 14, padding: "12px 14px" }}>
-                    <strong>Phản hồi từ đối tác:</strong> {review.partnerReply}
+                    <strong>{t("rv_partner_reply")}</strong> {review.partnerReply}
                   </div>
                 )}
               </div>
@@ -229,26 +227,26 @@ export default function ReviewsPage() {
         <div style={{ alignItems: "center", background: "rgba(15,23,42,0.35)", display: "flex", inset: 0, justifyContent: "center", padding: 20, position: "fixed", zIndex: 300 }}>
           <div style={{ background: "#fff", borderRadius: 20, boxShadow: "0 24px 80px rgba(0,0,0,0.18)", maxWidth: 520, padding: 24, width: "100%" }}>
             <h2 style={{ color: "#0f172a", fontSize: 18, fontWeight: 900, margin: "0 0 16px" }}>
-              {reviewModal.mode === "create" ? "Gửi đánh giá" : "Cập nhật đánh giá"}
+              {reviewModal.mode === "create" ? t("rv_modal_create") : t("rv_modal_edit")}
             </h2>
             <div style={{ marginBottom: 16 }}>
-              <label style={{ color: "#64748b", display: "block", fontSize: 12, fontWeight: 800, marginBottom: 8 }}>ĐIỂM ĐÁNH GIÁ</label>
+              <label style={{ color: "#64748b", display: "block", fontSize: 12, fontWeight: 800, marginBottom: 8 }}>{t("rv_rating_lbl")}</label>
               <select
                 value={reviewForm.rating}
                 onChange={(event) => setReviewForm((current) => ({ ...current, rating: Number(event.target.value) }))}
                 style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 12, color: "#0f172a", fontSize: 14, fontWeight: 700, padding: "10px 12px", width: "100%" }}
               >
                 {[5, 4, 3, 2, 1].map((rating) => (
-                  <option key={rating} value={rating}>{rating} sao</option>
+                  <option key={rating} value={rating}>{rating} {t("rv_star")}</option>
                 ))}
               </select>
             </div>
             <div>
-              <label style={{ color: "#64748b", display: "block", fontSize: 12, fontWeight: 800, marginBottom: 8 }}>NHẬN XÉT</label>
+              <label style={{ color: "#64748b", display: "block", fontSize: 12, fontWeight: 800, marginBottom: 8 }}>{t("rv_comment_lbl")}</label>
               <textarea
                 value={reviewForm.comment}
                 onChange={(event) => setReviewForm((current) => ({ ...current, comment: event.target.value }))}
-                placeholder="Chia sẻ trải nghiệm lưu trú của bạn..."
+                placeholder={t("rv_comment_ph")}
                 rows={5}
                 style={{ border: "1px solid #e2e8f0", borderRadius: 12, boxSizing: "border-box", fontFamily: "inherit", fontSize: 14, lineHeight: 1.6, outline: "none", padding: 12, resize: "vertical", width: "100%" }}
               />
@@ -258,14 +256,14 @@ export default function ReviewsPage() {
                 onClick={() => setReviewModal(null)}
                 style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 12, color: "#475569", cursor: "pointer", fontSize: 13, fontWeight: 800, padding: "10px 16px" }}
               >
-                Hủy
+                {t("rv_cancel")}
               </button>
               <button
                 disabled={saving}
                 onClick={handleSaveReview}
                 style={{ background: "#BE1E2E", border: "none", borderRadius: 12, color: "#fff", cursor: saving ? "not-allowed" : "pointer", fontSize: 13, fontWeight: 800, opacity: saving ? 0.7 : 1, padding: "10px 16px" }}
               >
-                {saving ? "Đang lưu..." : "Lưu đánh giá"}
+                {saving ? t("rv_saving") : t("rv_save")}
               </button>
             </div>
           </div>

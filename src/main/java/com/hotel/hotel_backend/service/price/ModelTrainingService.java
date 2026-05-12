@@ -142,7 +142,6 @@ ModelTrainingService {
                 .average();
 
         if (avgRatio.isPresent()) {
-            double observed = Math.max(0.88, Math.min(1.00, avgRatio.getAsDouble()));
             double newAdj = 0.70 * model.getPartnerPriceAdjustment() + 0.30 * observed;
             model.setPartnerPriceAdjustment(newAdj);
         }

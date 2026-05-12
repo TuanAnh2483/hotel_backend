@@ -2,18 +2,24 @@ package com.hotel.hotel_backend.service.price;
 
 
 import com.hotel.hotel_backend.entity.PriceFeedback;
+import com.hotel.hotel_backend.exeption.ApiException;
+import com.hotel.hotel_backend.exeption.ErrorCode;
 import com.hotel.hotel_backend.repository.PriceFeedbackRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class PriceFeedbackService {
     private final PriceFeedbackRepository feedbackRepository;
+
+    private static final Set<String> VALID_OUTCOMES =
+            Set.of("APPLIED", "APPLIED_MINUS5", "SKIPPED");
 
     public void record(
             Long roomId,
@@ -23,6 +29,11 @@ public class PriceFeedbackService {
             String outcome,
             long ownerId
     ) {
+        if (!VALID_OUTCOMES.contains(outcome)) {
+            throw new ApiException(ErrorCode.VALIDATION_ERROR,
+                    "outcome phải là APPLIED, APPLIED_MINUS5 hoặc SKIPPED");
+        }
+
         PriceFeedback priceFeedback = new PriceFeedback();
         priceFeedback.setRoomId(roomId);
         priceFeedback.setDate(date);

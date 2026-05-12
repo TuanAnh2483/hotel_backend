@@ -58,7 +58,6 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             HttpServletResponse response,
             FilterChain filterChain
     ) throws ServletException, IOException {
-        // Public auth endpoints ignore stale Bearer headers so Postman requests do not get accidental 401s.
         if (isPublicEndpoint(request)) {
             filterChain.doFilter(request, response);
             return;

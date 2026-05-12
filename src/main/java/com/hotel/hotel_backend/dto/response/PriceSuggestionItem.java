@@ -23,5 +23,7 @@ public record PriceSuggestionItem(
         List<String> factors,
         int activeBookings,
         int totalRooms,
-        boolean aiGenerated
+        boolean aiGenerated,
+        int velocity,
+        int daysUntil
 ) {}

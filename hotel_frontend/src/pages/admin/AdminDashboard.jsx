@@ -56,20 +56,9 @@ export default function AdminDashboard({ navigate, user, onLogout }) {
   }, []);
 
   const STATS = [
-    { icon: "👥", label: "Khách hàng",       key: "totalUsers",     color: "#4361ee", page: "admin-users"    },
-    { icon: "🤝", label: "Đối tác",           key: "totalPartners",  color: "#7209b7", page: "admin-partners" },
-    { icon: "🏨", label: "Khách sạn",         key: "totalHotels",    color: AP,        page: "admin-hotels"   },
-    { icon: "📋", label: "Tổng đặt phòng",    key: "totalBookings",  color: "#4cc9f0", page: "admin-bookings" },
-    { icon: "⏳", label: "Chờ thanh toán",    key: "pendingBookings",color: "#f72585", page: "admin-bookings" },
   ];
 
   const QUICK = [
-    { icon: "🤝", label: "Duyệt đối tác",     desc: "Xem các đơn đăng ký mới",    page: "admin-partners" },
-    { icon: "👥", label: "Quản lý người dùng", desc: "Xem, khoá, kích hoạt tài khoản", page: "admin-users" },
-    { icon: "🏨", label: "Quản lý khách sạn",  desc: "Thêm, sửa thông tin khách sạn",  page: "admin-hotels" },
-    { icon: "📋", label: "Đặt phòng",          desc: "Theo dõi giao dịch đặt phòng",   page: "admin-bookings" },
-    { icon: "💰", label: "Hoàn tiền",          desc: "Xử lý các yêu cầu hoàn tiền",    page: "admin-refunds" },
-    { icon: "⚙️", label: "Hệ thống",          desc: "Kiểm tra trạng thái hệ thống",    page: "admin-system" },
   ];
 
   return (
@@ -78,13 +67,11 @@ export default function AdminDashboard({ navigate, user, onLogout }) {
       <div className="admin-dashboard-banner">
         <div className="admin-dashboard-banner-text">
           <div className="admin-dashboard-banner-greeting">
-            Xin chào, {user?.email || "Admin"} 👋
           </div>
           <h1 className="admin-dashboard-banner-title">
             VLU <span style={{ color: AP }}>Hotel Hub</span> — Admin
           </h1>
           <p className="admin-dashboard-banner-sub">
-            Quản lý toàn bộ hệ thống khách sạn tại một nơi
           </p>
         </div>
         <div className="admin-dashboard-banner-icon">🏨</div>
@@ -92,7 +79,6 @@ export default function AdminDashboard({ navigate, user, onLogout }) {
 
       {/* Stats */}
       <div style={{ marginBottom: 8 }}>
-        <h2 className="admin-dashboard-section-title">Tổng quan hệ thống</h2>
         {loading ? (
           <div className="admin-dashboard-stats-grid">
             {STATS.map((_, i) => (
@@ -124,7 +110,6 @@ export default function AdminDashboard({ navigate, user, onLogout }) {
       {/* Quick actions + System info */}
       <div className="admin-dashboard-two-col">
         <Card>
-          <h3 className="admin-dashboard-section-title">Truy cập nhanh</h3>
           <div className="admin-dashboard-quick-grid">
             {QUICK.map(q => (
               <QuickBtn key={q.page} icon={q.icon} label={q.label} desc={q.desc} onClick={() => navigate(q.page)} />
@@ -133,14 +118,7 @@ export default function AdminDashboard({ navigate, user, onLogout }) {
         </Card>
 
         <Card>
-          <h3 className="admin-dashboard-section-title">Thông tin hệ thống</h3>
           {[
-            ["🔖 Phiên bản",    "1.0.0"],
-            ["🌐 Môi trường",   "Development"],
-            ["⚙️ Backend",      "Spring Boot"],
-            ["🗄️ Database",    "PostgreSQL"],
-            ["🔐 JWT Expiry",   "24 giờ"],
-            ["📅 Ngày hiện tại", new Date().toLocaleDateString("vi-VN")],
           ].map(([k, v]) => (
             <div key={k} className="admin-dashboard-sysinfo-row">
               <span className="admin-dashboard-sysinfo-key">{k}</span>
@@ -149,40 +127,25 @@ export default function AdminDashboard({ navigate, user, onLogout }) {
           ))}
 
           <button onClick={() => navigate("home")} className="admin-dashboard-home-btn">
-            🏠 Về trang chủ
           </button>
         </Card>
       </div>
 
       {/* Partner feature map */}
       <Card>
-        <h3 className="admin-dashboard-section-title" style={{ marginBottom: 6 }}>Tính năng dành cho đối tác</h3>
-        <p style={{ fontSize: 12, color: "#aaa", margin: "0 0 18px" }}>Tổng quan các nhóm chức năng mà đối tác có thể sử dụng trong hệ thống</p>
         <div className="admin-dashboard-feature-grid">
           {[
             {
-              icon: "🏨", color: "#4361ee", title: "Quản lý khách sạn",
-              items: ["Tạo khách sạn mới", "Cập nhật thông tin", "Xem danh sách khách sạn"],
             },
             {
-              icon: "🛏️", color: "#7209b7", title: "Quản lý loại phòng",
-              items: ["Tạo loại phòng", "Cập nhật loại phòng", "Xem danh sách phòng"],
             },
             {
-              icon: "💰", color: "#e65100", title: "Giá & Số lượng phòng",
-              items: ["Thiết lập giá theo ngày", "Thiết lập số phòng trống", "Quản lý theo lịch"],
             },
             {
-              icon: "⭐", color: "#f59e0b", title: "Đánh giá khách sạn",
-              items: ["Xem danh sách đánh giá", "Phản hồi đánh giá", "Theo dõi điểm TB"],
             },
             {
-              icon: "📊", color: "#2e7d32", title: "Thống kê & Báo cáo",
-              items: ["Danh sách booking", "Thống kê doanh thu", "Biểu đồ theo tháng"],
             },
             {
-              icon: "🤖", color: "#c62828", title: "AI Dự báo & Tối ưu giá",
-              items: ["Dự báo nhu cầu theo ngày", "Gợi ý giá tối ưu", "Phân tích xu hướng"],
             },
           ].map(f => (
             <div key={f.title} 

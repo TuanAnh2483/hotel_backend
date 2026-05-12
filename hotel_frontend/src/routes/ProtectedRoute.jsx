@@ -1,9 +1,8 @@
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 
-// role — optional; if provided, the user's userType must match exactly.
-// Unauthenticated users are sent to /login with the current location saved
-// so LoginPage can redirect them back after a successful login.
+// role — tùy chọn; nếu có, userType phải khớp chính xác.
+// Người dùng chưa đăng nhập được chuyển tới /login, lưu lại URL hiện tại để redirect sau khi đăng nhập.
 export default function ProtectedRoute({ children, role }) {
   const { user, loading } = useAuth();
   const location = useLocation();

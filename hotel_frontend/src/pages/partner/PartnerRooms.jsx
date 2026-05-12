@@ -12,9 +12,11 @@ import {
 import { PageHeader, Card, Btn, Modal } from "../../components/admin/AdminLayout";
 import {
   Bed, Users, Home, Edit3, Trash2, Search, Plus,
-  Wind, Coffee, Bath, Layout, Grid, Smartphone, Box, TrendingUp
+  Wind, Coffee, Bath, Layout, Grid, Smartphone, Box, TrendingUp, TrendingDown,
+  MapPin, FileText, Building2, Sparkles, Minus
 } from "lucide-react";
 import "../../styles/pages/partner/PartnerRooms.css";
+import { useLang } from "../../contexts/LanguageContext";
 
 // --- Configuration ---
 const CATEGORIES = [
@@ -48,10 +50,15 @@ const ROOM_AMENITIES = [
 ];
 const ROOM_AMENITY_KEYS = new Set(ROOM_AMENITIES.map((amenity) => amenity.key));
 
+const HOTEL_TYPE_LABELS = {
+  HOTEL: "Khách sạn", RESORT: "Resort", VILLA: "Villa",
+  APARTMENT: "Căn hộ", HOMESTAY: "Homestay", MOTEL: "Nhà nghỉ",
+};
+
 const EMPTY_FORM = {
   name: "", capacity: 2, quantity: 1, price: 500000,
   roomCategory: "STANDARD", bedType: "DOUBLE", amenities: [],
-  images: [],
+  images: [], description: "",
 };
 
 function getRoomImageUrl(room) {
@@ -76,7 +83,59 @@ function Field({ label, children, required }) {
   );
 }
 
-function RoomForm({ form, setForm, onSubmit, onCancel, saving, title, categories, bedTypes, amenities }) {
+function HotelInfoPanel({ hotel }) {
+  const { t } = useLang();
+  const HOTEL_TYPE_LABELS = {
+    HOTEL: t("pt_type_hotel"), RESORT: t("pt_type_resort"), VILLA: t("pt_type_villa"),
+    APARTMENT: t("pt_type_apartment"), HOMESTAY: t("pt_type_homestay"), MOTEL: t("pt_type_guest_house"),
+  };
+  if (!hotel) return null;
+  return (
+    <div className="pr-hotel-info-panel">
+      <div className="pr-hotel-info-header">
+        <Building2 size={18} color="#BE1E2E" />
+        <span className="pr-hotel-info-title">{t("pt_rooms_hotel_intro")}</span>
+        {hotel.hotelType && (
+          <span className="pr-hotel-type-badge">
+            {HOTEL_TYPE_LABELS[hotel.hotelType] || hotel.hotelType}
+          </span>
+        )}
+      </div>
+      <div className="pr-hotel-info-name">{hotel.name}</div>
+      {(hotel.address || hotel.district || hotel.province) && (
+        <div className="pr-hotel-info-address">
+          <MapPin size={13} color="#94a3b8" />
+          {[hotel.address, hotel.district, hotel.province].filter(Boolean).join(", ")}
+        </div>
+      )}
+      {hotel.description ? (
+        <p className="pr-hotel-info-desc">{hotel.description}</p>
+      ) : (
+        <p className="pr-hotel-info-desc pr-hotel-info-desc--empty">{t("pt_rooms_hotel_no_desc")}</p>
+      )}
+    </div>
+  );
+}
+
+function RoomForm({ form, setForm, onSubmit, onCancel, saving, title, categories, bedTypes, amenities, hotel, aiSuggestion }) {
+  const { t } = useLang();
+
+  const aiSuggestedPrice = aiSuggestion?.data?.suggestedPrice ?? null;
+  const aiDelta = (aiSuggestedPrice !== null && form.price > 0) ? aiSuggestedPrice - form.price : null;
+  const aiDeltaPct = (aiDelta !== null && form.price > 0) ? (aiDelta / form.price) * 100 : null;
+  // Derive demand from % delta — matches PartnerForecast's effectiveDemand thresholds
+  const aiDemand = aiDeltaPct !== null
+    ? (aiDeltaPct >= 12 ? "HIGH" : aiDeltaPct >= -5 ? "MEDIUM" : "LOW")
+    : "MEDIUM";
+  const aiIsUp = aiDemand === "HIGH";
+  const aiIsDown = aiDemand === "LOW";
+  const AI_ROOM_SCHEMES = {
+    HIGH:   { bg: "#FFF1F2", border: "#FECDD3", accent: "#BE1E2E", hint: "AI đề xuất tăng giá · thị trường đang tốt" },
+    MEDIUM: { bg: "#FFFBEB", border: "#FDE68A", accent: "#D97706", hint: "AI đề xuất giá ổn định với thị trường hiện tại" },
+    LOW:    { bg: "#F0FDF4", border: "#A7F3D0", accent: "#059669", hint: "AI đề xuất giảm giá · tối ưu công suất lấp phòng" },
+  };
+  const aiScheme = AI_ROOM_SCHEMES[aiDemand];
+
   function toggleAmenity(key) {
     setForm(f => ({
       ...f,
@@ -87,19 +146,21 @@ function RoomForm({ form, setForm, onSubmit, onCancel, saving, title, categories
   }
 
   return (
-    <Modal title={title} onClose={onCancel} width={640}>
+    <Modal title={title} onClose={onCancel} width={680}>
       <div className="pr-form-body">
-        <Field label="Tên loại phòng" required>
-          <input className="pr-input" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Ví dụ: Deluxe Sea View Double" />
+        <HotelInfoPanel hotel={hotel} />
+
+        <Field label={t("pt_rooms_name")} required>
+          <input className="pr-input" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder={t("pt_rooms_name_ph")} />
         </Field>
 
         <div className="pr-form-grid-2">
-          <Field label="Hạng phòng">
+          <Field label={t("pt_rooms_category")}>
             <select className="pr-input" value={form.roomCategory} onChange={e => setForm(f => ({ ...f, roomCategory: e.target.value }))}>
               {categories.map(c => <option key={c.key} value={c.key}>{c.label}</option>)}
             </select>
           </Field>
-          <Field label="Loại giường">
+          <Field label={t("pt_rooms_bed_type")}>
             <select className="pr-input" value={form.bedType} onChange={e => setForm(f => ({ ...f, bedType: e.target.value }))}>
               {bedTypes.map(b => <option key={b.key} value={b.key}>{b.label}</option>)}
             </select>
@@ -107,13 +168,13 @@ function RoomForm({ form, setForm, onSubmit, onCancel, saving, title, categories
         </div>
 
         <div className="pr-form-grid-3">
-          <Field label="Sức chứa">
+          <Field label={t("pt_rooms_capacity")}>
             <input className="pr-input" type="number" min="1" value={form.capacity} onChange={e => setForm(f => ({ ...f, capacity: Number(e.target.value) }))} />
           </Field>
-          <Field label="Số lượng phòng">
+          <Field label={t("pt_rooms_quantity")}>
             <input className="pr-input" type="number" min="0" value={form.quantity} onChange={e => setForm(f => ({ ...f, quantity: Number(e.target.value) }))} />
           </Field>
-          <Field label="Giá niêm yết (VND)">
+          <Field label={t("pt_rooms_price")}>
             <div className="pr-price-wrap">
               <input className="pr-input pr-input-icon-left" type="number" min="0" step="50000" value={form.price} onChange={e => setForm(f => ({ ...f, price: Number(e.target.value) }))} />
               <TrendingUp size={16} color="#10b981" style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)" }} />
@@ -121,7 +182,75 @@ function RoomForm({ form, setForm, onSubmit, onCancel, saving, title, categories
           </Field>
         </div>
 
-        <Field label="Tiện nghi phòng">
+        {/* AI suggestion — full width below grid, no blank space issue */}
+        {aiSuggestion && (aiSuggestion.loading || aiSuggestion.data) && (
+          <div style={{ marginBottom: 4 }}>
+            {aiSuggestion.loading ? (
+              <div style={{
+                display: "flex", alignItems: "center", gap: 7,
+                padding: "9px 14px", background: "#f8fafc", borderRadius: 12,
+                border: "1px solid #e2e8f0", fontSize: 12, color: "#94a3b8",
+              }}>
+                <Sparkles size={12} style={{ opacity: 0.35 }} />
+                Đang phân tích dữ liệu 14 ngày tới...
+              </div>
+            ) : aiSuggestion.data && (
+              <div style={{
+                borderRadius: 14, background: aiScheme.bg,
+                border: `1.5px solid ${aiScheme.border}`,
+                padding: "10px 14px",
+                boxShadow: "0 2px 10px rgba(0,0,0,0.04)",
+              }}>
+                {/* Single row: badge · price · delta · spacer · apply */}
+                <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
+                    <Sparkles size={11} color={aiScheme.accent} />
+                    <span style={{ fontSize: 10, fontWeight: 900, color: aiScheme.accent, letterSpacing: 0.4, textTransform: "uppercase" }}>
+                      {aiSuggestion.data.aiGenerated ? "Gemini AI" : "Thống kê"} · 14 ngày
+                    </span>
+                  </div>
+                  <span style={{ color: aiScheme.border, fontSize: 16, lineHeight: 1 }}>·</span>
+                  <span style={{ fontSize: 17, fontWeight: 900, color: aiScheme.accent, flexShrink: 0 }}>
+                    {new Intl.NumberFormat("vi-VN").format(aiSuggestion.data.suggestedPrice)} ₫
+                  </span>
+                  {aiDelta !== null && (
+                    <div style={{ display: "flex", alignItems: "center", gap: 3, flexShrink: 0 }}>
+                      {aiIsUp
+                        ? <TrendingUp size={12} color={aiScheme.accent} />
+                        : aiIsDown
+                        ? <TrendingDown size={12} color={aiScheme.accent} />
+                        : <Minus size={11} color="#94a3b8" />}
+                      <span style={{ fontSize: 11, fontWeight: 800, color: aiIsUp || aiIsDown ? aiScheme.accent : "#94a3b8" }}>
+                        {aiIsUp ? "+" : ""}{Math.round(aiDelta).toLocaleString("vi-VN")} ₫
+                        {aiDeltaPct !== null && ` (${aiIsUp ? "+" : ""}${aiDeltaPct.toFixed(1)}%)`}
+                      </span>
+                    </div>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setForm(f => ({ ...f, price: aiSuggestion.data.suggestedPrice }))}
+                    style={{
+                      marginLeft: "auto", flexShrink: 0,
+                      display: "flex", alignItems: "center", gap: 4,
+                      padding: "5px 12px", borderRadius: 8, border: "none",
+                      background: aiScheme.accent, color: "#fff",
+                      fontSize: 11, fontWeight: 800, cursor: "pointer", fontFamily: "inherit",
+                      boxShadow: `0 3px 8px ${aiScheme.accent}44`,
+                    }}
+                  >
+                    Áp dụng
+                  </button>
+                </div>
+                {/* Hint text */}
+                <div style={{ fontSize: 11, color: aiScheme.accent, opacity: 0.75, marginTop: 5, fontWeight: 600 }}>
+                  {aiScheme.hint}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        <Field label={t("pt_rooms_amenities")}>
           <div className="pr-amenities-grid">
             {amenities.map(a => {
               const selected = form.amenities.includes(a.key);
@@ -145,7 +274,17 @@ function RoomForm({ form, setForm, onSubmit, onCancel, saving, title, categories
           </div>
         </Field>
 
-        <Field label="Hình ảnh loại phòng (Chọn nhiều hình)">
+        <Field label={t("pt_rooms_desc")}>
+          <textarea
+            className="pr-input pr-textarea"
+            value={form.description || ""}
+            onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
+            placeholder={t("pt_rooms_desc_ph")}
+            rows={4}
+          />
+        </Field>
+
+        <Field label={t("pt_rooms_images")}>
           <div className="pr-images-grid">
             {form.images?.map((img, idx) => {
               const url = imageItemUrl(img);
@@ -168,7 +307,7 @@ function RoomForm({ form, setForm, onSubmit, onCancel, saving, title, categories
             })}
             <label className="pr-image-add-label">
               <Plus size={24} />
-              <div className="pr-image-add-text">Thêm ảnh</div>
+              <div className="pr-image-add-text">{t("pt_rooms_img_add")}</div>
               <input
                 type="file" multiple accept="image/png,image/jpeg,image/webp,image/gif" style={{ display: "none" }}
                 onChange={e => {
@@ -179,13 +318,13 @@ function RoomForm({ form, setForm, onSubmit, onCancel, saving, title, categories
               />
             </label>
           </div>
-          <p className="pr-image-hint">Hỗ trợ JPG, PNG, WEBP, GIF. Tối đa 10MB mỗi ảnh.</p>
+          <p className="pr-image-hint">{t("pt_rooms_img_hint")}</p>
         </Field>
 
         <div className="pr-form-footer">
-          <Btn variant="ghost" onClick={onCancel}>Hủy bỏ</Btn>
+          <Btn variant="ghost" onClick={onCancel}>{t("adm_cancel")}</Btn>
           <Btn onClick={onSubmit} disabled={saving || !form.name.trim()}>
-            {saving ? "Đang xử lý..." : "Lưu thay đổi"}
+            {saving ? t("adm_processing") : t("pt_rooms_save")}
           </Btn>
         </div>
       </div>
@@ -198,6 +337,36 @@ function fmtPrice(n) {
 }
 
 export default function PartnerRooms() {
+  const { t } = useLang();
+  const CATEGORIES = [
+    { key: "STANDARD", label: t("pt_cat_standard") },
+    { key: "DELUXE",   label: t("pt_cat_deluxe") },
+    { key: "SUITE",    label: t("pt_cat_suite") },
+    { key: "FAMILY",   label: t("pt_cat_family") },
+  ];
+  const BED_TYPES = [
+    { key: "SINGLE", label: t("pt_bed_single") },
+    { key: "DOUBLE", label: t("pt_bed_double") },
+    { key: "TWIN",   label: t("pt_bed_twin") },
+  ];
+  const ROOM_AMENITIES = [
+    { key: "AIR_CONDITIONER",  label: t("pt_ram_ac"),        Icon: Wind },
+    { key: "TV",               label: t("pt_ram_tv"),        Icon: Smartphone },
+    { key: "MINI_BAR",         label: t("pt_ram_minibar"),   Icon: Coffee },
+    { key: "PRIVATE_BATHROOM", label: t("pt_ram_bathroom"),  Icon: Bath },
+    { key: "BATHTUB",          label: t("pt_ram_bathtub"),   Icon: Bath },
+    { key: "HAIR_DRYER",       label: t("pt_ram_hairdryer"), Icon: Wind },
+    { key: "BALCONY",          label: t("pt_ram_balcony"),   Icon: Layout },
+    { key: "WINDOW",           label: t("pt_ram_window"),    Icon: Layout },
+    { key: "DESK",             label: t("pt_ram_desk"),      Icon: Layout },
+    { key: "WARDROBE",         label: t("pt_ram_wardrobe"),  Icon: Box },
+    { key: "KETTLE",           label: t("pt_ram_kettle"),    Icon: Coffee },
+    { key: "REFRIGERATOR",     label: t("pt_ram_fridge"),    Icon: Box },
+    { key: "SAFE_BOX",         label: t("pt_ram_safe"),      Icon: Box },
+    { key: "FREE_WATER",       label: t("pt_ram_water"),     Icon: Coffee },
+    { key: "SEA_VIEW",         label: t("pt_ram_seaview"),   Icon: Layout },
+    { key: "BREAKFAST",        label: t("pt_ram_breakfast"), Icon: Coffee },
+  ];
   const [sp] = useSearchParams();
   const initialHotelId = sp.get("hotelId") || "";
 
@@ -216,6 +385,9 @@ export default function PartnerRooms() {
     roomAmenities: ROOM_AMENITIES.map(a => a.key),
   });
   const [error, setError] = useState("");
+  const [searchText, setSearchText] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("");
+  const [roomAiSuggestion, setRoomAiSuggestion] = useState({ loading: false, data: null });
   const pageSize = 8;
 
   useEffect(() => {
@@ -258,13 +430,24 @@ export default function PartnerRooms() {
       .finally(() => setLoading(false));
   }, [selectedHotelId]);
 
+  const filteredRooms = rooms.filter(r => {
+    const matchCategory = !categoryFilter || r.roomCategory === categoryFilter;
+    const matchSearch = !searchText || r.name.toLowerCase().includes(searchText.toLowerCase());
+    return matchCategory && matchSearch;
+  });
+
+  function toIsoDateLocal(date) {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+  }
+
   function openAdd() {
     revokePendingImageUrls(form.images);
     setSelected(null);
     setForm({ ...EMPTY_FORM, images: [] });
+    setRoomAiSuggestion({ loading: false, data: null });
     setModal("add");
   }
-  function openEdit(room) {
+  async function openEdit(room) {
     revokePendingImageUrls(form.images);
     setSelected(room);
     setForm({
@@ -272,8 +455,24 @@ export default function PartnerRooms() {
       roomCategory: room.roomCategory || "STANDARD", bedType: room.bedType || "DOUBLE",
       amenities: room.amenities ? room.amenities.filter(key => catalog.roomAmenities.includes(key) || ROOM_AMENITY_KEYS.has(key)) : [],
       images: createExistingImageItems(getRoomImageUrls(room)),
+      description: room.description || "",
     });
     setModal("edit");
+    setRoomAiSuggestion({ loading: true, data: null });
+    try {
+      const today = new Date();
+      const end = new Date(today.getTime() + 14 * 86400000);
+      const result = await partnerService.getPriceSuggestions(room.id, toIsoDateLocal(today), toIsoDateLocal(end));
+      const items = (result?.items || []).filter((i) => i.suggestedPrice > 0);
+      if (items.length > 0) {
+        const avg = Math.round(items.reduce((s, i) => s + i.suggestedPrice, 0) / items.length / 1000) * 1000;
+        setRoomAiSuggestion({ loading: false, data: { suggestedPrice: avg, aiGenerated: items.some((i) => i.aiGenerated) } });
+      } else {
+        setRoomAiSuggestion({ loading: false, data: null });
+      }
+    } catch {
+      setRoomAiSuggestion({ loading: false, data: null });
+    }
   }
   function openDelete(room) { setSelected(room); setModal("delete"); }
 
@@ -282,6 +481,7 @@ export default function PartnerRooms() {
     setModal(null);
     setSelected(null);
     setForm({ ...EMPTY_FORM, images: [] });
+    setRoomAiSuggestion({ loading: false, data: null });
   }
 
   async function deleteRemovedRoomImages(room, remainingImageUrls) {
@@ -300,6 +500,7 @@ export default function PartnerRooms() {
       const pendingFiles = pendingImageFilesFromItems(images);
       const payload = { ...form, imageUrls: existingImageUrls };
       delete payload.images;
+      if (!payload.description) payload.description = null;
       if (modal === "add") {
         const created = await partnerService.createRoom(selectedHotelId, payload);
         if (pendingFiles.length > 0) {
@@ -339,11 +540,11 @@ export default function PartnerRooms() {
   return (
     <div className="pr-root">
       <PageHeader
-        title="Thiết lập các loại phòng"
-        subtitle="Quản lý chi tiết hạng phòng, giá niêm yết và số lượng phòng cho từng cơ sở"
+        title={t("pt_rooms_title")}
+        subtitle={t("pt_rooms_subtitle")}
         action={selectedHotelId && (
           <button className="pr-add-btn" onClick={openAdd}>
-            <Plus size={20} /> Thêm loại phòng mới
+            <Plus size={20} /> {t("pt_rooms_add_btn")}
           </button>
         )}
       />
@@ -351,14 +552,14 @@ export default function PartnerRooms() {
       {/* Hotel Selector */}
       <div className="pr-hotel-selector">
         <div className="pr-hotel-selector-label">
-          <Home size={20} color="#BE1E2E" /> ĐANG QUẢN LÝ TẠI:
+          <Home size={20} color="#BE1E2E" /> {t("pt_rooms_select_hotel").toUpperCase()}:
         </div>
         <select
           className="pr-hotel-select"
           value={selectedHotelId}
           onChange={e => setSelectedHotelId(e.target.value)}
         >
-          <option value="">-- Vui lòng chọn khách sạn của bạn --</option>
+          <option value="">-- {t("pt_rooms_select_hotel")} --</option>
           {hotels.map(h => <option key={h.id} value={h.id}>{h.name}</option>)}
         </select>
       </div>
@@ -374,26 +575,60 @@ export default function PartnerRooms() {
           <div className="pr-empty-icon">
             <Box size={40} color="#cbd5e1" />
           </div>
-          <h3 className="pr-empty-title">Sẵn sàng quản lý hạng phòng</h3>
-          <p className="pr-empty-desc">Vui lòng chọn một khách sạn từ danh sách phía trên để xem và chỉnh sửa các loại phòng.</p>
+          <h3 className="pr-empty-title">{t("pt_rooms_select_hotel")}</h3>
+          <p className="pr-empty-desc">{t("pt_rooms_no_hotel")}</p>
         </Card>
       ) : loading ? (
         <div className="pr-loading">
           <div className="pr-spinner" />
-          Đang đồng bộ dữ liệu phòng...
+          {t("pt_rooms_loading")}
         </div>
       ) : rooms.length === 0 ? (
         <Card style={{ textAlign: "center", padding: "80px 20px", borderRadius: 20 }}>
           <div className="pr-empty-icon">
             <Bed size={40} color="#cbd5e1" />
           </div>
-          <h3 className="pr-empty-title">Chưa có loại phòng nào</h3>
-          <p className="pr-empty-desc">Thêm loại phòng đầu tiên để khách có thể đặt phòng từ dữ liệu thật.</p>
-          <Btn onClick={openAdd}>Thêm loại phòng mới</Btn>
+          <h3 className="pr-empty-title">{t("pt_rooms_empty_title")}</h3>
+          <p className="pr-empty-desc">{t("pt_rooms_empty_desc")}</p>
+          <Btn onClick={openAdd}>{t("pt_rooms_add_btn")}</Btn>
         </Card>
       ) : (
+        <>
+          {/* Filter bar */}
+          <div className="pr-filter-bar">
+            <div className="pr-filter-search-wrap">
+              <Search size={15} color="#94a3b8" className="pr-filter-search-icon" />
+              <input
+                className="pr-filter-search"
+                placeholder={t("pt_rooms_search_ph")}
+                value={searchText}
+                onChange={e => { setSearchText(e.target.value); setPage(1); }}
+              />
+            </div>
+            <select
+              className="pr-filter-cat-select"
+              value={categoryFilter}
+              onChange={e => { setCategoryFilter(e.target.value); setPage(1); }}
+            >
+              <option value="">{t("pt_rooms_all_categories")}</option>
+              {categoryOptions.map(cat => (
+                <option key={cat.key} value={cat.key}>{cat.label}</option>
+              ))}
+            </select>
+            <div className="pr-filter-count">
+              {filteredRooms.length} / {rooms.length} loại phòng
+            </div>
+          </div>
+
+          {filteredRooms.length === 0 ? (
+            <Card style={{ textAlign: "center", padding: "60px 20px", borderRadius: 20 }}>
+              <div className="pr-empty-icon"><Search size={36} color="#cbd5e1" /></div>
+              <h3 className="pr-empty-title">{t("pt_rooms_empty_title")}</h3>
+              <p className="pr-empty-desc">{t("pt_rooms_empty_desc")}</p>
+            </Card>
+          ) : (
         <div className="pr-rooms-grid">
-          {rooms.slice((page - 1) * pageSize, page * pageSize).map((r) => (
+          {filteredRooms.slice((page - 1) * pageSize, page * pageSize).map((r) => (
             <div key={r.id} className="pr-room-card">
               <div className="pr-room-image-wrap">
                 {getRoomImageUrl(r) ? (
@@ -420,41 +655,43 @@ export default function PartnerRooms() {
 
                 <div className="pr-room-meta-grid">
                   <div className="pr-room-meta-item">
-                    <div className="pr-room-meta-icon"><Users size={14} color="#BE1E2E" /></div>
+                    <div className="pr-room-meta-icon"><Users size={14} color="#64748b" /></div>
                     {r.capacity} khách tối đa
                   </div>
                   <div className="pr-room-meta-item">
-                    <div className="pr-room-meta-icon"><Bed size={14} color="#BE1E2E" /></div>
+                    <div className="pr-room-meta-icon"><Bed size={14} color="#64748b" /></div>
                     {bedTypeOptions.find(b => b.key === r.bedType)?.label || r.bedType || "—"}
                   </div>
                   <div className="pr-room-meta-item">
-                    <div className="pr-room-meta-icon"><Grid size={14} color="#BE1E2E" /></div>
+                    <div className="pr-room-meta-icon"><Grid size={14} color="#64748b" /></div>
                     {r.quantity} phòng tổng
                   </div>
                   <div className="pr-room-meta-item">
-                    <div className="pr-room-meta-icon"><Box size={14} color="#BE1E2E" /></div>
+                    <div className="pr-room-meta-icon"><Box size={14} color="#64748b" /></div>
                     Mã #{r.id}
                   </div>
                 </div>
 
                 <div className="pr-room-actions">
                   <button className="pr-edit-btn" onClick={() => openEdit(r)}>
-                    <Edit3 size={16} /> Chỉnh sửa
+                    <Edit3 size={16} /> {t("adm_edit")}
                   </button>
                   <button className="pr-delete-btn" onClick={() => openDelete(r)}>
-                    <Trash2 size={16} /> Xóa
+                    <Trash2 size={16} /> {t("adm_delete")}
                   </button>
                 </div>
               </div>
             </div>
           ))}
         </div>
+          )}
+        </>
       )}
 
       {/* Pagination */}
-      {rooms.length > pageSize && (
+      {filteredRooms.length > pageSize && (
         <div className="pr-pagination">
-          {[...Array(Math.ceil(rooms.length / pageSize))].map((_, i) => (
+          {[...Array(Math.ceil(filteredRooms.length / pageSize))].map((_, i) => (
             <button
               key={i}
               className="pr-page-btn"
@@ -474,26 +711,30 @@ export default function PartnerRooms() {
       {/* Modals */}
       {(modal === "add" || modal === "edit") && (
         <RoomForm
-          title={modal === "add" ? "Thêm loại phòng mới" : "Cập nhật loại phòng"}
+          title={modal === "add" ? t("pt_rooms_form_add") : t("pt_rooms_form_edit")}
           form={form} setForm={setForm} onSubmit={handleSave} onCancel={closeFormModal} saving={saving}
           categories={categoryOptions}
           bedTypes={bedTypeOptions}
           amenities={roomAmenityOptions}
+          hotel={hotels.find(h => String(h.id) === String(selectedHotelId)) || null}
+          aiSuggestion={modal === "edit" ? roomAiSuggestion : null}
         />
       )}
 
       {modal === "delete" && (
-        <Modal title="Xác nhận xóa" onClose={() => setModal(null)} width={440}>
+        <Modal title={t("pt_rooms_del_title")} onClose={() => setModal(null)} width={440}>
           <div className="pr-delete-modal-content">
             <div className="pr-delete-modal-icon">
               <Trash2 size={32} color="#ef4444" />
             </div>
-            <h3 className="pr-delete-modal-title">Xóa hạng phòng này?</h3>
-            <p className="pr-delete-modal-desc">Bạn có chắc muốn xóa <strong>"{selected?.name}"</strong>? Toàn bộ thông tin giá và số lượng sẽ bị gỡ bỏ vĩnh viễn.</p>
+            <h3 className="pr-delete-modal-title">{t("adm_confirm")}</h3>
+            <p className="pr-delete-modal-desc"
+              dangerouslySetInnerHTML={{ __html: t("pt_rooms_del_desc").replace("{name}", `<strong>"${selected?.name}"</strong>`) }}
+            />
             <div className="pr-delete-modal-actions">
-              <button className="pr-delete-modal-cancel" onClick={() => setModal(null)}>Hủy bỏ</button>
+              <button className="pr-delete-modal-cancel" onClick={() => setModal(null)}>{t("adm_cancel")}</button>
               <button className="pr-delete-modal-confirm" onClick={handleDelete} disabled={saving}>
-                {saving ? "Đang xóa..." : "Xác nhận xóa"}
+                {saving ? t("adm_deleting") : t("pt_rooms_del_submit")}
               </button>
             </div>
           </div>

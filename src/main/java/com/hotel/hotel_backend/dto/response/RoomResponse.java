@@ -18,5 +18,6 @@ public record RoomResponse(
         BedType bedType,
         Set<RoomAmenity> amenities,
         String coverImageUrl,
-        List<String> imageUrls
+        List<String> imageUrls,
+        String description
 ) {}

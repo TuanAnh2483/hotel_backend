@@ -38,7 +38,6 @@ export default function PartnerBookings() {
     } catch (e) {
       setHotels([]);
       setPageData({ items: [], totalPages: 0, totalItems: 0 });
-      setError(e.message || "Không thể tải danh sách đặt phòng.");
     } finally {
       setLoading(false);
     }
@@ -51,12 +50,10 @@ export default function PartnerBookings() {
       const res = await partnerService.getBooking(id);
       setDetail(res);
     } catch (e) {
-      setError(e.message || "Không thể tải chi tiết đặt phòng.");
     }
   };
 
   const handleCheckout = async (booking) => {
-    if (!booking || !window.confirm("Xác nhận check-out booking này? Khách hàng sẽ có thể gửi đánh giá sau khi hoàn tất.")) return;
     setCheckoutId(booking.bookingId);
     setError("");
     setMessage("");
@@ -89,9 +86,7 @@ export default function PartnerBookings() {
       if (filters.status && filters.status !== String(updated.status) && pageData?.items?.length === 1 && filters.page > 1) {
         setFilters((current) => ({ ...current, page: current.page - 1 }));
       }
-      setMessage(`Đã check-out booking #${updated.bookingId}. Khách hàng đã có thể đánh giá khách sạn.`);
     } catch (e) {
-      setError(e.message || "Không thể check-out booking.");
     } finally {
       setCheckoutId(null);
     }
@@ -113,7 +108,6 @@ export default function PartnerBookings() {
         <div style={{ width: 28, height: 28, borderRadius: "50%", background: "#f1f5f9", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: "#475569" }}>
           {b.customerName?.[0] || "C"}
         </div>
-        <span style={{ fontWeight: 500, color: "#334155" }}>{b.customerName || "Khách ẩn danh"}</span>
       </div>,
       <div style={{ fontSize: 13, color: "#1e293b" }}>{b.checkIn}</div>,
       <div style={{ fontSize: 13, color: "#1e293b" }}>{b.checkOut}</div>,
@@ -123,7 +117,6 @@ export default function PartnerBookings() {
         onClick={() => openDetail(b.bookingId)}
         style={{ padding: "8px 16px", borderRadius: 10, background: "#f1f5f9", border: "none", color: "#475569", fontSize: 12, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}
       >
-        <Eye size={14} /> Chi tiết
       </button>,
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
         {canCheckout && (
@@ -132,19 +125,16 @@ export default function PartnerBookings() {
             disabled={isCheckingOut}
             style={{ alignItems: "center", background: "#10b981", border: "none", borderRadius: 10, color: "#fff", cursor: isCheckingOut ? "not-allowed" : "pointer", display: "flex", fontSize: 12, fontWeight: 800, gap: 6, opacity: isCheckingOut ? 0.7 : 1, padding: "8px 12px" }}
           >
-            <CheckCircle2 size={14} /> {isCheckingOut ? "Đang xử lý" : "Check-out"}
           </button>
         )}
         {b.status === "COMPLETED" && (
           <span style={{ alignItems: "center", background: "#ecfdf5", border: "1px solid #bbf7d0", borderRadius: 10, color: "#047857", display: "flex", fontSize: 12, fontWeight: 800, gap: 6, padding: "7px 10px" }}>
-            <CheckCircle2 size={14} /> Đã check-out
           </span>
         )}
         <button
           onClick={() => navigate(`/partner/bookings/${b.bookingId}`)}
           style={{ padding: "8px 16px", borderRadius: 10, background: "#BE1E2E", color: "#fff", border: "none", fontSize: 12, fontWeight: 700, cursor: "pointer", boxShadow: "0 4px 10px rgba(190, 30, 46, 0.2)" }}
         >
-          Xem toàn bộ
         </button>
       </div>,
     ];
@@ -153,15 +143,12 @@ export default function PartnerBookings() {
   return (
     <div style={{ paddingBottom: 60 }}>
       <PageHeader
-        title="Danh sách đặt phòng"
-        subtitle="Theo dõi và xử lý các yêu cầu đặt phòng từ khách hàng"
         action={
           <button style={{ 
             padding: "10px 18px", borderRadius: 10, background: "#fff", color: "#475569", 
             border: "1px solid #e2e8f0", fontWeight: 700, fontSize: 13, cursor: "pointer", 
             display: "flex", alignItems: "center", gap: 8 
           }}>
-            <Download size={16} /> Xuất CSV
           </button>
         }
       />
@@ -174,38 +161,29 @@ export default function PartnerBookings() {
       }}>
         <div>
           <div style={{ fontSize: 12, fontWeight: 700, color: "#64748b", marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
-            <Building2 size={14} /> KHÁCH SẠN
           </div>
           <select 
             style={selectSt} 
             value={filters.hotelId} 
             onChange={e => setFilters({ ...filters, hotelId: e.target.value, page: 1 })}
           >
-            <option value="">Tất cả khách sạn</option>
             {hotels.map(h => <option key={h.id} value={h.id}>{h.name}</option>)}
           </select>
         </div>
 
         <div>
           <div style={{ fontSize: 12, fontWeight: 700, color: "#64748b", marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
-            <Filter size={14} /> TRẠNG THÁI
           </div>
           <select 
             style={selectSt} 
             value={filters.status} 
             onChange={e => setFilters({ ...filters, status: e.target.value, page: 1 })}
           >
-            <option value="">Tất cả trạng thái</option>
-            <option value="CONFIRMED">Đã xác nhận</option>
-            <option value="PENDING_PAYMENT">Chờ thanh toán</option>
-            <option value="COMPLETED">Hoàn thành</option>
-            <option value="CANCELLED">Đã hủy</option>
           </select>
         </div>
 
         <div>
           <div style={{ fontSize: 12, fontWeight: 700, color: "#64748b", marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
-            <Calendar size={14} /> TỪ NGÀY
           </div>
           <input 
             type="date" style={selectSt} value={filters.checkInFrom} 
@@ -215,7 +193,6 @@ export default function PartnerBookings() {
 
         <div>
           <div style={{ fontSize: 12, fontWeight: 700, color: "#64748b", marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
-            <Calendar size={14} /> ĐẾN NGÀY
           </div>
           <input 
             type="date" style={selectSt} value={filters.checkInTo} 
@@ -227,7 +204,6 @@ export default function PartnerBookings() {
           onClick={() => setFilters({ hotelId: "", status: "", checkInFrom: "", checkInTo: "", page: 1 })}
           style={{ padding: "10px 16px", borderRadius: 10, background: "#f1f5f9", border: "none", color: "#475569", fontWeight: 700, fontSize: 13, cursor: "pointer", height: 42 }}
         >
-          Làm mới
         </button>
       </div>
 
@@ -243,12 +219,9 @@ export default function PartnerBookings() {
           </div>
         )}
         {loading
-          ? <div style={{ textAlign: "center", padding: 60, color: "#94a3b8" }}>Đang tải danh sách...</div>
           : <>
               <Table
-                headers={["MÃ", "KHÁCH SẠN", "KHÁCH HÀNG", "CHECK-IN", "CHECK-OUT", "TỔNG TIỀN", "TRẠNG THÁI", "", "THAO TÁC"]}
                 rows={rows}
-                empty="Không tìm thấy đặt phòng nào khớp với bộ lọc."
               />
               
               {/* Pagination */}
@@ -313,10 +286,8 @@ export default function PartnerBookings() {
                   style={{ width: "100%", marginBottom: 10 }}
                   onClick={() => handleCheckout(detail)}
                 >
-                  <CheckCircle2 size={15} /> Check-out và mở đánh giá
                 </Btn>
               )}
-              <Btn style={{ width: "100%" }} onClick={() => setDetail(null)}>Đóng</Btn>
             </div>
           </div>
         </Modal>

@@ -78,7 +78,6 @@ public class GeminiPromptBuilder {
             sb.append("- date=").append(p.date())
               .append(" currentPrice=").append(String.format("%,d", p.currentPrice())).append("VND")
               .append(" occupancy=").append(String.format("%.0f%%", p.occupancy() * 100))
-              .append(" demand=").append(p.demand());
             if (p.isWeekend())  sb.append(" weekend=true");
             if (p.isHoliday())  sb.append(" holiday=").append(p.holidayTier());
             if (p.suggestedPrice() != null)

@@ -3,6 +3,8 @@ import com.hotel.hotel_backend.entity.Room;
 import com.hotel.hotel_backend.entity.RoomStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.EntityGraph;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.util.Optional;
@@ -11,6 +13,9 @@ public interface RoomRepository extends JpaRepository<Room, Long> {
     List<Room> findByHotelId(Long hotelId);
 
     Optional<Room> findByIdAndHotelOwnerId(Long roomId, Long ownerId);
+
+    @Query("SELECT r FROM Room r JOIN FETCH r.hotel h WHERE r.id = :roomId AND h.owner.id = :ownerId")
+    Optional<Room> findByIdAndHotelOwnerIdWithHotel(@Param("roomId") Long roomId, @Param("ownerId") Long ownerId);
 
     boolean existsByHotelId(Long hotelId);
 

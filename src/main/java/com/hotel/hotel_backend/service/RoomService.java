@@ -44,6 +44,7 @@ public class RoomService {
         room.setAmenities(request.amenities() == null ? new HashSet<>() : new HashSet<>(request.amenities()));
         room.setImageUrls(normalizeImageUrls(request.imageUrls()));
         room.setCoverImageUrl(resolveCoverImageUrl(null, room.getImageUrls()));
+        room.setDescription(request.description());
 
         roomRepository.save(room);
         inventoryService.generateInventory(room);
@@ -75,6 +76,7 @@ public class RoomService {
         room.setAmenities(request.amenities() == null ? new HashSet<>() : new HashSet<>(request.amenities()));
         room.setImageUrls(normalizedImageUrls);
         room.setCoverImageUrl(resolveCoverImageUrl(room.getCoverImageUrl(), room.getImageUrls()));
+        room.setDescription(request.description());
 
         return mapToResponse(room);
     }
@@ -179,7 +181,8 @@ public class RoomService {
                 room.getBedType(),
                 room.getAmenities(),
                 resolveCoverImageUrl(room.getCoverImageUrl(), room.getImageUrls()),
-                copyImageUrls(room.getImageUrls())
+                copyImageUrls(room.getImageUrls()),
+                room.getDescription()
         );
     }
 

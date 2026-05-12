@@ -19,34 +19,6 @@ import {
 } from "lucide-react";
 import "../../styles/pages/PartnerCalendar.css";
 
-const DAY_NAMES = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
-const MONTH_NAMES = [
-  "Tháng 1",
-  "Tháng 2",
-  "Tháng 3",
-  "Tháng 4",
-  "Tháng 5",
-  "Tháng 6",
-  "Tháng 7",
-  "Tháng 8",
-  "Tháng 9",
-  "Tháng 10",
-  "Tháng 11",
-  "Tháng 12",
-];
-
-const TABS = [
-  { key: "CALENDAR", label: "Lịch phòng", icon: CalendarIcon },
-  { key: "REFUNDS", label: "Yêu cầu hoàn tiền", icon: RefreshCcw },
-];
-
-const REFUND_FILTERS = [
-  { value: "", label: "Tất cả trạng thái" },
-  { value: "PENDING", label: "Chờ xử lý" },
-  { value: "APPROVED", label: "Đã duyệt" },
-  { value: "REJECTED", label: "Đã từ chối" },
-];
-
 function toIsoDate(date) {
   const yyyy = date.getFullYear();
   const mm = String(date.getMonth() + 1).padStart(2, "0");
@@ -95,12 +67,9 @@ function formatCompactCurrency(value) {
 
   const amount = Number(value);
   if (amount >= 1_000_000) {
-    return `${(amount / 1_000_000).toFixed(amount % 1_000_000 === 0 ? 0 : 1)}tr`;
   }
   if (amount >= 1_000) {
-    return `${Math.round(amount / 1_000)}k`;
   }
-  return String(amount);
 }
 
 function formatDate(value) {
@@ -379,9 +348,6 @@ export default function PartnerCalendar() {
     if (calendarItems.length === 0) {
       return [
         metricCard(CalendarIcon, "Ngày trong tháng", 0, "Chưa có dữ liệu", "red"),
-        metricCard(DoorOpen, "TB phòng bán được", "—", "Theo ngày", "green"),
-        metricCard(AlertCircle, "Ngày đóng bán", 0, "closed = true", "amber"),
-        metricCard(Layers3, "Ngày giá tùy chỉnh", 0, "hasCustomRate", "blue"),
       ];
     }
 
@@ -396,9 +362,6 @@ export default function PartnerCalendar() {
 
     return [
       metricCard(CalendarIcon, "Ngày trong tháng", totalDays, selectedRoom?.name || "Phòng đã chọn", "red"),
-      metricCard(DoorOpen, "TB phòng bán được", avgSellableRooms, `Giá thấp nhất ${formatCompactCurrency(minPrice)}`, "green"),
-      metricCard(AlertCircle, "Ngày đóng bán", closedDays, "Không nhận booking mới", "amber"),
-      metricCard(Layers3, "Ngày giá tùy chỉnh", customRateDays, "Khác giá cơ bản", "blue"),
     ];
   }, [calendarItems, selectedRoom]);
 
@@ -548,13 +511,9 @@ export default function PartnerCalendar() {
       return;
     }
     if (availableRooms !== null && (!Number.isInteger(availableRooms) || availableRooms < 0)) {
-      setCalendarError("Số phòng bán được phải là số nguyên từ 0 trở lên.");
       return;
     }
 
-    setSavingRate(true);
-    setCalendarError("");
-    try {
       const payload = {
         startDate,
         endDate,
@@ -564,7 +523,6 @@ export default function PartnerCalendar() {
         availableRooms,
       };
 
-      if (rateForm.applyWeekendInMonth && rateModal.weekend) {
         const weekendRanges = getWeekendDateRanges(year, month);
         await Promise.all(
           weekendRanges.map((range) =>
@@ -579,7 +537,6 @@ export default function PartnerCalendar() {
         await partnerService.updateRoomCalendar(selectedRoomId, payload);
       }
 
-      setRateModal(null);
       setCalendarReloadKey((value) => value + 1);
     } catch (error) {
       setCalendarError(error.message || "Không thể cập nhật giá phòng.");
@@ -609,8 +566,6 @@ export default function PartnerCalendar() {
   return (
     <div style={{ paddingBottom: 80 }}>
       <PageHeader
-        title="Lịch vận hành đối tác"
-        subtitle="Lịch phòng bám theo tồn kho và giá theo ngày từ backend hiện tại."
       />
 
       <div
@@ -748,7 +703,6 @@ export default function PartnerCalendar() {
                       outline: "none",
                     }}
                   >
-                    {!hotels.length && <option value="">Chưa có khách sạn</option>}
                     {hotels.map((hotel) => (
                       <option key={hotel.id} value={hotel.id}>
                         {hotel.name}
@@ -778,7 +732,6 @@ export default function PartnerCalendar() {
                       outline: "none",
                     }}
                   >
-                    {!rooms.length && <option value="">Chưa có phòng</option>}
                     {rooms.map((room) => (
                       <option key={room.id} value={room.id}>
                         {room.name}
@@ -865,7 +818,6 @@ export default function PartnerCalendar() {
                   </span>
                   <span style={{ ...chipStyle, background: "#FFF7ED", color: "#C2410C" }}>
                     <Info size={12} />
-                    Ô ngày thể hiện giá và số phòng bán được theo backend
                   </span>
                 </div>
 
@@ -892,61 +844,24 @@ export default function PartnerCalendar() {
                         const isToday = cell.iso === todayIso;
                         const isClosed = Boolean(item?.closed);
                         const isWeekend = Boolean(cell.weekend);
-                        const usesDefaultRate = !item?.hasCustomRate;
                         const displayedPrice = item?.price ?? calendar?.basePrice;
                         const sellable = item?.sellableRooms ?? 0;
-                        const blocked = item?.blockedRooms ?? 0;
-                        const totalRooms = calendar?.defaultQuantity ?? item?.availableRooms ?? 0;
 
                         return (
                           <div
                             key={cell.key}
-                            className={`partner-calendar-cell${isWeekend ? " partner-calendar-cell-weekend" : ""}`}
-                            onClick={() => openDayRateModal(cell)}
-                            title="Click để cập nhật giá ngày này"
                             style={{
-                              "--cell-bg": isToday ? "#FFF1F2" : isClosed ? "#fff7ed" : isWeekend ? "#f0f9ff" : "#fff",
-                              "--cell-border": isToday ? "2px solid #BE1E2E" : isClosed ? "1px solid #fed7aa" : isWeekend ? "1px solid #bfdbfe" : "1px solid #f1f5f9",
                             }}
                           >
-                            <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "flex-start" }}>
-                              <div style={{ fontSize: 19, fontWeight: 900, color: isToday ? "#BE1E2E" : "#0f172a" }}>
                                 {cell.day}
                               </div>
-                              {isClosed && (
-                                <span style={{ ...chipStyle, background: "#FFF1F2", color: "#BE1E2E" }}>
-                                  Đóng bán
                                 </span>
                               )}
                             </div>
 
-                            <div style={{ marginTop: 12, display: "grid", gap: 7, flex: 1 }}>
-                              <div style={{ fontSize: 17, fontWeight: 900, color: "#0f172a" }}>
-                                {formatCompactCurrency(displayedPrice)}
                               </div>
-                              <div style={{ fontSize: 12, color: "#475569", fontWeight: 700 }}>
-                                Bán được: {sellable}/{totalRooms}
-                              </div>
-                              <div style={{ fontSize: 12, color: "#64748b" }}>
-                                Chặn: {blocked}
-                              </div>
-                              <div style={{ fontSize: 12, color: "#64748b" }}>
-                                Min stay: {item?.minStay ?? "—"}
                               </div>
                             </div>
-
-                            <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10 }}>
-                              {item?.hasCustomRate && (
-                                <span style={{ ...chipStyle, background: "#EFF6FF", color: "#2563EB" }}>Giá riêng</span>
-                              )}
-                              {usesDefaultRate && (
-                                <span style={{ ...chipStyle, background: "#ECFDF5", color: "#047857" }}>Giá mặc định</span>
-                              )}
-                              {isWeekend && (
-                                <span style={{ ...chipStyle, background: "#DBEAFE", color: "#1D4ED8" }}>Cuối tuần</span>
-                              )}
-                              {item?.hasInventoryRow && (
-                                <span style={{ ...chipStyle, background: "#F8FAFC", color: "#475569" }}>Có row tồn</span>
                               )}
                             </div>
                           </div>
@@ -1024,10 +939,6 @@ export default function PartnerCalendar() {
               }}
             >
               <div>
-                <div style={{ fontSize: 18, fontWeight: 900, color: "#0f172a" }}>Yêu cầu hoàn tiền</div>
-                <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>
-                  Dữ liệu lấy trực tiếp từ `/api/partner/refunds`
-                </div>
               </div>
 
               <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
@@ -1036,7 +947,6 @@ export default function PartnerCalendar() {
                   onChange={(event) => setSelectedHotelId(event.target.value)}
                   style={selectFilterStyle}
                 >
-                  {!hotels.length && <option value="">Chưa có khách sạn</option>}
                   {hotels.map((hotel) => (
                     <option key={hotel.id} value={hotel.id}>
                       {hotel.name}
@@ -1059,10 +969,8 @@ export default function PartnerCalendar() {
             </div>
 
             {refundsLoading ? (
-              <div style={{ padding: 48, textAlign: "center", color: "#64748b" }}>Đang tải yêu cầu hoàn tiền...</div>
             ) : (
               <Table
-                headers={["Mã", "Booking", "Khách sạn", "Khách hàng", "Số tiền", "Trạng thái", "Thao tác"]}
                 rows={refunds.map((refund) => [
                   <span style={{ fontFamily: "monospace", fontWeight: 700, color: "#64748b" }}>#{refund.id}</span>,
                   <span style={{ fontWeight: 800, color: "#BE1E2E" }}>#{refund.bookingId}</span>,
@@ -1072,7 +980,6 @@ export default function PartnerCalendar() {
                   <Badge status={refund.status} />,
                   <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                     <Btn small variant="ghost" onClick={() => setRefundDetail(refund)}>
-                      Chi tiết
                     </Btn>
                     {refund.status === "PENDING" && (
                       <>
@@ -1082,7 +989,6 @@ export default function PartnerCalendar() {
                           loading={actingRefundId === refund.id}
                           onClick={() => handleRefundAction(refund.id, "approve")}
                         >
-                          Duyệt
                         </Btn>
                         <Btn
                           small
@@ -1090,13 +996,11 @@ export default function PartnerCalendar() {
                           loading={actingRefundId === refund.id}
                           onClick={() => handleRefundAction(refund.id, "reject")}
                         >
-                          Từ chối
                         </Btn>
                       </>
                     )}
                   </div>,
                 ])}
-                empty="Không có yêu cầu hoàn tiền nào."
               />
             )}
           </Card>
@@ -1104,7 +1008,6 @@ export default function PartnerCalendar() {
       )}
 
       {rateModal && (
-        <Modal title={rateModal.title} onClose={() => setRateModal(null)} width={560}>
           <div className="partner-calendar-rate-form">
             <div className="partner-calendar-rate-summary">
               <div>
@@ -1123,7 +1026,6 @@ export default function PartnerCalendar() {
               {rateModal.scope === "range" && (
                 <>
                   <label className="partner-calendar-rate-field">
-                    <span>Từ ngày</span>
                     <input
                       type="date"
                       value={rateForm.startDate}
@@ -1132,7 +1034,6 @@ export default function PartnerCalendar() {
                   </label>
 
                   <label className="partner-calendar-rate-field">
-                    <span>Đến ngày</span>
                     <input
                       type="date"
                       value={rateForm.endDate}
@@ -1143,38 +1044,32 @@ export default function PartnerCalendar() {
               )}
 
               <label className="partner-calendar-rate-field">
-                <span>Giá bán</span>
                 <input
                   type="number"
                   min="0"
                   step="10000"
                   value={rateForm.price}
                   onChange={(event) => setRateForm((current) => ({ ...current, price: event.target.value }))}
-                  placeholder={String(calendar?.basePrice ?? "")}
                 />
               </label>
 
               <label className="partner-calendar-rate-field">
-                <span>Min stay</span>
                 <input
                   type="number"
                   min="1"
                   step="1"
                   value={rateForm.minStay}
                   onChange={(event) => setRateForm((current) => ({ ...current, minStay: event.target.value }))}
-                  placeholder="Không đổi"
                 />
               </label>
 
               <label className="partner-calendar-rate-field">
-                <span>Số phòng bán được</span>
                 <input
                   type="number"
                   min="0"
                   step="1"
                   value={rateForm.availableRooms}
                   onChange={(event) => setRateForm((current) => ({ ...current, availableRooms: event.target.value }))}
-                  placeholder="Không đổi"
                 />
               </label>
 
@@ -1184,7 +1079,6 @@ export default function PartnerCalendar() {
                   checked={rateForm.closed}
                   onChange={(event) => setRateForm((current) => ({ ...current, closed: event.target.checked }))}
                 />
-                <span>Đóng bán trong khoảng này</span>
               </label>
 
               {rateModal.weekend && (
@@ -1194,7 +1088,6 @@ export default function PartnerCalendar() {
                     checked={rateForm.applyWeekendInMonth}
                     onChange={(event) => setRateForm((current) => ({ ...current, applyWeekendInMonth: event.target.checked }))}
                   />
-                  <span>Áp dụng những ngày cuối tuần trong tháng</span>
                 </label>
               )}
             </div>
@@ -1210,11 +1103,8 @@ export default function PartnerCalendar() {
             </div>
 
             <div className="partner-calendar-rate-actions">
-              <Btn variant="ghost" onClick={() => setRateModal(null)}>
-                Hủy
               </Btn>
               <Btn loading={savingRate} onClick={handleSaveRate}>
-                Lưu giá
               </Btn>
             </div>
           </div>
@@ -1288,7 +1178,6 @@ export default function PartnerCalendar() {
 
             <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
               <Btn variant="ghost" onClick={() => setRefundDetail(null)}>
-                Đóng
               </Btn>
               {refundDetail.status === "PENDING" && (
                 <>
@@ -1297,13 +1186,11 @@ export default function PartnerCalendar() {
                     loading={actingRefundId === refundDetail.id}
                     onClick={() => handleRefundAction(refundDetail.id, "reject")}
                   >
-                    Từ chối
                   </Btn>
                   <Btn
                     loading={actingRefundId === refundDetail.id}
                     onClick={() => handleRefundAction(refundDetail.id, "approve")}
                   >
-                    Duyệt hoàn tiền
                   </Btn>
                 </>
               )}

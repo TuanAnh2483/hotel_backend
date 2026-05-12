@@ -14,7 +14,6 @@ const Login = ({ setPage, onSuccess }) => {
     setError("");
     setLoading(true);
     try {
-      // res = { accessToken, tokenType, expiresIn, user: { id, email, userType, status } }
       const res = await authService.login({ email: f.email, password: f.pw });
       if (onSuccess) onSuccess(res.user, res.accessToken);
     } catch (err) {
@@ -29,18 +28,13 @@ const Login = ({ setPage, onSuccess }) => {
       <ImgSide />
       <div style={S.formSide}>
         <div style={S.formBox}>
-          <h1 style={S.title}>Chào mừng</h1>
-          <p style={S.sub}>Vui lòng đăng nhập thông tin để tiếp tục hành trình của bạn</p>
 
           <div style={S.fg}>
-            <label style={S.label}>Email</label>
             <input style={S.input} type="email" placeholder="concierge@luminous.com" value={f.email} onChange={upd("email")} />
           </div>
 
           <div style={{ ...S.fg, marginBottom: 10 }}>
-            <label style={S.label}>Mật khẩu</label>
             <div style={S.inputWrap}>
-              <input style={S.input} type={showPw ? "text" : "password"} placeholder="••••••••" value={f.pw} onChange={upd("pw")} />
               <button style={S.eyeBtn} onClick={() => setShowPw(!showPw)}>{showPw ? <EyeOff /> : <EyeOpen />}</button>
             </div>
           </div>
@@ -48,20 +42,16 @@ const Login = ({ setPage, onSuccess }) => {
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
             <label style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 13, color: C.textMuted, cursor: "pointer" }}>
               <input style={S.checkBox} type="checkbox" checked={remember} onChange={e => setRemember(e.target.checked)} />
-              Ghi nhớ đăng nhập
             </label>
-            <a style={S.redLink} onClick={() => setPage("forgot")}>Quên mật khẩu ?</a>
           </div>
 
           {error && <p style={{ color: C.primary, fontSize: 13, marginBottom: 10, textAlign: "center" }}>{error}</p>}
 
           <SubmitButton
-            label={loading ? "Đang đăng nhập..." : "Đăng nhập ngay"}
             onClick={handleLogin}
             disabled={!f.email || !f.pw || loading}
           />
 
-          <div style={S.orRow}><div style={S.divLine} /><span>Hoặc tiếp tục với</span><div style={S.divLine} /></div>
           <div style={S.socialRow}>
             <button style={S.socialBtn}>
               <svg width="22" height="22" viewBox="0 0 48 48">
@@ -78,7 +68,6 @@ const Login = ({ setPage, onSuccess }) => {
             </button>
           </div>
 
-          <p style={S.bottomTxt}>Bạn chưa có tài khoản? <a style={S.redLink} onClick={() => setPage("register")}>Đăng kí tham gia</a></p>
         </div>
       </div>
     </div>

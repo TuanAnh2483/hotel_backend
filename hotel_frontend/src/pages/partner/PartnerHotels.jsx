@@ -76,34 +76,21 @@ function HotelForm({ form, setForm, onSubmit, onCancel, saving, title, hotelType
   return (
     <Modal title={title} onClose={onCancel} width={640}>
       <div style={{ display: "flex", flexDirection: "column", gap: 4, maxHeight: "80vh", overflowY: "auto", paddingRight: 8 }}>
-        <Field label="Tên khách sạn" required>
-          <input className="partner-hotel-form-input" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Ví dụ: Grand Palace Hotel & Spa" />
         </Field>
 
         <div className="partner-hotel-form-grid">
-          <Field label="Tỉnh/Thành phố">
-            <input className="partner-hotel-form-input" value={form.province} onChange={e => setForm(f => ({ ...f, province: e.target.value }))} placeholder="Hà Nội" />
           </Field>
-          <Field label="Quận/Huyện">
-            <input className="partner-hotel-form-input" value={form.district} onChange={e => setForm(f => ({ ...f, district: e.target.value }))} placeholder="Hoàn Kiếm" />
           </Field>
         </div>
 
-        <Field label="Địa chỉ chi tiết">
-          <input className="partner-hotel-form-input" value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))} placeholder="Số 1, Phố ABC, Phường XYZ..." />
         </Field>
 
-        <Field label="Loại hình lưu trú">
           <select className="partner-hotel-form-input" value={form.hotelType} onChange={e => setForm(f => ({ ...f, hotelType: e.target.value }))}>
-            {hotelTypes.map(t => <option key={t} value={t}>{HOTEL_TYPE_LABELS[t] || t}</option>)}
           </select>
         </Field>
 
-        <Field label="Mô tả giới thiệu">
-          <textarea className="partner-hotel-form-input" style={{ height: 120, resize: "vertical" }} value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="Chia sẻ những đặc điểm nổi bật của khách sạn..." />
         </Field>
 
-        <Field label="Tiện ích & Dịch vụ">
           <div className="partner-hotel-amenity-wrap">
             {amenities.map(a => (
               <label key={a.key} className={`partner-hotel-amenity-label${form.amenities.includes(a.key) ? " selected" : ""}`}>
@@ -115,7 +102,6 @@ function HotelForm({ form, setForm, onSubmit, onCancel, saving, title, hotelType
           </div>
         </Field>
 
-        <Field label="Hình ảnh khách sạn (Chọn nhiều hình)">
           <div className="partner-hotel-img-grid">
             {form.images?.map((img, idx) => {
               const url = imageItemUrl(img);
@@ -138,7 +124,6 @@ function HotelForm({ form, setForm, onSubmit, onCancel, saving, title, hotelType
             })}
             <label className="partner-hotel-img-add">
               <Plus size={24} />
-              <div className="partner-hotel-img-add-label">Thêm ảnh</div>
               <input
                 type="file" multiple accept="image/png,image/jpeg,image/webp,image/gif" style={{ display: "none" }}
                 onChange={e => {
@@ -149,13 +134,10 @@ function HotelForm({ form, setForm, onSubmit, onCancel, saving, title, hotelType
               />
             </label>
           </div>
-          <p className="partner-hotel-img-hint">Hỗ trợ JPG, PNG, WEBP, GIF. Tối đa 10MB mỗi ảnh.</p>
         </Field>
 
         <div className="partner-hotel-form-actions">
-          <Btn variant="ghost" onClick={onCancel}>Hủy bỏ</Btn>
           <Btn onClick={onSubmit} disabled={saving || !form.name.trim()}>
-            {saving ? "Đang xử lý..." : "Lưu thông tin"}
           </Btn>
         </div>
       </div>
@@ -287,11 +269,8 @@ export default function PartnerHotels() {
   return (
     <div className="partner-hotel-root">
       <PageHeader
-        title="Quản lý khách sạn của tôi"
-        subtitle="Quản lý thông tin, phòng và dịch vụ cho các cơ sở lưu trú bạn sở hữu"
         action={
           <button onClick={openAdd} className="partner-hotel-add-btn">
-            <Plus size={20} /> Thêm khách sạn mới
           </button>
         }
       />
@@ -303,14 +282,12 @@ export default function PartnerHotels() {
           <input
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
-            placeholder="Tìm kiếm nhanh khách sạn theo tên, tỉnh thành hoặc quận huyện..."
             className="partner-hotel-filter-search-input"
           />
         </div>
         <div className="partner-hotel-filter-count-wrap">
           <div className="partner-hotel-filter-divider" />
           <div className="partner-hotel-filter-count">
-            <span className="partner-hotel-filter-count-num">{filteredHotels.length}</span> KẾT QUẢ
           </div>
         </div>
       </div>
@@ -324,16 +301,10 @@ export default function PartnerHotels() {
       {loading ? (
         <div className="partner-hotel-loading">
           <div className="ui-spinner" />
-          Đang đồng bộ dữ liệu khách sạn...
         </div>
       ) : filteredHotels.length === 0 ? (
         <div className="partner-hotel-empty">
           <Building2 size={64} color="#e2e8f0" style={{ marginBottom: 20 }} />
-          <h3 className="partner-hotel-empty-title">Không tìm thấy khách sạn nào</h3>
-          <p className="partner-hotel-empty-desc">
-            Dường như bạn chưa có khách sạn nào hoặc không có kết quả phù hợp với từ khóa tìm kiếm.
-          </p>
-          <Btn onClick={openAdd}>Thêm khách sạn ngay</Btn>
         </div>
       ) : (
         <div className="partner-hotel-grid">
@@ -349,7 +320,6 @@ export default function PartnerHotels() {
                   </div>
                 )}
                 <span className="partner-hotel-card-type-badge">
-                  {(HOTEL_TYPE_LABELS[h.hotelType] || h.hotelType || "KHÁCH SẠN").toUpperCase()}
                 </span>
                 <button onClick={() => openEdit(h)} className="partner-hotel-card-edit-btn">
                   <Edit2 size={18} color="#475569" />
@@ -367,7 +337,6 @@ export default function PartnerHotels() {
                 </div>
 
                 <div className="partner-hotel-card-location">
-                  <MapPin size={16} color="#BE1E2E" />
                   {h.district}, {h.province}
                 </div>
 
@@ -376,7 +345,6 @@ export default function PartnerHotels() {
                     const am = AMENITIES.find(x => x.key === a);
                     return (
                       <span key={a} className="partner-hotel-card-chip">
-                        {am && <am.Icon size={14} color="#BE1E2E" />}
                         {am?.label || a}
                       </span>
                     );
@@ -390,13 +358,11 @@ export default function PartnerHotels() {
                     onClick={() => rrNavigate(`/partner/rooms?hotelId=${h.id}`)}
                     className="partner-hotel-card-btn partner-hotel-card-btn-manage"
                   >
-                    <Layout size={18} /> Quản lý phòng
                   </button>
                   <button
                     onClick={() => openDelete(h)}
                     className="partner-hotel-card-btn partner-hotel-card-btn-delete"
                   >
-                    <Trash2 size={18} /> Xóa
                   </button>
                 </div>
               </div>
@@ -423,7 +389,6 @@ export default function PartnerHotels() {
       {/* Modals */}
       {(modal === "add" || modal === "edit") && (
         <HotelForm
-          title={modal === "add" ? "Thêm khách sạn mới" : "Cập nhật thông tin khách sạn"}
           form={form} setForm={setForm} onSubmit={handleSave} onCancel={closeFormModal} saving={saving}
           hotelTypes={hotelTypeOptions}
           amenities={amenityOptions.length ? amenityOptions : AMENITIES}
@@ -431,19 +396,12 @@ export default function PartnerHotels() {
       )}
 
       {modal === "delete" && (
-        <Modal title="Xác nhận xóa khách sạn" onClose={() => setModal(null)} width={440}>
           <div>
             <div className="partner-hotel-delete-icon-wrap">
               <Trash2 size={32} color="#ef4444" />
             </div>
-            <h3 className="partner-hotel-delete-title">Bạn chắc chắn muốn xóa?</h3>
-            <p className="partner-hotel-delete-desc">
-              Tất cả dữ liệu liên quan đến khách sạn <strong>"{selected?.name}"</strong> bao gồm danh sách phòng và lịch đặt sẽ bị xóa vĩnh viễn.
-            </p>
             <div className="partner-hotel-delete-actions">
-              <button onClick={() => setModal(null)} className="partner-hotel-delete-cancel-btn">Hủy bỏ</button>
               <button onClick={handleDelete} disabled={saving} className="partner-hotel-delete-confirm-btn">
-                {saving ? "Đang xóa..." : "Xác nhận xóa"}
               </button>
             </div>
           </div>

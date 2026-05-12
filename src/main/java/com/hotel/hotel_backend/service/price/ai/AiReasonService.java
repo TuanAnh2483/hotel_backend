@@ -12,7 +12,6 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
@@ -57,7 +56,6 @@ public class AiReasonService {
     }
 
     private int computeAvgLeadDays(List<Booking> allBookings) {
-        LocalDate today = LocalDate.now();
         OptionalDouble avg = allBookings.stream()
                 .filter(b -> b.getCreatedAt() != null)
                 .mapToLong(b -> ChronoUnit.DAYS.between(b.getCreatedAt().toLocalDate(), b.getCheckIn()))

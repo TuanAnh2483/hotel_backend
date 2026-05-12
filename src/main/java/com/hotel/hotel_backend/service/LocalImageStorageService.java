@@ -30,7 +30,6 @@ public class LocalImageStorageService implements ImageStorageProvider {
     }
 
     /**
-     * Store hotel gallery images under a stable public folder and return generated public URLs.
      */
     @Override
     public List<String> storeHotelImages(Long hotelId, List<MultipartFile> files) {
@@ -38,7 +37,6 @@ public class LocalImageStorageService implements ImageStorageProvider {
     }
 
     /**
-     * Store room gallery images under a stable public folder and return generated public URLs.
      */
     @Override
     public List<String> storeRoomImages(Long roomId, List<MultipartFile> files) {

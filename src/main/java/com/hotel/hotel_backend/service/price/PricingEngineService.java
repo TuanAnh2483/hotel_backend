@@ -4,7 +4,6 @@ import com.hotel.hotel_backend.dto.OccupancyForecast;
 import com.hotel.hotel_backend.dto.PricingSuggestion;
 import com.hotel.hotel_backend.entity.PricingModel;
 import com.hotel.hotel_backend.entity.Room;
-import com.hotel.hotel_backend.service.price.ModelTrainingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -285,6 +284,8 @@ public class PricingEngineService {
                             .confidence(fc.confidence())
                             .activeBookings(fc.activeBookings())
                             .totalRooms(fc.totalRooms())
+                            .velocity(fc.velocity())
+                            .daysUntil(fc.daysUntil())
                             .build()
             );
         }

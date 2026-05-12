@@ -14,12 +14,6 @@ import "../styles/pages/customer/HomePage.css";
 
 const PLACEHOLDER_BG = "repeating-conic-gradient(#ccc 0% 25%,#e8e8e8 0% 50%) 0 0/20px 20px";
 const DESTINATION_CARDS = [
-  { id: "da-nang", name: "Đà Nẵng", searchKey: "Đà Nẵng", image: IMG_DESTINATIONS.DA_NANG, desc: "Khám phá chỗ nghỉ" },
-  { id: "nha-trang", name: "Nha Trang", searchKey: "Nha Trang", image: IMG_DESTINATIONS.NHA_TRANG, desc: "Khám phá chỗ nghỉ" },
-  { id: "hue", name: "Huế", searchKey: "Huế", image: IMG_DESTINATIONS.HUE, desc: "Khám phá chỗ nghỉ" },
-  { id: "ninh-binh", name: "Ninh Bình", searchKey: "Ninh Bình", image: IMG_DESTINATIONS.NINH_BINH, desc: "Khám phá chỗ nghỉ" },
-  { id: "can-tho", name: "Cần Thơ", searchKey: "Cần Thơ", image: IMG_DESTINATIONS.CAN_THO, desc: "Khám phá chỗ nghỉ" },
-  { id: "phu-quoc", name: "Phú Quốc", searchKey: "Phú Quốc", image: IMG_DESTINATIONS.PHU_QUOC, desc: "Khám phá chỗ nghỉ" },
 ];
 const DEFAULT_DESTINATIONS = DESTINATION_CARDS;
 const FALLBACK_LOCATION_OPTIONS = [
@@ -27,12 +21,6 @@ const FALLBACK_LOCATION_OPTIONS = [
   ...DESTINATION_CARDS.map((item) => ({ province: item.searchKey, districts: [] })),
 ];
 const PROPERTY_TYPE_CARDS = [
-  { id: "HOTEL", label: "Khách sạn", image: IMG_PROPERTY_TYPES.HOTEL },
-  { id: "APARTMENT", label: "Căn hộ", image: IMG_PROPERTY_TYPES.APARTMENT },
-  { id: "RESORT", label: "Các resort", image: IMG_PROPERTY_TYPES.RESORT },
-  { id: "VILLA", label: "Các biệt thự", image: IMG_PROPERTY_TYPES.VILLA },
-  { id: "HOMESTAY", label: "Homestay", image: IMG_PROPERTY_TYPES.HOMESTAY },
-  { id: "HOSTEL", label: "Hostel", image: IMG_PROPERTY_TYPES.HOSTEL },
 ];
 
 // ── SVG icon set ──────────────────────────────────────────────────────
@@ -165,12 +153,10 @@ function SearchBar({ initial = {}, onSearch }) {
     const province = q.province.trim();
     if ((q.checkIn && !q.checkOut) || (!q.checkIn && q.checkOut)) {
       setProvinceErr(false);
-      setSearchErr("Vui lòng chọn đủ ngày nhận phòng và ngày trả phòng");
       return;
     }
     if (q.checkIn && q.checkOut && q.checkOut <= q.checkIn) {
       setProvinceErr(false);
-      setSearchErr("Ngày trả phòng phải sau ngày nhận phòng");
       return;
     }
     setProvinceErr(false);
@@ -181,41 +167,30 @@ function SearchBar({ initial = {}, onSearch }) {
   return (
     <div className="customer-homepage-searchbar-wrap">
       <div className={`customer-homepage-searchbar${provinceErr || searchErr ? " has-error" : ""}`}>
-        <Field iconKey="pin" label="TỈNH">
           <select className="customer-homepage-field-input customer-homepage-field-select" value={q.province} onChange={updateProvince}>
-            <option value="">Chọn tỉnh / thành phố</option>
             {locations.map((item) => (
               <option key={item.province} value={item.province}>{item.province}</option>
             ))}
           </select>
         </Field>
-        <Field iconKey="map" label="QUẬN / HUYỆN">
           <select
             className="customer-homepage-field-input customer-homepage-field-select"
             value={q.district}
             onChange={upd("district")}
             disabled={!q.province || visibleDistrictOptions.length === 0}
           >
-            <option value="">Tất cả quận / huyện</option>
             {visibleDistrictOptions.map((district) => (
               <option key={district} value={district}>{district}</option>
             ))}
           </select>
         </Field>
-        <Field iconKey="calendar" label="NHẬN PHÒNG">
           <input className="customer-homepage-field-input" type="date" value={q.checkIn} onChange={upd("checkIn")} />
         </Field>
-        <Field iconKey="calendar" label="TRẢ PHÒNG">
           <input className="customer-homepage-field-input" type="date" value={q.checkOut} onChange={upd("checkOut")} />
         </Field>
-        <Field iconKey="people" label="KHÁCH" flex="0 0 120px">
-          <input className="customer-homepage-field-input" type="number" min="1" placeholder="Nhập số khách" value={q.guests} onChange={upd("guests")} />
         </Field>
-        <Field iconKey="bed" label="PHÒNG" flex="0 0 120px">
-          <input className="customer-homepage-field-input" type="number" min="1" placeholder="Nhập số phòng" value={q.rooms} onChange={upd("rooms")} />
         </Field>
         {hasData && (
-          <button onClick={clearAll} title="Xóa tất cả bộ lọc" className="customer-homepage-clear-btn">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <line x1="18" y1="6" x2="6" y2="18"></line>
               <line x1="6" y1="6" x2="18" y2="18"></line>
@@ -225,13 +200,11 @@ function SearchBar({ initial = {}, onSearch }) {
         <div className="customer-homepage-searchbar-divider" />
         <button className="customer-homepage-search-btn" onClick={handleSearch}>
           <Ic k="search" size={15} color="#fff" />
-          Tìm kiếm
         </button>
       </div>
       {(provinceErr || searchErr) && (
         <div className="customer-homepage-error-tip">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="#BE1E2E"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
-          {searchErr || "Vui lòng chọn tỉnh / thành phố bạn muốn đến"}
         </div>
       )}
     </div>
@@ -239,7 +212,6 @@ function SearchBar({ initial = {}, onSearch }) {
 }
 
 function HotelCard({ hotel, onView, imgUrl }) {
-  const ratingText = hotel.rating > 0 ? hotel.rating.toFixed(1) : "Mới";
 
   return (
     <div className="customer-homepage-hotel-card" onClick={onView}>
@@ -252,7 +224,6 @@ function HotelCard({ hotel, onView, imgUrl }) {
         </button>
       </div>
       <div className="customer-homepage-hotel-card-body">
-        <span className="customer-homepage-hotel-card-badge">Gợi ý</span>
         <h3 className="customer-homepage-hotel-card-name">{hotel.name}</h3>
         <div className="customer-homepage-hotel-card-location">
           <Ic k="pin" size={12} color="#aaa" />
@@ -261,25 +232,20 @@ function HotelCard({ hotel, onView, imgUrl }) {
         <div className="customer-homepage-hotel-card-rating-row">
           <span className="customer-homepage-hotel-card-rating">{ratingText}</span>
           <span className="customer-homepage-hotel-card-rating-copy">
-            {hotel.rating > 0 ? "Được đánh giá tốt" : "Chỗ nghỉ mới"}
           </span>
         </div>
         {hotel.availableUnits > 0 && (
           <div className="customer-homepage-hotel-card-availability">
             <Ic k="bed" size={12} color="#047857" />
-            {hotel.availableUnits} phòng trống
           </div>
         )}
         <div className="customer-homepage-hotel-card-footer">
           {hotel.price > 0
             ? <div className="customer-homepage-hotel-card-price-wrap">
-                <span className="customer-homepage-hotel-card-price-label">Bắt đầu từ</span>
                 <span className="customer-homepage-hotel-card-price">
                   {hotel.price.toLocaleString("vi-VN")} ₫
-                  <span className="customer-homepage-hotel-card-price-unit">/đêm</span>
                 </span>
               </div>
-            : <span className="customer-homepage-hotel-card-no-price">Liên hệ để biết giá</span>}
           <span className="customer-homepage-hotel-card-arrow-box">
             <Ic k="arrow" size={16} color={C.primary} />
           </span>
@@ -294,7 +260,6 @@ function DestinationCard({ item, onNavigate }) {
     <button className="customer-homepage-destination-card" type="button" onClick={onNavigate}>
       <ImgBox src={item.image} alt={item.name} h={150} />
       <span className="customer-homepage-destination-name">{item.name}</span>
-      <span className="customer-homepage-destination-desc">{item.desc}</span>
     </button>
   );
 }
@@ -302,8 +267,6 @@ function DestinationCard({ item, onNavigate }) {
 function PropertyTypeCard({ item, onNavigate }) {
   return (
     <button className="customer-homepage-property-card" type="button" onClick={onNavigate}>
-      <ImgBox src={item.image} alt={item.label} h={190} />
-      <span className="customer-homepage-property-name">{item.label}</span>
     </button>
   );
 }
@@ -354,7 +317,6 @@ export default function HomePage({ navigate, user, onLogout }) {
         hotelService.searchHotels({ province: destination.searchKey, size: 3, sort: "recommended" })
           .then(({ totalItems }) => ({
             ...destination,
-            desc: totalItems > 0 ? `${totalItems} chỗ nghỉ` : destination.desc,
           }))
           .catch(() => destination)
       )
@@ -376,11 +338,8 @@ export default function HomePage({ navigate, user, onLogout }) {
         <div className="customer-homepage-hero-overlay" />
 
         <div className="customer-homepage-hero-content">
-          <h1 className="customer-homepage-hero-title">
-            Tìm khách sạn lý tưởng<br />của bạn
           </h1>
           <p className="customer-homepage-hero-subtitle">
-            Hàng nghìn lựa chọn lưu trú chất lượng trên khắp Việt Nam
           </p>
         </div>
 
@@ -392,14 +351,10 @@ export default function HomePage({ navigate, user, onLogout }) {
       <>
           {/* ── Featured Hotels ── */}
           <div className="customer-homepage-section">
-            <p className="customer-homepage-section-eyebrow">GỢI Ý HÀNG ĐẦU</p>
             <div className="customer-homepage-section-header">
               <div>
-                <h2 className="customer-homepage-section-title">Nhà ở mà khách yêu thích</h2>
-                <p className="customer-homepage-section-desc">Các chỗ nghỉ đang còn phòng và có giá tốt cho ngày gần nhất</p>
               </div>
               <a className="customer-homepage-view-all" onClick={() => startSearchFromPreset({})}>
-                Xem tất cả <Ic k="arrow" size={14} color={C.primary} />
               </a>
             </div>
             <div className="customer-homepage-hotels-row">
@@ -424,8 +379,6 @@ export default function HomePage({ navigate, user, onLogout }) {
           <div className="customer-homepage-section customer-homepage-discovery-section">
             <div className="customer-homepage-section-header">
               <div>
-                <h2 className="customer-homepage-section-title">Khám phá Việt Nam</h2>
-                <p className="customer-homepage-section-desc">Các điểm đến phổ biến có nhiều điều chờ đón bạn</p>
               </div>
             </div>
             <div className="customer-homepage-destination-row">
@@ -442,8 +395,6 @@ export default function HomePage({ navigate, user, onLogout }) {
           <div className="customer-homepage-section customer-homepage-type-section">
             <div className="customer-homepage-section-header">
               <div>
-                <h2 className="customer-homepage-section-title">Tìm theo loại chỗ nghỉ</h2>
-                <p className="customer-homepage-section-desc">Chọn nhanh kiểu lưu trú phù hợp với chuyến đi của bạn</p>
               </div>
             </div>
             <div className="customer-homepage-property-row">

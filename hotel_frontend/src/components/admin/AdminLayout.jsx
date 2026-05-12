@@ -15,27 +15,14 @@ const SIDEBAR_ACT  = AP;
 const SIDEBAR_TEXT = "#5a1a22";
 const SIDEBAR_DIV  = "rgba(190,30,46,0.14)";
 
-// ── Nav items ─────────────────────────────────────────────────────────
 const NAV = [
-  { key: "admin-dashboard", icon: <LayoutDashboard size={18} />, label: "Tổng quan" },
   {
     key: "admin-users-group",
     icon: <Users size={18} />,
-    label: "Quản lý người dùng",
     children: [
-      { key: "admin-users",    icon: <UserPlus size={15} />,   label: "Thêm người dùng" },
-      { key: "admin-partners", icon: <Handshake size={15} />,  label: "Duyệt đối tác"   },
     ],
   },
-  { key: "admin-hotels",    icon: <Building2 size={18} />, label: "Quản lý khách sạn" },
-  { key: "admin-bookings",  icon: <ClipboardList size={18} />, label: "Toàn bộ Booking" },
-  { key: "admin-refunds",   icon: <CircleDollarSign size={18} />, label: "Hoàn tiền" },
-  { key: "admin-reviews",   icon: <Star size={18} />, label: "Đánh giá" },
-  { key: "admin-system",    icon: <Settings size={18} />, label: "Hệ thống" },
 ];
-
-// ── Sidebar ───────────────────────────────────────────────────────────
-function Sidebar({ page, navigate, user, onLogout, open, onClose }) {
   const initialOpen = NAV
     .filter(item => item.children?.some(c => c.key === page))
     .map(item => item.key);
@@ -54,12 +41,10 @@ function Sidebar({ page, navigate, user, onLogout, open, onClose }) {
           <div className="admin-sidebar-logo-box">
             <img src={LOGO_IMG} alt="VLU Hotel Hub" />
           </div>
-          <div className="admin-sidebar-logo-tag">Quản lý</div>
         </div>
 
         {/* Nav */}
         <nav className="admin-sidebar-nav">
-          <div className="admin-nav-section-label">DANH MỤC</div>
           {NAV.map(item => {
             if (item.children) {
               const isOpen    = expanded.includes(item.key);
@@ -114,7 +99,6 @@ function Sidebar({ page, navigate, user, onLogout, open, onClose }) {
           <div className="admin-nav-divider">
             <button onClick={() => navigate("home")} className="admin-nav-home-btn">
               <span className="admin-nav-icon"><Home size={18} /></span>
-              Về trang chủ
             </button>
           </div>
         </nav>
@@ -127,29 +111,15 @@ function Sidebar({ page, navigate, user, onLogout, open, onClose }) {
             </div>
             <div className="admin-sidebar-user-info">
               <div className="admin-sidebar-user-email">{user?.email || "admin"}</div>
-              <div className="admin-sidebar-user-role">Quản trị viên</div>
             </div>
           </div>
           <button onClick={onLogout} className="admin-sidebar-logout-btn">
-            <LogOut size={14} /> Đăng xuất
           </button>
         </div>
       </aside>
     </>
   );
 }
-
-// ── Top header ────────────────────────────────────────────────────────
-const PAGE_TITLES = {
-  "admin-dashboard": "Tổng quan",
-  "admin-users":     "Quản lý người dùng",
-  "admin-partners":  "Duyệt đơn đăng ký đối tác",
-  "admin-hotels":    "Quản lý khách sạn",
-  "admin-bookings":  "Toàn bộ booking",
-  "admin-refunds":   "Thực hiện hoàn tiền",
-  "admin-reviews":   "Quản lý đánh giá",
-  "admin-system":    "Xử lý hệ thống",
-};
 
 // ── Main layout ───────────────────────────────────────────────────────
 export default function AdminLayout({ page, navigate, user, onLogout, children }) {
@@ -173,7 +143,6 @@ export default function AdminLayout({ page, navigate, user, onLogout, children }
             <Menu size={20} color={AP} />
           </button>
           <div className="admin-topbar-breadcrumb">
-            <span className="admin-topbar-parent">Quản trị</span>
             <span className="admin-topbar-sep">/</span>
             <span className="admin-topbar-title">{PAGE_TITLES[page] || page}</span>
           </div>

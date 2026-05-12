@@ -58,7 +58,6 @@ public class BookingRefundService {
                 bookingExpirationService.releaseReservedInventory(booking);
             }
             case COMPLETED, CANCELLED -> {
-                // No extra inventory operation is needed here.
             }
             default -> throw new ApiException(ErrorCode.CONFLICT, "Only paid bookings can be refunded");
         }

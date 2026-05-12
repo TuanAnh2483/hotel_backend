@@ -7,7 +7,6 @@ export default function HotelListPage({ navigate, params = {}, user, onLogout })
     <div style={{ minHeight: "100vh", background: "linear-gradient(135deg, #ffffff 0%, #fdf4f5 45%, #f7ebeb 100%)", fontFamily: "'Segoe UI','Be Vietnam Pro',sans-serif", display: "flex", flexDirection: "column" }}>
       <MainNavbar active="hotels" navigate={navigate} user={user} onLogout={onLogout} />
 
-      <HotelSearchResults navigate={navigate} params={params} hideResultText={true} />
 
       <Footer />
     </div>

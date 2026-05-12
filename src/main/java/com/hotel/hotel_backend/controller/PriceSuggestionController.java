@@ -4,6 +4,7 @@ import com.hotel.hotel_backend.dto.request.PriceSuggestionFeedbackRequest;
 import com.hotel.hotel_backend.dto.response.ApiResponse;
 import com.hotel.hotel_backend.dto.response.PriceSuggestionResponse;
 import com.hotel.hotel_backend.dto.response.RevenueAnalyticsResponse;
+import com.hotel.hotel_backend.dto.response.TrainResultResponse;
 import com.hotel.hotel_backend.service.price.PriceSuggestionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -71,5 +72,17 @@ public class PriceSuggestionController {
             @PathVariable Long roomId
     ) {
         return ApiResponse.ok(priceSuggestionService.getRevenueAnalytics(roomId));
+    }
+
+    /**
+     * Kích hoạt huấn luyện model AI thủ công cho phòng.
+     * POST /api/partner/rooms/{roomId}/train
+     */
+    @PostMapping("/train")
+    @PreAuthorize("hasRole('PARTNER')")
+    public ApiResponse<TrainResultResponse> triggerTraining(
+            @PathVariable Long roomId
+    ) {
+        return ApiResponse.ok(priceSuggestionService.triggerTraining(roomId));
     }
 }

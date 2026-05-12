@@ -287,6 +287,75 @@
   font-family: inherit;
 }
 
+/* ── Hotel Info Panel (in form) ──────────────────────────────── */
+
+.pr-hotel-info-panel {
+  background: linear-gradient(135deg, #fff8f8 0%, #fff1f2 100%);
+  border: 1px solid #FFE4E6;
+  border-radius: 16px;
+  padding: 20px 24px;
+  margin-bottom: 24px;
+}
+
+.pr-hotel-info-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.pr-hotel-info-title {
+  font-size: 12px;
+  font-weight: 800;
+  color: #BE1E2E;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  flex: 1;
+}
+
+.pr-hotel-type-badge {
+  padding: 3px 10px;
+  border-radius: 8px;
+  background: #fff;
+  border: 1px solid #FFE4E6;
+  color: #BE1E2E;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.pr-hotel-info-name {
+  font-size: 17px;
+  font-weight: 800;
+  color: #1e293b;
+  margin-bottom: 8px;
+}
+
+.pr-hotel-info-address {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #64748b;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+
+.pr-hotel-info-desc {
+  font-size: 13px;
+  color: #475569;
+  line-height: 1.6;
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.pr-hotel-info-desc--empty {
+  color: #94a3b8;
+  font-style: italic;
+}
+
 /* ── Form ────────────────────────────────────────────────────── */
 
 .pr-form-body {
@@ -395,6 +464,12 @@
 
 .pr-input-icon-left {
   padding-left: 40px;
+}
+
+.pr-textarea {
+  resize: vertical;
+  min-height: 90px;
+  line-height: 1.6;
 }
 
 .pr-input-flex {
@@ -598,4 +673,78 @@
   cursor: pointer;
   font-family: inherit;
   font-size: 14px;
+}
+
+/* ── Filter bar ──────────────────────────────────────────────── */
+.pr-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  padding: 14px 18px;
+  background: #fff;
+  border-radius: 18px;
+  border: 1px solid #f1f5f9;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+}
+
+.pr-filter-search-wrap {
+  position: relative;
+  flex: 1;
+  min-width: 180px;
+}
+
+.pr-filter-search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.pr-filter-search {
+  width: 100%;
+  padding: 9px 12px 9px 34px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #0f172a;
+  background: #f8fafc;
+  outline: none;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+.pr-filter-search:focus {
+  border-color: #BE1E2E;
+  box-shadow: 0 0 0 3px rgba(190,30,46,0.08);
+}
+
+.pr-filter-cat-select {
+  padding: 9px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #0f172a;
+  background: #f8fafc;
+  outline: none;
+  font-family: inherit;
+  min-width: 170px;
+  cursor: pointer;
+}
+
+.pr-filter-cat-select:focus {
+  border-color: #BE1E2E;
+  box-shadow: 0 0 0 3px rgba(190,30,46,0.08);
+}
+
+.pr-filter-count {
+  font-size: 12px;
+  font-weight: 700;
+  color: #94a3b8;
+  white-space: nowrap;
+  margin-left: auto;
 }

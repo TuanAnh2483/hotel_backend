@@ -39,30 +39,12 @@ function FIcon({ k, size = 14, color = C.primary }) {
 }
 
 const HOTEL_TYPE_OPTIONS = [
-  { value: "HOTEL", label: "Khách sạn" },
-  { value: "APARTMENT", label: "Căn hộ" },
-  { value: "RESORT", label: "Khu nghỉ dưỡng" },
-  { value: "VILLA", label: "Biệt thự" },
-  { value: "HOMESTAY", label: "Homestay" },
-  { value: "HOSTEL", label: "Hostel" },
 ];
 
 const ROOM_CATEGORY_OPTIONS = [
-  { value: "STANDARD", label: "Tiêu chuẩn" },
-  { value: "DELUXE", label: "Cao cấp" },
-  { value: "SUITE", label: "Phòng Suite" },
-  { value: "FAMILY", label: "Gia đình" },
 ];
 
 const AMENITY_FILTER_OPTIONS = [
-  { value: "WIFI", label: "Wifi miễn phí", target: "hotelAmenities" },
-  { value: "POOL", label: "Hồ bơi", target: "hotelAmenities" },
-  { value: "PARKING", label: "Bãi đỗ xe", target: "hotelAmenities" },
-  { value: "SPA", label: "Spa", target: "hotelAmenities" },
-  { value: "RESTAURANT", label: "Nhà hàng", target: "hotelAmenities" },
-  { value: "MINI_BAR", label: "Quầy mini bar", target: "roomAmenities" },
-  { value: "SEA_VIEW", label: "Tầm nhìn ra biển", target: "roomAmenities" },
-  { value: "BREAKFAST", label: "Bữa sáng", target: "roomAmenities" },
 ];
 
 function FilterOption({ label, checked, onClick, isRadio }) {
@@ -124,49 +106,38 @@ function FilterSidebar({ filters, onChange, onApply }) {
     <div style={{ background: "#fff", borderRadius: 14, padding: "20px 16px", border: "1.5px solid #edd8da", position: "sticky", top: 20 }}>
       <h3 style={{ fontSize: 14, fontWeight: 800, color: "#1a1a1a", marginBottom: 16, display: "flex", alignItems: "center", gap: 8 }}>
         <FIcon k="pin" size={16} color={C.primary} />
-        Bộ lọc tìm kiếm
       </h3>
 
-      <Section iconKey="hotel" title="Loại khách sạn">
         {HOTEL_TYPE_OPTIONS.map((option) => (
-          <FilterOption key={option.value} label={option.label} isRadio
             checked={filters.hotelTypes === option.value}
             onClick={() => onChange({ ...filters, hotelTypes: filters.hotelTypes === option.value ? "" : option.value })} />
         ))}
       </Section>
 
-      <Section iconKey="star" title="Đánh giá">
         {[5, 4, 3, 2, 1].map(s => (
-          <FilterOption key={s} label={`${s} sao trở lên`} isRadio
             checked={filters.stars === s}
             onClick={() => onChange({ ...filters, stars: filters.stars === s ? null : s })} />
         ))}
       </Section>
 
-      <Section iconKey="layers" title="Hạng phòng">
         {ROOM_CATEGORY_OPTIONS.map((option) => (
-          <FilterOption key={option.value} label={option.label} isRadio
             checked={filters.roomCategories === option.value}
             onClick={() => onChange({ ...filters, roomCategories: filters.roomCategories === option.value ? "" : option.value })} />
         ))}
       </Section>
 
-      <Section iconKey="wifi" title="Tiện nghi">
         {(showMoreAmenities ? AMENITY_FILTER_OPTIONS : AMENITY_FILTER_OPTIONS.slice(0, 5)).map((option) => (
-          <FilterOption key={`${option.target}-${option.value}`} label={option.label}
             checked={(filters[option.target] || []).includes(option.value)}
             onClick={() => toggleEnumList(option.target, option.value)} />
         ))}
         <a style={{ fontSize: 12, color: C.primary, cursor: "pointer", fontWeight: 600 }}
           onClick={() => setShowMoreAmenities(p => !p)}>
-          {showMoreAmenities ? "Thu gọn ‹" : "Hiện thêm ›"}
         </a>
       </Section>
 
       <div style={{ marginBottom: 16 }}>
         <p style={{ fontSize: 12, fontWeight: 700, color: "#1a1a1a", marginBottom: 8, display: "flex", alignItems: "center", gap: 7, textTransform: "uppercase", letterSpacing: 0.8 }}>
           <FIcon k="wallet" size={14} color={C.primary} />
-          Ngân sách / đêm
         </p>
         <input type="range" min="1000000" max="10000000" step="100000"
           value={filters.priceMax || 10000000}
@@ -180,7 +151,6 @@ function FilterSidebar({ filters, onChange, onApply }) {
 
       <button onClick={onApply}
         style={{ width: "100%", padding: "11px", background: C.primary, color: "#fff", border: "none", borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
-        Áp dụng bộ lọc
       </button>
     </div>
   );
@@ -222,10 +192,8 @@ function HotelResultCard({ hotel, onView }) {
         
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginTop: 24 }}>
           <div>
-            <div style={{ fontSize: 12, color: "#94a3b8", fontWeight: 600, marginBottom: 2 }}>GIÁ CHỈ TỪ</div>
             <div style={{ fontSize: 22, fontWeight: 900, color: C.primary }}>
                {hotel.price > 0 ? hotel.price.toLocaleString("vi-VN") : "1.250.000"} ₫
-               <span style={{ fontSize: 13, fontWeight: 500, color: "#94a3b8", marginLeft: 4 }}>/đêm</span>
             </div>
           </div>
           <button
@@ -238,7 +206,6 @@ function HotelResultCard({ hotel, onView }) {
             onClick={(e) => { e.stopPropagation(); onView(); }}
             onMouseEnter={e => e.currentTarget.style.transform = "scale(1.02)"}
             onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
-          >XEM CHI TIẾT</button>
         </div>
       </div>
     </div>
@@ -267,13 +234,6 @@ function Pagination({ page, totalPages, onPage }) {
 
 function FeaturedBanner() {
   return (
-    <div style={{ position: "relative", height: 200, borderRadius: 14, overflow: "hidden", marginBottom: 20 }}>
-      <Img h={200} />
-      <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to right,rgba(0,0,0,0.6) 0%,transparent 60%)" }} />
-      <div style={{ position: "absolute", top: 16, left: 20, fontSize: 10, fontWeight: 800, color: "#f5b200", letterSpacing: 2, textTransform: "uppercase" }}>5.0 LUXURY ESCAPE</div>
-      <div style={{ position: "absolute", bottom: 20, left: 20 }}>
-        <h3 style={{ fontSize: 28, fontWeight: 900, color: "#fff", marginBottom: 4 }}>Azure Sands Resort</h3>
-        <p style={{ fontSize: 12, color: "rgba(255,255,255,0.85)" }}>📍 Maldives, North Atoll &nbsp; 🏖 Private Beach Access</p>
       </div>
     </div>
   );
@@ -377,11 +337,8 @@ export default function HotelSearchResults({ navigate, params = {}, hideBanner =
       </div>
 
       <div style={{ flex: 1, minWidth: 0 }}>
-        {!hideBanner && <FeaturedBanner />}
 
-        {!loading && !hideResultText && (
           <h2 style={{ fontSize: 20, fontWeight: 800, color: "#1a1a1a", marginBottom: 16 }}>
-            Đã tìm thấy {totalItems} kết quả từ tìm kiếm
           </h2>
         )}
 
@@ -390,7 +347,6 @@ export default function HotelSearchResults({ navigate, params = {}, hideBanner =
               <div key={i} style={{ height: 200, background: "#fff", borderRadius: 14, border: "1.5px solid #edd8da", marginBottom: 16, opacity: 0.5 }} />
             ))
           : displayed.length === 0
-            ? <p style={{ color: "#888", textAlign: "center", padding: "40px 0" }}>Không tìm thấy kết quả phù hợp.</p>
             : displayed.map(h => (
                 <HotelResultCard key={h.id} hotel={h} onView={() => navigate("hotel", { hotelId: h.id, ...defaultStayParams(params) })} />
               ))

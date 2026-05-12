@@ -21,11 +21,6 @@ public class PartnerOnboardingController {
 
 
     /**
-     * Start a new partner application for the currently authenticated user.
-     *
-     * Business meaning:
-     * User clicks "Đăng chỗ nghỉ của quý vị" and starts onboarding.
-     * This does NOT grant PARTNER role immediately.
      */
     @PostMapping("/start")
     @PreAuthorize("hasRole('CUSTOMER')")
@@ -47,11 +42,6 @@ public class PartnerOnboardingController {
     }
 
     /**
-     * Submit an existing partner application.
-     *
-     * Business rule:
-     * - Only the owner of the application can submit it
-     * - Only draft application can be submitted
      */
     @PostMapping("/{applicationId}/submit")
     @PreAuthorize("hasRole('CUSTOMER')")

@@ -21,8 +21,7 @@ public class RuleBasedReasonService {
     public Map<String, AiPricingResult> mergeFallback(
             List<PricingSuggestion> pricing,
             Map<String, AiPricingResult> parsed
-    )
-        {
+    ) {
         Map<String, AiPricingResult> result = new HashMap<>();
 
         for (PricingSuggestion p : pricing) {
@@ -87,4 +86,3 @@ public class RuleBasedReasonService {
         );
     }
 }
-

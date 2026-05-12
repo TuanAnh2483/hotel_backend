@@ -21,21 +21,12 @@ export default function Footer({ navigate }) {
       {/* ── Top Section: Links ── */}
       <div style={{ maxWidth: 1300, margin: "0 auto", padding: "60px 40px", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 40, boxSizing: "border-box" }}>
         <div>
-          <h4 style={H4}>HỖ TRỢ</h4>
-          {["Liên hệ dịch vụ khách hàng", "Quản lý chuyến đi", "Trung tâm bảo mật"].map(t => <FooterLink key={t} text={t} />)}
         </div>
         <div>
-          <h4 style={H4}>ĐIỀU KHOẢN VÀ CÀI ĐẶT</h4>
-          {["Ưu đãi theo mùa và dịp lễ", "Chính sách bảo mật", "Điều khoản dịch vụ", "Khiếu nại"].map(t => <FooterLink key={t} text={t} />)}
         </div>
         <div>
-          <h4 style={H4}>CHÍNH SÁCH</h4>
-          <FooterLink text="Đăng chỗ nghỉ của bạn" onClick={() => navigate && navigate("become-partner")} />
-          <FooterLink text="Trợ giúp đối tác" />
-          <FooterLink text="Về khả năng tiếp cận" />
         </div>
         <div>
-          <h4 style={H4}>VỀ CHÚNG TÔI</h4>
           <FooterLink text="Email: abc@gmail.com" />
           <FooterLink text="Hotline: 0000000000" />
           
@@ -61,11 +52,9 @@ export default function Footer({ navigate }) {
         <img src={LOGO_IMG} alt="VLU Hotel Hub" style={{ height: 140, objectFit: "contain", marginBottom: 32, filter: "drop-shadow(0 8px 16px rgba(0,0,0,0.06))" }} />
         
         <h3 style={{ fontSize: 22, fontWeight: 800, color: C.primary, margin: "0 0 12px", letterSpacing: 0.5, textTransform: "uppercase" }}>
-          XIN CẢM ƠN VÀ RẤT HÂN HẠNH ĐƯỢC PHỤC VỤ
         </h3>
         
         <p style={{ fontSize: 13, color: "#888", margin: 0, fontWeight: 500 }}>
-          Bản quyền © 2026 VLU HotelHub . Bảo lưu mọi quyền.
         </p>
       </div>
     </footer>

@@ -116,7 +116,6 @@ public class AuthService {
             throw new ApiException(ErrorCode.INVALID_CREDENTIALS,"sai email hoặc password");
         }
 
-        // Account lock/disable is orthogonal to email verification, so enforce both before JWT issue.
         assertActive(user);
         assertEmailVerified(user);
 
@@ -184,7 +183,6 @@ public class AuthService {
 
     @Transactional
     public VerifyEmailResponse verifyEmail(@Valid VerifyEmailRequest request) {
-        // Raw verification tokens are only accepted from the client; the database stores their hash.
         EmailVerificationToken token = emailVerificationTokenRepository.findByTokenHash(hashToken(request.token()))
                 .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND, "Email verification token not found"));
 
@@ -214,7 +212,6 @@ public class AuthService {
         String email = normalizeEmail(request.email());
         User user = userRepo.findByEmail(email).orElse(null);
 
-        // Keep the same public response for unknown and already-verified accounts.
         if (user == null || user.isEmailVerified() || !canIssueVerification(user)) {
             return new ResendVerificationResponse(
                     RESEND_VERIFICATION_MESSAGE,
@@ -246,7 +243,6 @@ public class AuthService {
             throw new BadRequestException("Not confirm password", ErrorCode.VALIDATION_ERROR);
         }
 
-        // Re-registering an unverified account rotates its verification link without changing ownership.
         User existingUser = userRepo.findByEmail(email).orElse(null);
         if (existingUser != null) {
             if (existingUser.isEmailVerified()
@@ -270,7 +266,6 @@ public class AuthService {
         User user = new User();
         user.setEmail(email);
         user.setUserType(role);
-        // Activation is tracked by status; email verification is tracked separately via emailVerifiedAt.
         user.setStatus(UserStatus.ACTIVE);
         user.setPasswordHash(passwordEncoder.encode(rawPassword));
         return userRepo.save(user);
@@ -289,7 +284,6 @@ public class AuthService {
     }
 
     private EmailVerificationDispatch issueEmailVerification(User user) {
-        // Only the most recent verification link should remain valid for a given account.
         emailVerificationTokenRepository.deleteByUserId(user.getId());
 
         String rawToken = generateOpaqueToken();
@@ -334,7 +328,6 @@ public class AuthService {
 
     private String hashToken(String token) {
         try {
-            // Persisting only the hash prevents raw verification tokens from being recoverable from the DB.
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             byte[] hash = digest.digest(token.getBytes(StandardCharsets.UTF_8));
             return HexFormat.of().formatHex(hash);

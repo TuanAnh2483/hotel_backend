@@ -27,6 +27,9 @@ public record PricingSuggestion(
         String confidence,
 
         int activeBookings,
-        int totalRooms
+        int totalRooms,
+
+        int velocity,
+        int daysUntil
 
 ) {}

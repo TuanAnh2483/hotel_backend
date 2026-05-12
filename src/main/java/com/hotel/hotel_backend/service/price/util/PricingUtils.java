@@ -13,9 +13,9 @@ public class PricingUtils {
         return "LOW";
     }
 
-    public static String computeConfidence(int count) { // Dựa trên số lượng booking lịch sử để đánh giá độ tin cậy của model
-        if (count >= 30) return "HIGH";
-        if (count >= 10) return "MEDIUM";
+    public static String computeConfidence(int count, int daysUntil) {
+        if (count >= 30 && daysUntil <= 14) return "HIGH";
+        if (count >= 10 && daysUntil <= 21) return "MEDIUM";
         return "LOW";
     }
 

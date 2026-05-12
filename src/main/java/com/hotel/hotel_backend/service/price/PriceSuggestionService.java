@@ -5,9 +5,9 @@ import com.hotel.hotel_backend.dto.PricingSuggestion;
 import com.hotel.hotel_backend.dto.response.PriceSuggestionItem;
 import com.hotel.hotel_backend.dto.response.PriceSuggestionResponse;
 import com.hotel.hotel_backend.dto.response.RevenueAnalyticsResponse;
+import com.hotel.hotel_backend.dto.response.TrainResultResponse;
 import com.hotel.hotel_backend.entity.AiPricingResult;
 import com.hotel.hotel_backend.entity.Booking;
-import com.hotel.hotel_backend.entity.BookingStatus;
 import com.hotel.hotel_backend.entity.DailyRate;
 import com.hotel.hotel_backend.entity.PricingModel;
 import com.hotel.hotel_backend.entity.Room;
@@ -17,13 +17,13 @@ import com.hotel.hotel_backend.repository.BookingRepository;
 import com.hotel.hotel_backend.repository.DailyRateRepository;
 import com.hotel.hotel_backend.repository.RoomRepository;
 import com.hotel.hotel_backend.service.SecurityService;
-import com.hotel.hotel_backend.service.price.ModelTrainingService;
 import com.hotel.hotel_backend.service.price.ai.AiReasonService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -99,12 +99,12 @@ public class PriceSuggestionService {
                         .userId();
 
         // =================================================
-        // load room
+        // load room (JOIN FETCH hotel to avoid lazy-load NPE)
         // =================================================
 
         Room room =
                 roomRepository
-                        .findByIdAndHotelOwnerId(
+                        .findByIdAndHotelOwnerIdWithHotel(
                                 roomId,
                                 ownerId
                         )
@@ -249,6 +249,44 @@ public class PriceSuggestionService {
                 appliedPrice,
                 outcome,
                 ownerId
+        );
+    }
+
+    // =====================================================
+    // TRAINING
+    // =====================================================
+
+    @Transactional
+    public TrainResultResponse triggerTraining(Long roomId) {
+
+        long ownerId =
+                securityService
+                        .getCurrentPrincipal()
+                        .userId();
+
+        roomRepository
+                .findByIdAndHotelOwnerId(roomId, ownerId)
+                .orElseThrow(() ->
+                        new ApiException(ErrorCode.NOT_FOUND, "Room not found"));
+
+        PricingModel existing = modelTrainingService.getOrDefault(roomId);
+        if (existing.getLastTrainedAt() != null
+                && existing.getLastTrainedAt().isAfter(LocalDateTime.now().minusHours(1))) {
+            throw new ApiException(ErrorCode.VALIDATION_ERROR,
+                    "Vui lòng chờ ít nhất 1 giờ giữa các lần huấn luyện thủ công");
+        }
+
+        modelTrainingService.trainForRoom(roomId);
+
+        PricingModel model = modelTrainingService.getOrDefault(roomId);
+
+        return new TrainResultResponse(
+                model.isHasSufficientData(),
+                model.getTrainingRound(),
+                model.getTrainingDataPoints(),
+                model.getPriceAggressiveness(),
+                model.getLastAcceptanceRate(),
+                model.getLastTrainedAt()
         );
     }
 

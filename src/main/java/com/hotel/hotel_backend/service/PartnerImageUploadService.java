@@ -19,7 +19,6 @@ public class PartnerImageUploadService {
     private final ImageStorageRouterService imageStorageRouterService;
 
     /**
-     * Upload binary image files for a partner-owned hotel and append generated public URLs to the hotel gallery.
      */
     public HotelResponse uploadHotelImages(Long hotelId, List<MultipartFile> files) {
         // B1: xác nhận hotel thuộc partner hiện tại.
@@ -31,7 +30,6 @@ public class PartnerImageUploadService {
     }
 
     /**
-     * Upload binary image files for a partner-owned room and append generated public URLs to the room gallery.
      */
     public RoomResponse uploadRoomImages(Long roomId, List<MultipartFile> files) {
         // B1: xác nhận room thuộc partner hiện tại.
@@ -43,7 +41,6 @@ public class PartnerImageUploadService {
     }
 
     /**
-     * Remove one hotel image from the gallery and delete the underlying file when the active providers own it.
      */
     public HotelResponse deleteHotelImage(Long hotelId, String imageUrl) {
         // Luôn kiểm tra URL này thực sự đang thuộc gallery của hotel.
@@ -55,7 +52,6 @@ public class PartnerImageUploadService {
     }
 
     /**
-     * Remove one room image from the gallery and delete the underlying file when the active providers own it.
      */
     public RoomResponse deleteRoomImage(Long roomId, String imageUrl) {
         // Luồng của room giống hotel: kiểm tra sở hữu -> xóa file thật -> cập nhật DB.

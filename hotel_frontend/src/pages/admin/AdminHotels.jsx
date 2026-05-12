@@ -6,10 +6,6 @@ import AdminLayout, {
 import { adminService } from "../../services/adminService";
 
 const HOTEL_TYPES = ["HOTEL", "RESORT", "VILLA", "APARTMENT", "HOMESTAY", "HOSTEL", "GUEST_HOUSE"];
-const HOTEL_TYPE_LABEL = {
-  HOTEL: "Khách sạn", RESORT: "Resort", VILLA: "Biệt thự",
-  APARTMENT: "Căn hộ", HOMESTAY: "Homestay", HOSTEL: "Hostel", GUEST_HOUSE: "Nhà nghỉ",
-};
 const EMPTY_FORM = { name: "", province: "", district: "", address: "", hotelType: "HOTEL", description: "" };
 
 export default function AdminHotels({ navigate, user, onLogout }) {
@@ -54,7 +50,6 @@ export default function AdminHotels({ navigate, user, onLogout }) {
       setHotels(prev => prev.map(h => h.id === selected.id ? updated : h));
       setModal(null);
     } catch (e) {
-      setError(e.message || "Không thể cập nhật khách sạn.");
     } finally {
       setActing(false);
     }
@@ -68,7 +63,6 @@ export default function AdminHotels({ navigate, user, onLogout }) {
       setHotels(prev => prev.filter(h => h.id !== selected.id));
       setModal(null);
     } catch (e) {
-      setError(e.message || "Không thể xóa khách sạn.");
     } finally {
       setActing(false);
     }
@@ -83,8 +77,6 @@ export default function AdminHotels({ navigate, user, onLogout }) {
   return (
     <AdminLayout page="admin-hotels" navigate={navigate} user={user} onLogout={onLogout}>
       <PageHeader
-        title="Quản lý khách sạn"
-        subtitle="Danh sách tất cả khách sạn trong hệ thống"
       />
 
       {error && (
@@ -96,9 +88,6 @@ export default function AdminHotels({ navigate, user, onLogout }) {
       {/* Summary */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14, marginBottom: 24 }}>
         {[
-          { label: "Tổng khách sạn", value: counts.total,  color: AP,        icon: "🏨" },
-          { label: "Đang hoạt động", value: counts.active, color: "#2e7d32", icon: "✅" },
-          { label: "Đánh giá TB",    value: counts.avg,    color: "#f5a623", icon: "⭐" },
         ].map(c => (
           <div key={c.label} style={{
             background: "#fff", borderRadius: 12, padding: "16px 20px",
@@ -117,25 +106,19 @@ export default function AdminHotels({ navigate, user, onLogout }) {
       <Card>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18, flexWrap: "wrap", gap: 10 }}>
           <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-            <SearchInput value={search} onChange={setSearch} placeholder="Tìm theo tên, tỉnh thành..." />
             <select
               value={filterType}
               onChange={e => setFilterType(e.target.value)}
               style={{ padding: "9px 12px", borderRadius: 9, border: "1px solid #e5e5e5", fontSize: 13, background: "#f8f9fa", cursor: "pointer" }}
             >
-              <option value="">Tất cả loại</option>
-              {HOTEL_TYPES.map(t => <option key={t} value={t}>{HOTEL_TYPE_LABEL[t]}</option>)}
             </select>
           </div>
-          <span style={{ fontSize: 12, color: "#aaa", fontWeight: 600 }}>{filtered.length} kết quả</span>
         </div>
 
         {loading ? (
-          <div style={{ textAlign: "center", padding: 48, color: "#bbb" }}>Đang tải dữ liệu...</div>
         ) : (
           <>
             <Table
-              headers={["#ID", "Tên khách sạn", "Địa điểm", "Loại", "Đánh giá", "Trạng thái", "Thao tác"]}
               rows={filtered.slice((page - 1) * pageSize, page * pageSize).map(h => [
               <span style={{ color: "#bbb", fontSize: 12, fontFamily: "monospace" }}>#{h.id}</span>,
               <div>
@@ -155,11 +138,8 @@ export default function AdminHotels({ navigate, user, onLogout }) {
               </span>,
               <Badge status={h.status || "ACTIVE"} />,
               <div style={{ display: "flex", gap: 6 }}>
-                <Btn small variant="action" onClick={() => openEdit(h)}>Sửa</Btn>
-                <Btn small variant="danger" onClick={() => openDel(h)}>Xóa</Btn>
               </div>,
             ])}
-              empty="Không tìm thấy khách sạn nào"
             />
 
             {/* Pagination */}
@@ -187,41 +167,28 @@ export default function AdminHotels({ navigate, user, onLogout }) {
 
       {/* Edit modal */}
       {modal === "edit" && (
-        <Modal title="✏️ Chỉnh sửa khách sạn" onClose={() => setModal(null)} width={520}>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 0 }}>
             <div style={{ gridColumn: "1/-1" }}>
-              <FormField label="Tên khách sạn" required>
-                <Input value={form.name} onChange={upd("name")} placeholder="VD: Grand Palace Hotel" />
               </FormField>
             </div>
             <div style={{ paddingRight: 8 }}>
-              <FormField label="Tỉnh / Thành phố" required>
-                <Input value={form.province} onChange={upd("province")} placeholder="VD: Hà Nội" />
               </FormField>
             </div>
             <div style={{ paddingLeft: 8 }}>
-              <FormField label="Quận / Huyện" required>
-                <Input value={form.district} onChange={upd("district")} placeholder="VD: Hoàn Kiếm" />
               </FormField>
             </div>
             <div style={{ gridColumn: "1/-1" }}>
-              <FormField label="Địa chỉ cụ thể" required>
-                <Input value={form.address} onChange={upd("address")} placeholder="Số nhà, đường..." />
               </FormField>
             </div>
             <div style={{ gridColumn: "1/-1" }}>
-              <FormField label="Loại hình">
                 <Select value={form.hotelType} onChange={upd("hotelType")}>
-                  {HOTEL_TYPES.map(t => <option key={t} value={t}>{HOTEL_TYPE_LABEL[t]}</option>)}
                 </Select>
               </FormField>
             </div>
             <div style={{ gridColumn: "1/-1" }}>
-              <FormField label="Mô tả">
                 <textarea
                   value={form.description}
                   onChange={upd("description")}
-                  placeholder="Mô tả ngắn về khách sạn..."
                   rows={3}
                   style={{
                     width: "100%", padding: "9px 12px", borderRadius: 8,
@@ -233,9 +200,7 @@ export default function AdminHotels({ navigate, user, onLogout }) {
             </div>
           </div>
           <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 4 }}>
-            <Btn variant="ghost" onClick={() => setModal(null)}>Hủy</Btn>
             <Btn disabled={acting || !form.name.trim() || !form.province.trim() || !form.district.trim() || !form.address.trim()} onClick={handleSave}>
-              {acting ? "Đang lưu..." : "Lưu thay đổi"}
             </Btn>
           </div>
         </Modal>
@@ -243,19 +208,14 @@ export default function AdminHotels({ navigate, user, onLogout }) {
 
       {/* Delete confirm */}
       {modal === "delete" && (
-        <Modal title="🗑️ Xóa khách sạn" onClose={() => setModal(null)}>
           <div style={{ textAlign: "center", padding: "12px 0 20px" }}>
             <div style={{ fontSize: 48, marginBottom: 12 }}>⚠️</div>
             <p style={{ fontSize: 14, color: "#333", margin: "0 0 6px" }}>
-              Bạn có chắc muốn xóa khách sạn
             </p>
             <p style={{ fontSize: 15, fontWeight: 800, color: AP, margin: 0 }}>"{selected?.name}"?</p>
-            <p style={{ fontSize: 12, color: "#aaa", marginTop: 8 }}>Thao tác này không thể hoàn tác.</p>
           </div>
           <div style={{ display: "flex", justifyContent: "center", gap: 12 }}>
-            <Btn variant="ghost" onClick={() => setModal(null)}>Hủy</Btn>
             <Btn variant="danger" disabled={acting} onClick={handleDelete}>
-              {acting ? "Đang xóa..." : "Xác nhận xóa"}
             </Btn>
           </div>
         </Modal>

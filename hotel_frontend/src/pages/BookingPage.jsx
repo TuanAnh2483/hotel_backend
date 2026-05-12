@@ -39,7 +39,6 @@ function fmtDate(s) {
 
 // ── Stepper ─────────────────────────────────────────────────────────
 function Stepper({ current }) {
-  const steps = ["Chọn phòng", "Xác nhận", "Thanh toán", "Hoàn tất"];
   return (
     <div className="bkp-stepper">
       {steps.map((s, i) => {
@@ -168,8 +167,6 @@ export default function BookingPage({ navigate, user, params = {}, onLogout }) {
             <div className="bkp-login-avatar">
               <SvgIcon k="person" size={32} color={P} />
             </div>
-            <p className="bkp-login-text">Vui lòng đăng nhập để tiếp tục đặt phòng</p>
-            <ActionBtn onClick={() => navigate("login")} style={{ padding: "12px 36px" }}>Đăng nhập</ActionBtn>
           </div>
         </div>
       </div>
@@ -193,36 +190,23 @@ export default function BookingPage({ navigate, user, params = {}, onLogout }) {
         <div className="bkp-left">
           {/* Back */}
           <button className="bkp-back-btn" onClick={() => navigate("hotel", { hotelId })}>
-            <ChevronLeft size={18} /> Quay lại
           </button>
 
-          <h1 className="bkp-page-title">Xác nhận đặt phòng</h1>
 
           {/* Booking summary card */}
-          <Card title="Thông tin đặt phòng" icon="bed">
             {hotelName && <div className="bkp-hotel-name">{hotelName}</div>}
-            <div className="bkp-room-name">{room?.name || "Phòng đã chọn"}</div>
 
-            <InfoRow icon="calendar" label="Ngày nhận phòng" value={fmtDate(checkin)} />
-            <InfoRow icon="calendar" label="Ngày trả phòng"  value={fmtDate(checkout)} />
-            <InfoRow icon="moon"     label="Thời gian lưu trú" value={`${nights} đêm`} />
-            <InfoRow icon="people"   label="Số khách"          value={`${guests} khách`} />
             {room?.beds && (
-              <InfoRow icon="bed" label="Loại giường" value={room.beds} />
             )}
           </Card>
 
           {/* Contact form */}
-          <Card title="Thông tin liên hệ" icon="person">
             <p className="bkp-contact-note">
-              Thông tin này dùng để xác nhận đặt phòng và liên hệ khi cần thiết.
             </p>
             <div className="bkp-contact-form">
-              <Field label="Họ và tên" icon="person">
                 <input
                   className="bkp-input"
                   style={inp(focusField === "fullName")}
-                  placeholder="Nguyễn Văn A"
                   value={contact.fullName}
                   onChange={upd("fullName")}
                   onFocus={() => setFocusField("fullName")}
@@ -230,7 +214,6 @@ export default function BookingPage({ navigate, user, params = {}, onLogout }) {
                 />
               </Field>
               <div className="bkp-contact-grid">
-                <Field label="Email" icon="email">
                   <input
                     className="bkp-input"
                     style={inp(focusField === "email")}
@@ -242,11 +225,9 @@ export default function BookingPage({ navigate, user, params = {}, onLogout }) {
                     onBlur={() => setFocusField(null)}
                   />
                 </Field>
-                <Field label="Số điện thoại" icon="phone">
                   <input
                     className="bkp-input"
                     style={inp(focusField === "phone")}
-                    placeholder="0912 345 678"
                     value={contact.phone}
                     onChange={upd("phone")}
                     onFocus={() => setFocusField("phone")}
@@ -264,10 +245,6 @@ export default function BookingPage({ navigate, user, params = {}, onLogout }) {
                 <SvgIcon k="shield" size={18} color="#2e7d32" />
               </div>
               <div>
-                <div className="bkp-policy-title">Chính sách hủy phòng linh hoạt</div>
-                <div className="bkp-policy-text">
-                  Miễn phí hủy phòng trước <strong>24 giờ</strong> nhận phòng. Không tính phí nếu hủy đúng hạn. Sau thời gian này, phí hủy sẽ tính theo quy định từng khách sạn.
-                </div>
               </div>
             </div>
           </Card>
@@ -277,31 +254,25 @@ export default function BookingPage({ navigate, user, params = {}, onLogout }) {
         <div className="bkp-right">
           {/* Price breakdown */}
           <div className="bkp-price-box">
-            <h3 className="bkp-price-title">Chi phí</h3>
 
             {roomPrice > 0 ? (
               <>
                 <div className="bkp-price-row">
-                  <span>{fmt(roomPrice)} × {nights} đêm</span>
                   <span className="bkp-price-row-val">{fmt(subtotal)}</span>
                 </div>
                 <div className="bkp-price-row bkp-price-row-tax">
-                  <span>Thuế &amp; phí dịch vụ (10%)</span>
                   <span className="bkp-price-row-val">{fmt(tax)}</span>
                 </div>
                 <div className="bkp-price-total-row">
-                  <span className="bkp-price-total-label">Tổng cộng</span>
                   <span className="bkp-price-total-value">{fmt(total)}</span>
                 </div>
               </>
             ) : (
-              <p className="bkp-price-empty">Chưa có thông tin giá</p>
             )}
 
             {/* Payment note */}
             <div className="bkp-payment-note">
               <SvgIcon k="info" size={14} color="#aaa" />
-              <span>Bước tiếp theo bạn sẽ được chuyển đến trang thanh toán.</span>
             </div>
           </div>
 
@@ -312,7 +283,6 @@ export default function BookingPage({ navigate, user, params = {}, onLogout }) {
             disabled={loading}
             style={{ width: "100%", padding: "15px", fontSize: 15, borderRadius: 12, boxSizing: "border-box" }}
           >
-            {loading ? "Đang xử lý..." : "Xác nhận đặt phòng →"}
           </ActionBtn>
 
           <p className="bkp-terms">

@@ -33,14 +33,11 @@ export default function AdminSystem({ navigate, user, onLogout }) {
 
   return (
     <AdminLayout page="admin-system" navigate={navigate} user={user} onLogout={onLogout}>
-      <PageHeader title="Hệ thống" subtitle="Giám sát trạng thái và các vấn đề đặc biệt của hệ thống" />
 
       {/* Service status grid */}
       <Card style={{ marginBottom: 24 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
-          <h2 style={{ fontSize: 15, fontWeight: 800, color: "#1a1a1a", margin: 0 }}>Trạng thái dịch vụ</h2>
           <span style={{ background: "#e8f5e9", color: "#2e7d32", padding: "4px 14px", borderRadius: 20, fontSize: 12, fontWeight: 700 }}>
-            🟢 Tất cả hoạt động
           </span>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 12 }}>
@@ -53,7 +50,6 @@ export default function AdminSystem({ navigate, user, onLogout }) {
               <span style={{ fontSize: 20 }}>{svc.icon}</span>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 13, fontWeight: 700, color: "#1a1a1a" }}>{svc.name}</div>
-                <div style={{ fontSize: 11, color: "#aaa", marginTop: 2 }}>Độ trễ: {svc.latency}</div>
               </div>
               <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
                 <div style={{ width: 9, height: 9, borderRadius: "50%", background: "#4caf50", boxShadow: "0 0 6px #4caf5080" }} />
@@ -64,7 +60,6 @@ export default function AdminSystem({ navigate, user, onLogout }) {
       </Card>
 
       {loading ? (
-        <div style={{ textAlign: "center", padding: 48, color: "#bbb" }}>Đang tải dữ liệu...</div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
 
@@ -72,43 +67,34 @@ export default function AdminSystem({ navigate, user, onLogout }) {
           <Card>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
               <div>
-                <h2 style={{ fontSize: 15, fontWeight: 800, color: "#1a1a1a", margin: 0 }}>Đặt phòng bị gắn cờ</h2>
-                <p style={{ fontSize: 12, color: "#888", marginTop: 4, marginBottom: 0 }}>Các giao dịch cần kiểm tra thủ công</p>
               </div>
               <span style={{
                 background: data.flaggedBookings.length > 0 ? "#ffebee" : "#e8f5e9",
                 color:      data.flaggedBookings.length > 0 ? "#c62828" : "#2e7d32",
                 padding: "4px 14px", borderRadius: 20, fontSize: 12, fontWeight: 700,
               }}>
-                {data.flaggedBookings.length > 0 ? `⚠️ ${data.flaggedBookings.length} vấn đề` : "✓ Không có vấn đề"}
               </span>
             </div>
             <Table
-              headers={["Booking ID", "Mức độ", "Lý do", "Ngày báo cáo", "Thao tác"]}
               rows={data.flaggedBookings.map(f => [
                 <span style={{ fontWeight: 700, fontFamily: "monospace" }}>#B{f.bookingId}</span>,
                 <Badge status={f.severity} />,
                 <span style={{ fontSize: 12, color: "#555" }}>{f.reason}</span>,
                 <span style={{ fontSize: 12, color: "#888" }}>{f.reportedAt}</span>,
                 <Btn small variant="action" onClick={() => handleResolve(f.id)}>
-                  Mở xử lý
                 </Btn>,
               ])}
-              empty="✓ Không có vấn đề nào cần xử lý"
             />
           </Card>
 
           {/* Recent errors */}
           <Card>
             <div style={{ marginBottom: 18 }}>
-              <h2 style={{ fontSize: 15, fontWeight: 800, color: "#1a1a1a", margin: 0 }}>Lỗi hệ thống gần đây</h2>
-              <p style={{ fontSize: 12, color: "#888", marginTop: 4, marginBottom: 0 }}>Các ngoại lệ và lỗi được ghi nhận</p>
             </div>
 
             {data.recentErrors.length === 0 ? (
               <div style={{ textAlign: "center", padding: 32, color: "#bbb", fontSize: 13 }}>
                 <div style={{ fontSize: 32, marginBottom: 8 }}>✅</div>
-                Không có lỗi nào được ghi nhận
               </div>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>

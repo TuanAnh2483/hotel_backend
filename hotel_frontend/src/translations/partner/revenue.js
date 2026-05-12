@@ -1,0 +1,48 @@
+export const vi = {
+  pt_rev_title:         "Phân tích doanh thu",
+  pt_rev_subtitle:      "Theo dõi hiệu quả kinh doanh và dòng tiền của bạn",
+  pt_rev_export:        "Xuất báo cáo",
+  // Summary cards
+  pt_rev_total:         "TỔNG DOANH THU",
+  pt_rev_total_sub:     "Theo dữ liệu booking",
+  pt_rev_completed:     "ĐƠN HOÀN TẤT",
+  pt_rev_completed_sub: "CONFIRMED và COMPLETED",
+  pt_rev_cancel_rate:   "TỶ LỆ HỦY PHÒNG",
+  pt_rev_cancel_sub:    "{n} booking đã hủy",
+  // Chart
+  pt_rev_chart_title:   "Biểu đồ tăng trưởng",
+  pt_rev_chart_sub:     "Thống kê doanh thu theo từng tháng trong năm {year}",
+  pt_rev_analyzing:     "Đang phân tích dữ liệu...",
+  pt_rev_year:          "Năm {year}",
+  // Table
+  pt_rev_table_title:   "Chi tiết báo cáo theo tháng",
+  pt_rev_filter:        "Lọc kết quả",
+  pt_rev_col_month:     "Tháng",
+  pt_rev_col_revenue:   "Doanh thu",
+  pt_rev_col_bookings:  "Số booking",
+  pt_rev_col_avg:       "Trung bình",
+  pt_rev_empty_month:   "—",
+};
+
+export const en = {
+  pt_rev_title:         "Revenue analytics",
+  pt_rev_subtitle:      "Track your business performance and cash flow",
+  pt_rev_export:        "Export report",
+  pt_rev_total:         "TOTAL REVENUE",
+  pt_rev_total_sub:     "Based on booking data",
+  pt_rev_completed:     "COMPLETED ORDERS",
+  pt_rev_completed_sub: "CONFIRMED and COMPLETED",
+  pt_rev_cancel_rate:   "CANCELLATION RATE",
+  pt_rev_cancel_sub:    "{n} bookings cancelled",
+  pt_rev_chart_title:   "Growth chart",
+  pt_rev_chart_sub:     "Monthly revenue for {year}",
+  pt_rev_analyzing:     "Analyzing data...",
+  pt_rev_year:          "Year {year}",
+  pt_rev_table_title:   "Monthly breakdown",
+  pt_rev_filter:        "Filter results",
+  pt_rev_col_month:     "Month",
+  pt_rev_col_revenue:   "Revenue",
+  pt_rev_col_bookings:  "Bookings",
+  pt_rev_col_avg:       "Average",
+  pt_rev_empty_month:   "—",
+};

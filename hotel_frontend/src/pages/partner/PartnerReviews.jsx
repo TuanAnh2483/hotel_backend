@@ -2,13 +2,9 @@ import { useEffect, useMemo, useState } from "react";
 import { MessageSquareReply, Star } from "lucide-react";
 import { partnerService } from "../../services/partnerService";
 import { PageHeader, Card, Btn, Modal, Table } from "../../components/admin/AdminLayout";
+import { useLang } from "../../contexts/LanguageContext";
 
 const RATING_OPTIONS = ["", "5", "4", "3", "2", "1"];
-const REPLY_OPTIONS = [
-  { value: "", label: "Tất cả phản hồi" },
-  { value: "false", label: "Chưa phản hồi" },
-  { value: "true", label: "Đã phản hồi" },
-];
 
 function fmtDate(value) {
   if (!value) return "—";
@@ -33,6 +29,12 @@ function Stars({ value }) {
 }
 
 export default function PartnerReviews() {
+  const { t } = useLang();
+  const REPLY_OPTIONS = [
+    { value: "", label: t("pt_rv_reply_all") },
+    { value: "false", label: t("pt_rv_reply_no") },
+    { value: "true", label: t("pt_rv_reply_yes") },
+  ];
   const [hotels, setHotels] = useState([]);
   const [reviews, setReviews] = useState([]);
   const [filters, setFilters] = useState({ hotelId: "", rating: "", hasReply: "" });
@@ -102,39 +104,39 @@ export default function PartnerReviews() {
   return (
     <div style={{ paddingBottom: 60 }}>
       <PageHeader
-        title="Đánh giá từ khách hàng"
-        subtitle="Theo dõi đánh giá của các khách sạn bạn sở hữu và phản hồi trực tiếp"
+        title={t("pt_rv_title")}
+        subtitle={t("pt_rv_subtitle")}
       />
 
       <Card style={{ marginBottom: 20 }}>
         <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr auto", gap: 12, alignItems: "end" }}>
           <div>
-            <div style={{ color: "#64748b", fontSize: 12, fontWeight: 800, marginBottom: 6 }}>KHÁCH SẠN</div>
+            <div style={{ color: "#64748b", fontSize: 12, fontWeight: 800, marginBottom: 6 }}>{t("pt_rv_hotel_label")}</div>
             <select
               value={filters.hotelId}
               onChange={(event) => setFilters((current) => ({ ...current, hotelId: event.target.value }))}
               style={selectStyle}
             >
-              <option value="">Tất cả khách sạn</option>
+              <option value="">{t("pt_rv_all_hotels")}</option>
               {hotels.map((hotel) => (
                 <option key={hotel.id} value={hotel.id}>{hotel.name}</option>
               ))}
             </select>
           </div>
           <div>
-            <div style={{ color: "#64748b", fontSize: 12, fontWeight: 800, marginBottom: 6 }}>ĐIỂM</div>
+            <div style={{ color: "#64748b", fontSize: 12, fontWeight: 800, marginBottom: 6 }}>{t("pt_rv_score_label")}</div>
             <select
               value={filters.rating}
               onChange={(event) => setFilters((current) => ({ ...current, rating: event.target.value }))}
               style={selectStyle}
             >
               {RATING_OPTIONS.map((rating) => (
-                <option key={rating || "all"} value={rating}>{rating ? `${rating} sao` : "Tất cả điểm"}</option>
+                <option key={rating || "all"} value={rating}>{rating ? t("pt_rv_score_x").replace("{n}", rating) : t("pt_rv_all_scores")}</option>
               ))}
             </select>
           </div>
           <div>
-            <div style={{ color: "#64748b", fontSize: 12, fontWeight: 800, marginBottom: 6 }}>PHẢN HỒI</div>
+            <div style={{ color: "#64748b", fontSize: 12, fontWeight: 800, marginBottom: 6 }}>{t("pt_rv_reply_label")}</div>
             <select
               value={filters.hasReply}
               onChange={(event) => setFilters((current) => ({ ...current, hasReply: event.target.value }))}
@@ -146,7 +148,7 @@ export default function PartnerReviews() {
             </select>
           </div>
           <Btn variant="ghost" onClick={() => setFilters({ hotelId: "", rating: "", hasReply: "" })}>
-            Làm mới
+            {t("pt_rv_reset")}
           </Btn>
         </div>
       </Card>
@@ -160,11 +162,11 @@ export default function PartnerReviews() {
       <Card style={{ padding: 0, overflow: "hidden" }}>
         {loading ? (
           <div style={{ color: "#94a3b8", fontWeight: 700, padding: 48, textAlign: "center" }}>
-            Đang tải đánh giá...
+            {t("pt_rv_loading")}
           </div>
         ) : (
           <Table
-            headers={["Khách sạn", "Khách hàng", "Điểm", "Nhận xét", "Ngày", "Phản hồi", "Thao tác"]}
+            headers={[t("pt_rv_col_hotel"), t("pt_rv_col_customer"), t("pt_rv_col_score"), t("pt_rv_col_comment"), t("pt_rv_col_date"), t("pt_rv_col_reply"), t("pt_rv_col_actions")]}
             rows={reviews.map((review) => {
               const hotel = hotelsById.get(Number(review.hotelId));
               return [
@@ -172,42 +174,42 @@ export default function PartnerReviews() {
                 <span style={{ color: "#334155", fontWeight: 700 }}>{review.reviewerName || "Khách hàng"}</span>,
                 <Stars value={review.rating} />,
                 <span style={{ color: review.comment ? "#475569" : "#94a3b8", display: "block", fontSize: 13, maxWidth: 280, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                  {review.comment || "Khách hàng chỉ chấm điểm"}
+                  {review.comment || t("pt_rv_no_comment")}
                 </span>,
                 <span style={{ color: "#64748b", fontSize: 12 }}>{fmtDate(review.createdAt)}</span>,
                 <span style={{ color: review.partnerReply ? "#10b981" : "#f59e0b", fontSize: 12, fontWeight: 800 }}>
-                  {review.partnerReply ? "Đã phản hồi" : "Chưa phản hồi"}
+                  {review.partnerReply ? t("pt_rv_replied") : t("pt_rv_not_replied")}
                 </span>,
                 <Btn small variant="action" onClick={() => openReplyModal(review)}>
                   <span style={{ alignItems: "center", display: "flex", gap: 5 }}>
-                    <MessageSquareReply size={13} /> Phản hồi
+                    <MessageSquareReply size={13} /> {t("pt_rv_reply_btn")}
                   </span>
                 </Btn>,
               ];
             })}
-            empty="Chưa có đánh giá nào cho bộ lọc hiện tại."
+            empty={t("pt_rv_empty")}
           />
         )}
       </Card>
 
       {selectedReview && (
-        <Modal title="Phản hồi đánh giá" onClose={() => setSelectedReview(null)} width={560}>
+        <Modal title={t("pt_rv_modal_title")} onClose={() => setSelectedReview(null)} width={560}>
           <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 14, marginBottom: 16, padding: 14 }}>
             <Stars value={selectedReview.rating} />
             <p style={{ color: selectedReview.comment ? "#334155" : "#94a3b8", fontSize: 14, lineHeight: 1.7, margin: "10px 0 0" }}>
-              {selectedReview.comment || "Khách hàng chỉ chấm điểm, không để lại bình luận."}
+              {selectedReview.comment || t("pt_rv_no_comment_long")}
             </p>
           </div>
           <textarea
             value={reply}
             onChange={(event) => setReply(event.target.value)}
-            placeholder="Nhập phản hồi cho khách hàng..."
+            placeholder={t("pt_rv_reply_ph")}
             rows={5}
             style={{ border: "1px solid #e2e8f0", borderRadius: 12, boxSizing: "border-box", fontFamily: "inherit", fontSize: 14, outline: "none", padding: 12, resize: "vertical", width: "100%" }}
           />
           <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 16 }}>
-            <Btn variant="ghost" onClick={() => setSelectedReview(null)}>Hủy</Btn>
-            <Btn disabled={saving || !reply.trim()} loading={saving} onClick={handleSaveReply}>Lưu phản hồi</Btn>
+            <Btn variant="ghost" onClick={() => setSelectedReview(null)}>{t("adm_cancel")}</Btn>
+            <Btn disabled={saving || !reply.trim()} loading={saving} onClick={handleSaveReply}>{t("pt_rv_save_reply")}</Btn>
           </div>
         </Modal>
       )}

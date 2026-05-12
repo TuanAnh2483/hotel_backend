@@ -58,6 +58,9 @@ public class Room {
     @Column(name = "image_url", nullable = false)
     private List<String> imageUrls = new ArrayList<>();
 
+    @Column(columnDefinition = "TEXT")
+    private String description;
+
     @Column(length = 1000)
     private String coverImageUrl;
 

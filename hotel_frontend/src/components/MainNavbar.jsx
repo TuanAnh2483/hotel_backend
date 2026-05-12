@@ -11,21 +11,8 @@ import {
   ClipboardList
 } from "lucide-react";
 
-const BASE_LINKS = [
-  { label: "Trang chủ",          page: "home"                    },
-  { label: "Đặt phòng của tôi",  page: "my-bookings", role: "CUSTOMER" },
-  { label: "Đánh giá",           page: "customer-reviews", role: "CUSTOMER", authOnly: true },
 ];
 
-const PARTNER_LINKS = [
-  { label: "Trang chủ",   page: "partner-dashboard" },
-  { label: "Khách sạn của tôi", page: "partner-hotels"    },
-  { label: "Loại phòng", page: "partner-rooms"     },
-  { label: "Lịch & Vận hành", page: "partner-calendar"  },
-  { label: "Booking",     page: "partner-bookings"  },
-  { label: "Đánh giá",    page: "partner-reviews"   },
-  { label: "Doanh thu",   page: "partner-revenue"   },
-  { label: "AI Dự báo",  page: "partner-forecast"  },
 ];
 
 const ROLE_LABEL = {
@@ -51,11 +38,7 @@ export default function MainNavbar({ active, navigate, user, onLogout }) {
   const canApplyPartner = !isPartner && user?.userType !== "ADMIN";
 
   const navLinks = isPartner
-    ? PARTNER_LINKS
     : [
-        ...BASE_LINKS.filter(l => (!l.authOnly || user) && (!l.role || !user || user.userType === l.role)),
-        ...(canApplyPartner ? [{ label: "Đăng chỗ nghỉ của bạn", page: "become-partner" }] : []),
-        ...(user?.userType === "ADMIN" ? [{ label: "Quản lý", page: "admin-dashboard" }] : []),
       ];
 
   useEffect(() => {
@@ -69,10 +52,7 @@ export default function MainNavbar({ active, navigate, user, onLogout }) {
 
   useEffect(() => {
     if (isDark) {
-      // invert(0.92) turns #ffffff into #141414 (soft dark gray)
-      // contrast(0.9) softens harsh texts
       document.documentElement.style.filter = "invert(0.92) hue-rotate(180deg) contrast(0.9)";
-      document.documentElement.style.background = "#fff"; // Will be inverted to dark gray
       
       let style = document.getElementById("dark-mode-fixes");
       if (!style) {
@@ -80,7 +60,6 @@ export default function MainNavbar({ active, navigate, user, onLogout }) {
         style.id = "dark-mode-fixes";
         style.innerHTML = `
           img, video, iframe {
-            /* Reverse the parent invert exactly to keep true colors */
             filter: contrast(1.11) hue-rotate(180deg) invert(1) !important;
           }
           input { background-color: transparent !important; }
@@ -139,8 +118,6 @@ export default function MainNavbar({ active, navigate, user, onLogout }) {
           {isDark ? <Sun size={20} color="#1a1a1a" /> : <Moon size={20} color="#1a1a1a" />}
         </button>
 
-        <button style={S.iconBtn} title="Ngôn ngữ">
-          <Globe size={20} color="#1a1a1a" />
         </button>
 
         {user ? (
@@ -171,7 +148,6 @@ export default function MainNavbar({ active, navigate, user, onLogout }) {
                   .menu-item:hover { background: #f8f9fa !important; }
                 `}</style>
                 <div style={{ padding: "16px 20px", borderBottom: "1px solid #f0f0f0", background: "linear-gradient(to bottom, #fff, #fdfdfd)" }}>
-                  <p style={{ fontSize: 10, color: "#aaa", margin: 0, textTransform: "uppercase", letterSpacing: 1.2, fontWeight: 700 }}>Tài khoản</p>
                   <p style={{ fontSize: 13, fontWeight: 700, color: "#1a1a1a", margin: "4px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{user.email}</p>
                   {user.userType && (
                     <span style={{ fontSize: 10, borderRadius: 6, padding: "2px 10px", fontWeight: 800, display: "inline-block", marginTop: 6, textTransform: "uppercase", ...(ROLE_STYLE[user.userType] || { background: "#f0f0f0", color: "#555" }) }}>
@@ -188,7 +164,6 @@ export default function MainNavbar({ active, navigate, user, onLogout }) {
                       onClick={() => { navigate("partner-dashboard"); setShowMenu(false); }}
                     >
                       <LayoutDashboard size={16} color="#555" />
-                      <span style={{ fontWeight: 500 }}>Bảng điều khiển</span>
                     </button>
                   )}
                   
@@ -199,7 +174,6 @@ export default function MainNavbar({ active, navigate, user, onLogout }) {
                       onClick={() => { navigate("admin-dashboard"); setShowMenu(false); }}
                     >
                       <LayoutDashboard size={16} color="#555" />
-                      <span style={{ fontWeight: 500 }}>Quản trị hệ thống</span>
                     </button>
                   )}
 
@@ -210,7 +184,6 @@ export default function MainNavbar({ active, navigate, user, onLogout }) {
                       onClick={() => { navigate("become-partner"); setShowMenu(false); }}
                     >
                       <ClipboardList size={16} color="#555" />
-                      <span style={{ fontWeight: 500 }}>Đăng chỗ nghỉ của bạn</span>
                     </button>
                   )}
 
@@ -220,7 +193,6 @@ export default function MainNavbar({ active, navigate, user, onLogout }) {
                     onClick={() => { navigate("profile"); setShowMenu(false); }}
                   >
                     <User size={16} color="#555" />
-                    <span style={{ fontWeight: 500 }}>Trang cá nhân</span>
                   </button>
                 </div>
 
@@ -230,7 +202,6 @@ export default function MainNavbar({ active, navigate, user, onLogout }) {
                   onClick={() => { if (onLogout) onLogout(); setShowMenu(false); }}
                 >
                   <LogOut size={16} />
-                  Đăng xuất
                 </button>
               </div>
             )}
@@ -247,7 +218,6 @@ export default function MainNavbar({ active, navigate, user, onLogout }) {
               onClick={() => navigate("login")}
               onMouseEnter={() => setHovBtn("login")}
               onMouseLeave={() => setHovBtn(null)}
-            >Đăng nhập</button>
             <button
               style={{
                 ...S.btnDefault,
@@ -260,7 +230,6 @@ export default function MainNavbar({ active, navigate, user, onLogout }) {
               onClick={() => navigate("register")}
               onMouseEnter={() => setHovBtn("register")}
               onMouseLeave={() => setHovBtn(null)}
-            >Đăng kí</button>
           </>
         )}
       </div>

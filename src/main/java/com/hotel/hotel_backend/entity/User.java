@@ -52,9 +52,6 @@ public class User {
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PartnerApplication> partnerApplications;
 
-    @OneToMany(mappedBy = "owner",cascade = CascadeType.ALL)
-    private List<Property> property;
-
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PasswordResetToken> passwordResetTokens;
 

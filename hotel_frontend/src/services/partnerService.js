@@ -166,6 +166,22 @@ export const partnerService = {
       method: "POST",
     }),
 
+  // ── AI Price Suggestions ─────────────────────────────────────────────
+  getPriceSuggestions: (roomId, from, to) =>
+    partnerFetch(`/api/partner/rooms/${roomId}/price-suggestions?${new URLSearchParams({ from, to })}`),
+
+  submitPriceFeedback: (roomId, payload) =>
+    partnerFetch(`/api/partner/rooms/${roomId}/price-feedback`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+
+  getRevenueAnalytics: (roomId) =>
+    partnerFetch(`/api/partner/rooms/${roomId}/revenue-analytics`),
+
+  triggerTraining: (roomId) =>
+    partnerFetch(`/api/partner/rooms/${roomId}/train`, { method: "POST" }),
+
   // ── Reviews ─────────────────────────────────────────────────────────
   getReviews: (params = {}) => {
     const q = new URLSearchParams();

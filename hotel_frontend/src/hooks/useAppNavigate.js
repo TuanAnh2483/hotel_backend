@@ -1,9 +1,7 @@
 import { useNavigate } from "react-router-dom";
 
-// Translates legacy page-name navigation calls into React Router URLs.
-// All existing page components call navigate("hotel", { hotelId }) or
-// navigate("search", { province }) — this hook maps those strings to real paths
-// so the page files themselves never need to know about React Router.
+// Chuyển đổi tên trang (navigate("hotel", ...)) thành URL React Router thực.
+// Các page component không cần biết cấu trúc URL; hook này xử lý tập trung.
 
 function toSearchString(params = {}) {
   const entries = Object.entries(params).filter(([, v]) => v !== "" && v != null);

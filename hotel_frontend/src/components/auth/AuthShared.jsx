@@ -121,9 +121,6 @@ const ImgSide = () => (
 
 // ─── SHARED: Navbar ───────────────────────────────────────────────────────────
 const AUTH_NAV_LINKS = [
-  { label: "Trang chủ",         page: "home"        },
-  { label: "Đặt phòng của tôi", page: "my-bookings" },
-  { label: "Đăng chỗ nghỉ của bạn", page: "become-partner" },
 ];
 
 const Navbar = ({ active, setPage, user }) => {
@@ -134,9 +131,6 @@ const Navbar = ({ active, setPage, user }) => {
   const isPartner = user?.userType === "PARTNER";
   const navLinks = isPartner
     ? [
-        { label: "Trang chủ",   page: "partner-dashboard" },
-        { label: "Khách sạn của tôi", page: "partner-hotels"    },
-        { label: "Đặt phòng của tôi", page: "my-bookings" },
       ]
     : AUTH_NAV_LINKS;
 
@@ -190,7 +184,6 @@ const Navbar = ({ active, setPage, user }) => {
       <img src={LOGO_IMG} alt="VLU Hotel Hub" style={S.navLogo} />
     </div>
     <ul style={{ ...S.navLinks, gap: 28 }}>
-      {navLinks.map(({ label, page }) => {
         const isActive = active === page;
         const isHov    = hovLink === page;
         return (
@@ -208,7 +201,6 @@ const Navbar = ({ active, setPage, user }) => {
               onClick={() => setPage(page)}
               onMouseEnter={() => setHovLink(page)}
               onMouseLeave={() => setHovLink(null)}
-            >{label}</a>
           </li>
         );
       })}
@@ -225,8 +217,6 @@ const Navbar = ({ active, setPage, user }) => {
           </svg>
         )}
       </button>
-      <button style={S.iconBtn} title="Ngôn ngữ">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/>
           <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
         </svg>
@@ -236,13 +226,11 @@ const Navbar = ({ active, setPage, user }) => {
         onClick={() => setPage("login")}
         onMouseEnter={() => setHov("login")}
         onMouseLeave={() => setHov(null)}
-      >Đăng nhập</button>
       <button
         style={{ ...btnStyle("register"), borderRadius: 8 }}
         onClick={() => setPage("register")}
         onMouseEnter={() => setHov("register")}
         onMouseLeave={() => setHov(null)}
-      >Đăng kí</button>
     </div>
   </nav>
   );

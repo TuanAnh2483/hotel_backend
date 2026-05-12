@@ -1,37 +1,28 @@
 import { useState } from "react";
 import { S, EyeOpen, EyeOff, SubmitButton, ImgSide } from "../components/auth/AuthShared";
 import { authService } from "../services/authService";
+import { useLang } from "../contexts/LanguageContext";
 
 const errStyle = { color: "#BE1E2E", fontSize: 12, margin: "4px 0 0" };
-const noteStyle = {
-  background: "#fff5f5",
-  border: "1px solid #ffcdd2",
-  borderRadius: 10,
-  color: "#7f1d1d",
-  fontSize: 13,
-  lineHeight: 1.6,
-  marginBottom: 18,
-  padding: "12px 14px",
-};
 
-function validateField(key, value, form) {
+function validateField(key, value, form, t) {
   if (key === "email") {
-    if (!value) return "Email không được để trống";
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return "Email không hợp lệ";
+    if (!value) return t("register_err_email_empty");
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return t("register_err_email_invalid");
   }
   if (key === "pw") {
-    if (!value) return "Mật khẩu không được để trống";
-    if (value.length < 8) return "Mật khẩu tối thiểu 8 ký tự";
-    if (!/(?=.*[A-Za-z])(?=.*\d)/.test(value)) return "Mật khẩu phải có ít nhất 1 chữ cái và 1 chữ số";
+    if (!value) return t("register_err_pw_empty");
+    if (value.length < 8) return t("register_err_pw_min");
+    if (!/(?=.*[A-Za-z])(?=.*\d)/.test(value)) return t("register_err_pw_format");
   }
   if (key === "cf" && value !== form.pw) {
-    return "Mật khẩu xác nhận không khớp";
+    return t("register_err_cf");
   }
   return "";
 }
 
 export default function Register({ setPage }) {
-  const [role, setRole] = useState("customer");
+  const { t } = useLang();
   const [showPw, setShowPw] = useState(false);
   const [showCf, setShowCf] = useState(false);
   const [agreed, setAgreed] = useState(false);
@@ -45,14 +36,14 @@ export default function Register({ setPage }) {
     const val = e.target.value;
     const next = { ...f, [k]: val };
     setF(next);
-    setFieldErrors((prev) => ({ ...prev, [k]: validateField(k, val, next) }));
+    setFieldErrors((prev) => ({ ...prev, [k]: validateField(k, val, next, t) }));
   };
 
   const handleRegister = async () => {
     const errs = {
-      email: validateField("email", f.email, f),
-      pw: validateField("pw", f.pw, f),
-      cf: validateField("cf", f.cf, f),
+      email: validateField("email", f.email, f, t),
+      pw:    validateField("pw",    f.pw,    f, t),
+      cf:    validateField("cf",    f.cf,    f, t),
     };
     setFieldErrors(errs);
     if (Object.values(errs).some(Boolean)) return;
@@ -60,11 +51,16 @@ export default function Register({ setPage }) {
     setError("");
     setLoading(true);
     try {
-      await authService.register({
+      const result = await authService.register({
         email: f.email,
         password: f.pw,
         confirmPassword: f.cf,
       });
+      // Dev mode: backend exposes token directly → auto-verify without email
+      if (result?.verificationToken) {
+        window.location.href = `/verify-email?token=${encodeURIComponent(result.verificationToken)}`;
+        return;
+      }
       setRegisteredEmail(f.email);
       setF({ email: "", pw: "", cf: "" });
       setAgreed(false);
@@ -81,23 +77,26 @@ export default function Register({ setPage }) {
         <ImgSide />
         <div style={S.formSide}>
           <div style={S.formBox}>
-            <h1 style={S.title}>Kiểm tra email của bạn</h1>
-            <p style={S.sub}>Tài khoản đã được tạo cho {registeredEmail}.</p>
+            <h1 style={S.title}>{t("register_success_title")}</h1>
+            <p style={S.sub}>{t("register_success_sub").replace("{email}", registeredEmail)}</p>
 
-            <div style={{ ...noteStyle, marginBottom: 22 }}>
-              Vui lòng mở link xác thực trong email. Sau khi xác thực thành công, hệ thống sẽ báo rõ để bạn quay lại đăng nhập.
-              {role === "partner" && " Sau khi xác minh và đăng nhập, hãy vào mục Đăng ký đối tác để gửi hồ sơ partner."}
+            <div style={{
+              background: "#eafaf1", border: "1.5px solid #27ae60",
+              borderRadius: 10, padding: "16px 18px", marginBottom: 22,
+              fontSize: 13, lineHeight: 1.6, color: "#1a5c38",
+            }}>
+              {t("register_success_note")}
             </div>
 
-            <SubmitButton label="Đến trang đăng nhập" onClick={() => setPage("login")} />
+            <SubmitButton label={t("register_goto_login")} onClick={() => setPage("login")} />
             <p style={S.bottomTxt}>
-              Chưa nhận được email?{" "}
+              {t("register_no_email")}{" "}
               <button
                 type="button"
                 onClick={() => setRegisteredEmail("")}
                 style={{ background: "none", border: "none", color: "#BE1E2E", cursor: "pointer", fontWeight: 700, padding: 0 }}
               >
-                Đăng ký lại
+                {t("register_retry")}
               </button>
             </p>
           </div>
@@ -111,23 +110,12 @@ export default function Register({ setPage }) {
       <ImgSide />
       <div style={S.formSide}>
         <div style={S.formBox}>
-          <h1 style={S.title}>Đăng ký tài khoản</h1>
-          <p style={S.sub}>Tạo tài khoản thật để test trực tiếp với backend</p>
-
-          <div style={S.tabs}>
-            <button style={S.tab(role === "customer")} onClick={() => setRole("customer")}>Khách hàng</button>
-            <button style={S.tab(role === "partner")} onClick={() => setRole("partner")}>Đối tác khách sạn</button>
-          </div>
-
-          <div style={noteStyle}>
-            {role === "customer"
-              ? "Đăng ký chỉ gửi đúng 3 field backend đang nhận: email, password, confirmPassword."
-              : "Backend chưa cho đăng ký partner trực tiếp ở màn này. Bước đúng là: tạo tài khoản thường, xác minh email, đăng nhập, rồi gửi hồ sơ tại mục Đăng ký đối tác."}
-          </div>
+          <h1 style={S.title}>{t("register_title")}</h1>
+          <p style={S.sub}>{t("register_sub")}</p>
 
           <div style={{ display: "grid", gap: 16, marginBottom: 20 }}>
             <div>
-              <label style={S.label}>Email đăng ký</label>
+              <label style={S.label}>{t("register_email_label")}</label>
               <input
                 style={S.input}
                 type="email"
@@ -139,12 +127,12 @@ export default function Register({ setPage }) {
             </div>
 
             <div>
-              <label style={S.label}>Mật khẩu</label>
+              <label style={S.label}>{t("auth_password")}</label>
               <div style={S.inputWrap}>
                 <input
                   style={S.input}
                   type={showPw ? "text" : "password"}
-                  placeholder="Tối thiểu 8 ký tự, gồm chữ và số"
+                  placeholder={t("register_pw_ph")}
                   value={f.pw}
                   onChange={upd("pw")}
                 />
@@ -156,12 +144,12 @@ export default function Register({ setPage }) {
             </div>
 
             <div>
-              <label style={S.label}>Xác nhận mật khẩu</label>
+              <label style={S.label}>{t("auth_password_cf")}</label>
               <div style={S.inputWrap}>
                 <input
                   style={S.input}
                   type={showCf ? "text" : "password"}
-                  placeholder="Nhập lại mật khẩu"
+                  placeholder={t("register_cf_ph")}
                   value={f.cf}
                   onChange={upd("cf")}
                 />
@@ -176,25 +164,26 @@ export default function Register({ setPage }) {
           <div style={{ ...S.checkRow, marginTop: 0 }}>
             <input style={S.checkBox} type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} />
             <span style={S.checkLabel}>
-              Tôi đồng ý với các <a style={S.redLink}>Điều khoản &amp; Điều kiện</a> và <a style={S.redLink}>Chính sách bảo mật</a>
+              {t("register_terms")} <a style={S.redLink}>{t("register_terms_link")}</a> {t("register_privacy")} <a style={S.redLink}>{t("register_privacy_link")}</a>
             </span>
           </div>
 
           {error && <p style={{ color: "#BE1E2E", fontSize: 13, marginBottom: 10, textAlign: "center" }}>{error}</p>}
 
           <SubmitButton
-            label={loading ? "Đang xử lý..." : (role === "customer" ? "Tạo tài khoản" : "Tạo tài khoản để đăng ký đối tác")}
+            label={loading ? t("register_loading") : t("register_submit")}
             onClick={handleRegister}
             disabled={!f.email || !f.pw || !f.cf || !agreed || loading || Object.values(fieldErrors).some(Boolean)}
           />
+
           <p style={S.bottomTxt}>
-            Đã có tài khoản?{" "}
+            {t("register_has_account")}{" "}
             <button
               type="button"
               onClick={() => setPage("login")}
               style={{ background: "none", border: "none", color: "#BE1E2E", cursor: "pointer", fontWeight: 700, padding: 0 }}
             >
-              Đăng nhập ngay
+              {t("register_login_link")}
             </button>
           </p>
         </div>

@@ -4,7 +4,6 @@ import { adminService } from "../../services/adminService";
 import "../../styles/pages/admin/AdminCommon.css";
 
 const STATUSES = ["", "PENDING", "APPROVED", "REJECTED"];
-const STATUS_LABEL = { "": "Tất cả", PENDING: "Chờ duyệt", APPROVED: "Đã duyệt", REJECTED: "Từ chối" };
 
 function fmt(n) {
   if (!n && n !== 0) return "—";
@@ -31,15 +30,12 @@ export default function AdminRefunds({ navigate, user, onLogout }) {
   const handleFilter = s => { setPage(1); setFilter(s); };
 
   const handleAction = async (id, newStatus) => {
-    const label = newStatus === "APPROVED" ? "phê duyệt" : "từ chối";
-    if (!window.confirm(`Xác nhận ${label} yêu cầu hoàn tiền này?`)) return;
     setActing(id);
     try {
       const updated = await adminService.updateRefundStatus(id, newStatus);
       setRefunds(prev => prev.map(r => r.id === id ? { ...r, ...updated } : r));
       if (detail?.id === id) setDetail(d => ({ ...d, ...updated }));
     } catch (e) {
-      alert(e.message || "Không thể cập nhật yêu cầu hoàn tiền.");
     } finally {
       setActing(null);
     }
@@ -52,15 +48,10 @@ export default function AdminRefunds({ navigate, user, onLogout }) {
 
   return (
     <AdminLayout page="admin-refunds" navigate={navigate} user={user} onLogout={onLogout}>
-      <PageHeader title="Quản lý hoàn tiền" subtitle="Xem xét và xử lý các yêu cầu hoàn tiền từ khách hàng" />
 
       {/* Summary */}
       <div className="admin-summary-grid admin-summary-grid-4">
         {[
-          { label: "Chờ duyệt",     value: pending,           color: "#f57f17", icon: "⏳" },
-          { label: "Đã duyệt",      value: approved,          color: "#2e7d32", icon: "✅" },
-          { label: "Từ chối",       value: rejected,          color: "#c62828", icon: "❌" },
-          { label: "Tổng chờ hoàn", value: fmt(totalPending), color: AP,        icon: "💰", isStr: true },
         ].map(c => (
           <div key={c.label} className="admin-summary-card">
             <span className="admin-summary-card-icon">{c.icon}</span>
@@ -90,11 +81,9 @@ export default function AdminRefunds({ navigate, user, onLogout }) {
         </div>
 
         {loading ? (
-          <div className="admin-loading">Đang tải dữ liệu...</div>
         ) : (
           <>
             <Table
-              headers={["#ID", "Booking", "Người dùng", "Khách sạn", "Số tiền hoàn", "Trạng thái", "Thao tác"]}
               rows={refunds.slice((page - 1) * pageSize, page * pageSize).map(r => [
               <span className="admin-cell-id">#{r.id}</span>,
               <span className="admin-cell-id">#B{r.bookingId}</span>,
@@ -103,16 +92,12 @@ export default function AdminRefunds({ navigate, user, onLogout }) {
               <span className="admin-cell-amount">{fmt(r.amount)}</span>,
               <Badge status={r.status} />,
               <div className="admin-cell-actions">
-                <Btn small variant="action" onClick={() => setDetail(r)}>👁 Xem</Btn>
                 {r.status === "PENDING" && (
                   <>
-                    <Btn small variant="success" disabled={acting === r.id} onClick={() => handleAction(r.id, "APPROVED")}>Duyệt</Btn>
-                    <Btn small variant="danger"  disabled={acting === r.id} onClick={() => handleAction(r.id, "REJECTED")}>Từ chối</Btn>
                   </>
                 )}
               </div>,
             ])}
-              empty="Không có yêu cầu hoàn tiền nào"
             />
 
             {/* Pagination */}
@@ -135,18 +120,11 @@ export default function AdminRefunds({ navigate, user, onLogout }) {
 
       {/* Detail modal */}
       {detail && (
-        <Modal title={`💰 Yêu cầu hoàn tiền #${detail.id}`} onClose={() => setDetail(null)}>
           <div className="admin-modal-info">
             <div className="admin-modal-info-title">{detail.hotelName}</div>
             <div className="admin-modal-info-sub">{detail.userEmail}</div>
           </div>
           {[
-            ["Mã đặt phòng",   `#B${detail.bookingId}`],
-            ["Số tiền hoàn",   fmt(detail.amount)],
-            ["Ngày đặt phòng", detail.bookingDate || "—"],
-            ["Ngày yêu cầu",   detail.requestedAt || "—"],
-            ["Lý do",          detail.reason],
-            ["Trạng thái",     <Badge status={detail.status} />],
           ].map(([k, v]) => (
             <div key={k} className="admin-modal-row">
               <span className="admin-modal-row-key">{k}</span>
@@ -155,13 +133,10 @@ export default function AdminRefunds({ navigate, user, onLogout }) {
           ))}
           {detail.status === "PENDING" && (
             <div className="admin-modal-actions">
-              <Btn variant="danger"  onClick={() => handleAction(detail.id, "REJECTED")}>❌ Từ chối</Btn>
-              <Btn variant="success" onClick={() => handleAction(detail.id, "APPROVED")}>✅ Phê duyệt</Btn>
             </div>
           )}
           {detail.status !== "PENDING" && (
             <div className="admin-modal-actions-right">
-              <Btn variant="ghost" onClick={() => setDetail(null)}>Đóng</Btn>
             </div>
           )}
         </Modal>

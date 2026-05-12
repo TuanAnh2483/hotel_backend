@@ -41,7 +41,6 @@ public class ImageStorageRouterService {
     }
 
     /**
-     * Delete only when a provider recognizes the stored URL; external URLs are removed from the gallery only.
      */
     public void deleteManagedImage(String imageUrl) {
         if (imageUrl == null || imageUrl.isBlank()) {

@@ -29,10 +29,6 @@ public class PartnerOnboardingService {
     private final PartnerApplicationRepository partnerApplicationRepository;
 
     /**
-     * Start a new partner application in DRAFT status.
-     *
-     * Important:
-     * Starting onboarding does NOT grant PARTNER role.
      */
     public PartnerApplication startPartnerApplication(
             User currentUser,
@@ -61,11 +57,6 @@ public class PartnerOnboardingService {
 
 
     /**
-     * Submit partner application.
-     *
-     * Business rules:
-     * - Application must belong to current user
-     * - Only DRAFT application can be submitted
      */
     public PartnerApplication submitPartnerApplication(User currentUser, Long applicationId) {
         assertVerifiedCustomer(currentUser);
