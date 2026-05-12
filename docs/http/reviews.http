@@ -1,0 +1,47 @@
+@host = http://localhost:8080
+@customerToken = REPLACE_CUSTOMER_JWT
+@partnerToken = REPLACE_PARTNER_JWT
+@bookingId = 1
+@reviewId = 1
+@hotelId = 1
+
+### 1. Customer creates a review for a completed booking
+POST {{host}}/api/reviews
+Authorization: Bearer {{customerToken}}
+Content-Type: application/json
+
+{
+  "bookingId": {{bookingId}},
+  "rating": 5,
+  "comment": "Great stay and clean room"
+}
+
+### 2. Customer updates the review
+PUT {{host}}/api/reviews/{{reviewId}}
+Authorization: Bearer {{customerToken}}
+Content-Type: application/json
+
+{
+  "rating": 4,
+  "comment": "Still good, but breakfast can improve"
+}
+
+### 3. Public reads hotel reviews
+GET {{host}}/api/hotels/{{hotelId}}/reviews
+
+### 4. Partner lists reviews for owned hotels
+GET {{host}}/api/partner/reviews?hotelId={{hotelId}}&hasReply=false
+Authorization: Bearer {{partnerToken}}
+
+### 5. Partner replies to a review
+PUT {{host}}/api/partner/reviews/{{reviewId}}/reply
+Authorization: Bearer {{partnerToken}}
+Content-Type: application/json
+
+{
+  "reply": "Thank you for your feedback. We will improve the breakfast."
+}
+
+### 6. Customer deletes the review
+DELETE {{host}}/api/reviews/{{reviewId}}
+Authorization: Bearer {{customerToken}}

@@ -1,0 +1,231 @@
+import { useEffect, useMemo, useState } from "react";
+import { MessageSquareReply, Star } from "lucide-react";
+import { partnerService } from "../../services/partnerService";
+import { PageHeader, Card, Btn, Modal, Table } from "../../components/admin/AdminLayout";
+import { useLang } from "../../contexts/LanguageContext";
+
+const RATING_OPTIONS = ["", "5", "4", "3", "2", "1"];
+
+function fmtDate(value) {
+  if (!value) return "—";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString("vi-VN");
+}
+
+function Stars({ value }) {
+  return (
+    <div style={{ display: "flex", gap: 2, alignItems: "center" }}>
+      {[1, 2, 3, 4, 5].map((star) => (
+        <Star
+          key={star}
+          size={15}
+          fill={star <= Number(value || 0) ? "#f59e0b" : "transparent"}
+          color={star <= Number(value || 0) ? "#f59e0b" : "#cbd5e1"}
+        />
+      ))}
+      <span style={{ color: "#64748b", fontSize: 12, fontWeight: 700, marginLeft: 4 }}>{value}/5</span>
+    </div>
+  );
+}
+
+export default function PartnerReviews() {
+  const { t } = useLang();
+  const REPLY_OPTIONS = [
+    { value: "", label: t("pt_rv_reply_all") },
+    { value: "false", label: t("pt_rv_reply_no") },
+    { value: "true", label: t("pt_rv_reply_yes") },
+  ];
+  const [hotels, setHotels] = useState([]);
+  const [reviews, setReviews] = useState([]);
+  const [filters, setFilters] = useState({ hotelId: "", rating: "", hasReply: "" });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [selectedReview, setSelectedReview] = useState(null);
+  const [reply, setReply] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    partnerService.getMyHotels()
+      .then((data) => setHotels(Array.isArray(data) ? data : []))
+      .catch(() => setHotels([]));
+  }, []);
+
+  useEffect(() => {
+    let ignore = false;
+    async function loadReviews() {
+      setLoading(true);
+      setError("");
+      try {
+        const data = await partnerService.getReviews({
+          hotelId: filters.hotelId || undefined,
+          rating: filters.rating || undefined,
+          hasReply: filters.hasReply === "" ? undefined : filters.hasReply,
+        });
+        if (!ignore) setReviews(Array.isArray(data) ? data : []);
+      } catch (e) {
+        if (!ignore) {
+          setReviews([]);
+          setError(e.message || "Không thể tải đánh giá.");
+        }
+      } finally {
+        if (!ignore) setLoading(false);
+      }
+    }
+    loadReviews();
+    return () => {
+      ignore = true;
+    };
+  }, [filters]);
+
+  const hotelsById = useMemo(() => new Map(hotels.map((hotel) => [Number(hotel.id), hotel])), [hotels]);
+
+  function openReplyModal(review) {
+    setSelectedReview(review);
+    setReply(review.partnerReply || "");
+    setError("");
+  }
+
+  async function handleSaveReply() {
+    if (!selectedReview || !reply.trim()) return;
+    setSaving(true);
+    setError("");
+    try {
+      const updated = await partnerService.replyReview(selectedReview.reviewId, reply.trim());
+      setReviews((items) => items.map((item) => item.reviewId === updated.reviewId ? updated : item));
+      setSelectedReview(null);
+      setReply("");
+    } catch (e) {
+      setError(e.message || "Không thể lưu phản hồi.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div style={{ paddingBottom: 60 }}>
+      <PageHeader
+        title={t("pt_rv_title")}
+        subtitle={t("pt_rv_subtitle")}
+      />
+
+      <Card style={{ marginBottom: 20 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr auto", gap: 12, alignItems: "end" }}>
+          <div>
+            <div style={{ color: "#64748b", fontSize: 12, fontWeight: 800, marginBottom: 6 }}>{t("pt_rv_hotel_label")}</div>
+            <select
+              value={filters.hotelId}
+              onChange={(event) => setFilters((current) => ({ ...current, hotelId: event.target.value }))}
+              style={selectStyle}
+            >
+              <option value="">{t("pt_rv_all_hotels")}</option>
+              {hotels.map((hotel) => (
+                <option key={hotel.id} value={hotel.id}>{hotel.name}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <div style={{ color: "#64748b", fontSize: 12, fontWeight: 800, marginBottom: 6 }}>{t("pt_rv_score_label")}</div>
+            <select
+              value={filters.rating}
+              onChange={(event) => setFilters((current) => ({ ...current, rating: event.target.value }))}
+              style={selectStyle}
+            >
+              {RATING_OPTIONS.map((rating) => (
+                <option key={rating || "all"} value={rating}>{rating ? t("pt_rv_score_x").replace("{n}", rating) : t("pt_rv_all_scores")}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <div style={{ color: "#64748b", fontSize: 12, fontWeight: 800, marginBottom: 6 }}>{t("pt_rv_reply_label")}</div>
+            <select
+              value={filters.hasReply}
+              onChange={(event) => setFilters((current) => ({ ...current, hasReply: event.target.value }))}
+              style={selectStyle}
+            >
+              {REPLY_OPTIONS.map((option) => (
+                <option key={option.value || "all"} value={option.value}>{option.label}</option>
+              ))}
+            </select>
+          </div>
+          <Btn variant="ghost" onClick={() => setFilters({ hotelId: "", rating: "", hasReply: "" })}>
+            {t("pt_rv_reset")}
+          </Btn>
+        </div>
+      </Card>
+
+      {error && (
+        <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 12, color: "#b91c1c", fontSize: 13, fontWeight: 700, marginBottom: 16, padding: "12px 14px" }}>
+          {error}
+        </div>
+      )}
+
+      <Card style={{ padding: 0, overflow: "hidden" }}>
+        {loading ? (
+          <div style={{ color: "#94a3b8", fontWeight: 700, padding: 48, textAlign: "center" }}>
+            {t("pt_rv_loading")}
+          </div>
+        ) : (
+          <Table
+            headers={[t("pt_rv_col_hotel"), t("pt_rv_col_customer"), t("pt_rv_col_score"), t("pt_rv_col_comment"), t("pt_rv_col_date"), t("pt_rv_col_reply"), t("pt_rv_col_actions")]}
+            rows={reviews.map((review) => {
+              const hotel = hotelsById.get(Number(review.hotelId));
+              return [
+                <span style={{ color: "#0f172a", fontWeight: 800 }}>{hotel?.name || `#${review.hotelId}`}</span>,
+                <span style={{ color: "#334155", fontWeight: 700 }}>{review.reviewerName || "Khách hàng"}</span>,
+                <Stars value={review.rating} />,
+                <span style={{ color: review.comment ? "#475569" : "#94a3b8", display: "block", fontSize: 13, maxWidth: 280, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {review.comment || t("pt_rv_no_comment")}
+                </span>,
+                <span style={{ color: "#64748b", fontSize: 12 }}>{fmtDate(review.createdAt)}</span>,
+                <span style={{ color: review.partnerReply ? "#10b981" : "#f59e0b", fontSize: 12, fontWeight: 800 }}>
+                  {review.partnerReply ? t("pt_rv_replied") : t("pt_rv_not_replied")}
+                </span>,
+                <Btn small variant="action" onClick={() => openReplyModal(review)}>
+                  <span style={{ alignItems: "center", display: "flex", gap: 5 }}>
+                    <MessageSquareReply size={13} /> {t("pt_rv_reply_btn")}
+                  </span>
+                </Btn>,
+              ];
+            })}
+            empty={t("pt_rv_empty")}
+          />
+        )}
+      </Card>
+
+      {selectedReview && (
+        <Modal title={t("pt_rv_modal_title")} onClose={() => setSelectedReview(null)} width={560}>
+          <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 14, marginBottom: 16, padding: 14 }}>
+            <Stars value={selectedReview.rating} />
+            <p style={{ color: selectedReview.comment ? "#334155" : "#94a3b8", fontSize: 14, lineHeight: 1.7, margin: "10px 0 0" }}>
+              {selectedReview.comment || t("pt_rv_no_comment_long")}
+            </p>
+          </div>
+          <textarea
+            value={reply}
+            onChange={(event) => setReply(event.target.value)}
+            placeholder={t("pt_rv_reply_ph")}
+            rows={5}
+            style={{ border: "1px solid #e2e8f0", borderRadius: 12, boxSizing: "border-box", fontFamily: "inherit", fontSize: 14, outline: "none", padding: 12, resize: "vertical", width: "100%" }}
+          />
+          <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 16 }}>
+            <Btn variant="ghost" onClick={() => setSelectedReview(null)}>{t("adm_cancel")}</Btn>
+            <Btn disabled={saving || !reply.trim()} loading={saving} onClick={handleSaveReply}>{t("pt_rv_save_reply")}</Btn>
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+const selectStyle = {
+  background: "#f8fafc",
+  border: "1px solid #e2e8f0",
+  borderRadius: 10,
+  boxSizing: "border-box",
+  color: "#334155",
+  fontSize: 13,
+  fontWeight: 700,
+  outline: "none",
+  padding: "10px 12px",
+  width: "100%",
+};

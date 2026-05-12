@@ -1,0 +1,17 @@
+/* ── Partner Layout ───────────────────────────────────────────────────── */
+
+.partner-root {
+  min-height: 100vh;
+  background: var(--gradient-bg);
+  display: flex;
+  flex-direction: column;
+}
+
+.partner-content {
+  max-width: 1440px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 28px 24px 56px;
+  box-sizing: border-box;
+  flex: 1;
+}
