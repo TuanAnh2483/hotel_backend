@@ -1,4 +1,7 @@
 spring:
+  config:
+    import: optional:file:.env[.properties]
+
   datasource:
     url: ${SPRING_DATASOURCE_URL}
     username: ${SPRING_DATASOURCE_USERNAME}
@@ -6,6 +9,7 @@ spring:
     driver-class-name: org.postgresql.Driver
 
   mail:
+    from: ${MAIL_FROM:no-reply@hotel.local}
     host: ${MAIL_HOST:smtp.gmail.com}
     port: ${MAIL_PORT:587}
     username: ${MAIL_USERNAME}
@@ -62,7 +66,7 @@ app:
 
   mail:
     enabled: ${MAIL_ENABLED:true}
-    from: ${MAIL_FROM}
+    from: ${MAIL_FROM:no-reply@hotel.local}
     expose-debug-tokens: ${MAIL_EXPOSE_DEBUG_TOKENS:false}
 
   uploads:
