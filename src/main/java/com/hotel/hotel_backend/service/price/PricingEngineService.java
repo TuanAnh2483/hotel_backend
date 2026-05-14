@@ -111,9 +111,11 @@ public class PricingEngineService {
             // Override rule-based price when the LR model has been trained.
             // Seasonal factor is re-applied to the LR output to keep seasonal
             // awareness consistent across both paths.
+            // daysUntil + rawSeasonalFactor được truyền để model LR dùng đúng context ngày.
             if (pricingModel.isLrReady() && currentPrice > 0) {
                 Long lrPrice = modelTrainingService.optimizePrice(
-                        pricingModel, basePrice, fc.date(), fc.weekend(), fc.holiday());
+                        pricingModel, basePrice, fc.date(), fc.weekend(), fc.holiday(),
+                        fc.daysUntil(), rawSeasonalFactor);
                 if (lrPrice != null) {
                     suggestedPrice = roundK(lrPrice * seasonalFactor);
                     log.debug("[Pricing] date={} LR override lrBase={} seasonalAdj={} final={}",
