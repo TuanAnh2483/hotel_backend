@@ -66,6 +66,7 @@ public class ModelTrainingService {
     private final BookingItemRepository   bookingItemRepository;
     private final RoomRepository          roomRepository;
     private final HolidayService          holidayService;
+    private final SeasonalPricingService  seasonalPricingService;
 
     // ── Scheduled training ────────────────────────────────────────────────────
 
@@ -263,7 +264,8 @@ public class ModelTrainingService {
     }
 
     // ── Phase 3: Weighted Logistic Regression ────────────────────────────────
-    // Features: [bias, priceUplift, isWeekend, isHoliday, sin(dow), cos(dow)]
+    // Features (8): [bias, priceUplift, isWeekend, isHoliday,
+    //                sin(dow), cos(dow), leadTimeNorm, seasonalDeviation]
     // Sample weights from time-decay: newer feedback → higher gradient contribution.
 
     private void phase3LogisticRegression(PricingModel model, List<PriceFeedback> feedbacks, long basePrice) {
@@ -276,7 +278,7 @@ public class ModelTrainingService {
         List<Double>   weights = new ArrayList<>();
 
         for (PriceFeedback fb : feedbacks) {
-            X.add(buildFeatures(fb.getSuggestedPrice(), basePrice, fb.getDate()));
+            X.add(buildFeatures(fb, basePrice));
             y.add(fb.getOutcome().startsWith("APPLIED") ? 1 : 0);
             double daysAgo = computeDaysAgo(fb.getCreatedAt(), today);
             weights.add(decayWeight(daysAgo));
@@ -287,8 +289,10 @@ public class ModelTrainingService {
         double lambda = 0.01;
         int    epochs = 300;
 
+        // 8 weights: w0–w7
         double[] w = { model.getLrW0(), model.getLrW1(), model.getLrW2(),
-                       model.getLrW3(), model.getLrW4(), model.getLrW5() };
+                       model.getLrW3(), model.getLrW4(), model.getLrW5(),
+                       model.getLrW6(), model.getLrW7() };
 
         double finalLoss = 1.0;
         double prevLoss  = Double.MAX_VALUE;
@@ -297,21 +301,20 @@ public class ModelTrainingService {
         double totalW = weights.stream().mapToDouble(Double::doubleValue).sum();
 
         for (int epoch = 0; epoch < epochs; epoch++) {
-            double[] grad = new double[6];
+            double[] grad = new double[8];
             double   loss = 0.0;
 
             for (int i = 0; i < n; i++) {
                 double wi  = weights.get(i);
                 double p   = sigmoid(dot(w, X.get(i)));
                 double err = p - y.get(i);
-                // Scale gradient by sample weight (normalised to preserve learning rate)
                 double wScaled = wi / totalW * n;
                 loss += wi * (-y.get(i) * Math.log(p + 1e-9)
                         - (1 - y.get(i)) * Math.log(1 - p + 1e-9));
-                for (int j = 0; j < 6; j++) grad[j] += err * X.get(i)[j] * wScaled;
+                for (int j = 0; j < 8; j++) grad[j] += err * X.get(i)[j] * wScaled;
             }
 
-            for (int j = 0; j < 6; j++) {
+            for (int j = 0; j < 8; j++) {
                 double reg = (j > 0) ? lambda * w[j] : 0.0;
                 w[j] -= lr * (grad[j] / n + reg);
             }
@@ -332,28 +335,40 @@ public class ModelTrainingService {
 
         model.setLrW0(w[0]); model.setLrW1(w[1]); model.setLrW2(w[2]);
         model.setLrW3(w[3]); model.setLrW4(w[4]); model.setLrW5(w[5]);
+        model.setLrW6(w[6]); model.setLrW7(w[7]);
         model.setLrTrainingSamples(n);
         model.setLrLastLoss(finalLoss);
         model.setLrReady(true);
 
-        log.info("[LR] room={} samples={} loss={} window={}d",
+        log.info("[LR] room={} samples={} loss={} features=8 window={}d",
                 model.getRoomId(), n,
                 String.format("%.4f", finalLoss), TRAINING_WINDOW);
     }
 
     // ── Price optimiser: argmax(price × P(accept)) ────────────────────────────
 
+    /**
+     * @param daysUntil     số ngày từ hôm nay đến ngày đặt phòng
+     * @param seasonalFactor hệ số mùa vụ từ SeasonalPricingService (e.g. 1.18 cho Tết)
+     */
     public Long optimizePrice(PricingModel model, long basePrice,
-                              String dateIso, boolean isWeekend, boolean isHoliday) {
+                              String dateIso, boolean isWeekend, boolean isHoliday,
+                              int daysUntil, double seasonalFactor) {
         if (!model.isLrReady() || basePrice <= 0) return null;
 
         double[] w = { model.getLrW0(), model.getLrW1(), model.getLrW2(),
-                       model.getLrW3(), model.getLrW4(), model.getLrW5() };
+                       model.getLrW3(), model.getLrW4(), model.getLrW5(),
+                       model.getLrW6(), model.getLrW7() };
 
         LocalDate date = LocalDate.parse(dateIso);
         int    dow    = date.getDayOfWeek().getValue();
         double dowSin = Math.sin(2 * Math.PI * dow / 7.0);
         double dowCos = Math.cos(2 * Math.PI * dow / 7.0);
+
+        // Normalise lead time: 0 = đặt sát ngày, 1 = đặt trước 60 ngày
+        double leadTimeNorm = Math.min(60, Math.max(0, daysUntil)) / 60.0;
+        // Seasonal deviation vs neutral (1.0): Tết → +0.18, thấp điểm → -0.08
+        double seasonalDev  = seasonalFactor - 1.0;
 
         double bestExpRev = 0;
         Long   bestPrice  = null;
@@ -364,7 +379,8 @@ public class ModelTrainingService {
             double[] x = { 1.0, priceUplift,
                            isWeekend ? 1.0 : 0.0,
                            isHoliday ? 1.0 : 0.0,
-                           dowSin, dowCos };
+                           dowSin, dowCos,
+                           leadTimeNorm, seasonalDev };
             double pAccept = sigmoid(dot(w, x));
             double expRev  = candidate * pAccept;
             if (expRev > bestExpRev) { bestExpRev = expRev; bestPrice = candidate; }
@@ -374,17 +390,39 @@ public class ModelTrainingService {
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
-    private double[] buildFeatures(long suggestedPrice, long basePrice, String dateIso) {
-        double priceUplift = (double) suggestedPrice / basePrice - 1.0;
-        LocalDate date = LocalDate.parse(dateIso);
+    /**
+     * Xây dựng vector đặc trưng 8 chiều từ một feedback:
+     *   [bias, priceUplift, isWeekend, isHoliday, sin(dow), cos(dow),
+     *    leadTimeNorm, seasonalDeviation]
+     *
+     * leadTimeNorm   : thời gian đặt trước chuẩn hóa (0 = sát ngày, 1 = 60 ngày trước)
+     * seasonalDev    : độ lệch mùa vụ so với trung tính (Tết ≈ +0.18, thấp điểm ≈ −0.08)
+     */
+    private double[] buildFeatures(PriceFeedback fb, long basePrice) {
+        double priceUplift = (double) fb.getSuggestedPrice() / basePrice - 1.0;
+        LocalDate date = LocalDate.parse(fb.getDate());
         int     dow    = date.getDayOfWeek().getValue();
         boolean wkend  = dow >= 6;
-        boolean hol    = holidayService.getHolidayMap().containsKey(dateIso);
+        boolean hol    = holidayService.getHolidayMap().containsKey(fb.getDate());
         double  dowSin = Math.sin(2 * Math.PI * dow / 7.0);
         double  dowCos = Math.cos(2 * Math.PI * dow / 7.0);
+
+        // Lead time: số ngày từ lúc tạo feedback đến ngày ở
+        // (bằng cách dùng createdAt sẵn có, không cần field mới)
+        long rawLead = 7; // mặc định nếu không có createdAt
+        if (fb.getCreatedAt() != null) {
+            rawLead = ChronoUnit.DAYS.between(fb.getCreatedAt().toLocalDate(), date);
+            rawLead = Math.max(0, Math.min(60, rawLead));
+        }
+        double leadTimeNorm = rawLead / 60.0;
+
+        // Seasonal deviation: hệ số mùa vụ − 1.0 để model thấy được biên độ
+        double seasonalDev = seasonalPricingService.getSeasonalFactor(date, hol, wkend) - 1.0;
+
         return new double[]{ 1.0, priceUplift,
                              wkend ? 1.0 : 0.0, hol ? 1.0 : 0.0,
-                             dowSin, dowCos };
+                             dowSin, dowCos,
+                             leadTimeNorm, seasonalDev };
     }
 
     /**
