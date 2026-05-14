@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { partnerService } from "../../services/partnerService";
+import { useState } from "react";
+import { usePartnerBookings } from "../../hooks/usePartnerQueries";
 import { PageHeader, Card } from "../../components/admin/AdminLayout";
 import { useLang } from "../../contexts/LanguageContext";
 import {
@@ -32,31 +32,9 @@ function groupByMonth(bookings) {
 
 export default function PartnerRevenue() {
   const { t } = useLang();
-  const [bookings, setBookings] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [year, setYear] = useState(new Date().getFullYear());
-
-  useEffect(() => {
-    async function loadAll() {
-      setLoading(true);
-      try {
-        let all = [];
-        let page = 1;
-        while (true) {
-          const data = await partnerService.getBookings({ page, size: 50 });
-          const items = data?.items || [];
-          all = all.concat(items);
-          if (!data?.hasNext || page >= 10) break; 
-          page++;
-        }
-        setBookings(all);
-      } catch {
-        setBookings([]);
-      }
-      finally { setLoading(false); }
-    }
-    loadAll();
-  }, []);
+  const { data: pageData, isLoading: loading } = usePartnerBookings({ size: 500 });
+  const bookings = pageData?.items || [];
 
   const grouped = groupByMonth(bookings);
 
