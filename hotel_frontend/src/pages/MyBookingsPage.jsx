@@ -1,8 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { C } from "../components/auth/AuthShared";
 import MainNavbar from "../components/MainNavbar";
 import Footer from "../components/Footer";
-import { bookingService } from "../services/bookingService";
+import { useMyBookings } from "../hooks/useBookingQueries";
 import { useLang } from "../contexts/LanguageContext";
 
 function useStatusMap() {
@@ -94,24 +94,11 @@ function useTabs() {
 export default function MyBookingsPage({ navigate, user, onLogout }) {
   const { t } = useLang();
   const tabs = useTabs();
-  const [bookings, setBookings] = useState([]);
-  const [loading, setLoading]   = useState(true);
-  const [error, setError]       = useState("");
-  const [tab, setTab]           = useState("ALL");
+  const [tab, setTab] = useState("ALL");
 
-  useEffect(() => {
-    if (!user) { setLoading(false); return; }
-    bookingService.getMyBookings()
-      .then((data) => {
-        setBookings(Array.isArray(data) ? data : []);
-        setError("");
-      })
-      .catch((err) => {
-        setBookings([]);
-        setError(err.message || t("rv_load_error"));
-      })
-      .finally(() => setLoading(false));
-  }, [user]);
+  const { data, isLoading: loading, error: queryError } = useMyBookings({ enabled: Boolean(user) });
+  const bookings = Array.isArray(data) ? data : [];
+  const error = queryError?.message || "";
 
   if (!user) {
     return (

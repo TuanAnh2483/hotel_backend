@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { C, S, EyeOpen, EyeOff, SubmitButton, ImgSide } from "../components/auth/AuthShared";
-import { authService } from "../services/authService";
+import { useLogin, useGoogleLogin } from "../hooks/useAuthMutations";
 import { useLang } from "../contexts/LanguageContext";
 
 const Login = ({ setPage, onSuccess }) => {
@@ -8,36 +8,29 @@ const Login = ({ setPage, onSuccess }) => {
   const [showPw, setShowPw] = useState(false);
   const [remember, setRemember] = useState(false);
   const [f, setF] = useState({ email: "", pw: "" });
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const googleButtonRef = useRef(null);
   const googleInitializedRef = useRef(false);
   const upd = k => e => setF({ ...f, [k]: e.target.value });
 
-  const handleLogin = async () => {
-    setError("");
-    setLoading(true);
-    try {
-      const res = await authService.login({ email: f.email, password: f.pw });
-      if (onSuccess) onSuccess(res.user, res.accessToken);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-  const handleGoogleLogin = async (credential) => {
-    setError("");
-    setLoading(true);
+  const loginMutation = useLogin();
+  const googleLoginMutation = useGoogleLogin();
+  const loading = loginMutation.isPending || googleLoginMutation.isPending;
 
-    try {
-      const res = await authService.googleLogin({ credential });
-      if (onSuccess) onSuccess(res.user, res.accessToken);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
+  const handleLogin = () => {
+    setError("");
+    loginMutation.mutate({ email: f.email, password: f.pw }, {
+      onSuccess: (res) => { if (onSuccess) onSuccess(res.user, res.accessToken); },
+      onError: (err) => setError(err.message),
+    });
+  };
+
+  const handleGoogleLogin = (credential) => {
+    setError("");
+    googleLoginMutation.mutate({ credential }, {
+      onSuccess: (res) => { if (onSuccess) onSuccess(res.user, res.accessToken); },
+      onError: (err) => setError(err.message),
+    });
   };
   useEffect(() => {
     if (

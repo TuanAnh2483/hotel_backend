@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { C } from "../components/auth/AuthShared";
 import MainNavbar from "../components/MainNavbar";
 import Footer from "../components/Footer";
-import { hotelService } from "../services/hotelService";
+import { useHotelLocations, useHotelSearch, useDestinationCounts } from "../hooks/useHotelQueries";
 import { SkeletonCard } from "../components/ui/Skeleton";
 import { useLang } from "../contexts/LanguageContext";
 import {
@@ -98,7 +98,10 @@ const Field = ({ iconKey, label, children, flex }) => (
 
 function SearchBar({ initial = {}, onSearch }) {
   const { t } = useLang();
-  const [locations, setLocations] = useState(FALLBACK_LOCATION_OPTIONS);
+  const { data: fetchedLocations } = useHotelLocations();
+  const locations = (fetchedLocations && fetchedLocations.length > 0)
+    ? fetchedLocations
+    : FALLBACK_LOCATION_OPTIONS;
   const [q, setQ] = useState({
     province: initial.province || "",
     district: initial.district || "",
@@ -137,19 +140,6 @@ function SearchBar({ initial = {}, onSearch }) {
     initial.rooms,
     initial.hotelTypes,
   ]);
-
-  useEffect(() => {
-    let active = true;
-    hotelService.getLocations().then((items) => {
-      if (active && items.length > 0) {
-        setLocations(items);
-      }
-    });
-
-    return () => {
-      active = false;
-    };
-  }, []);
 
   const upd = k => e => {
     if (k === "province") setProvinceErr(false);
@@ -326,9 +316,6 @@ function PropertyTypeCard({ item, onNavigate }) {
 
 export default function HomePage({ navigate, user, onLogout }) {
   const { t } = useLang();
-  const [hotels, setHotels] = useState([]);
-  const [destinations, setDestinations] = useState(DEFAULT_DESTINATIONS);
-  const [loadingHotels, setLoadingHotels] = useState(true);
   const [searchQuery, setSearchQuery] = useState(() => {
     try {
       const saved = sessionStorage.getItem("homeSearch");
@@ -337,6 +324,16 @@ export default function HomePage({ navigate, user, onLogout }) {
       return null;
     }
   });
+
+  const { data: searchResult, isLoading: loadingHotels } = useHotelSearch(
+    { size: 8, sort: "recommended" }
+  );
+  const hotels = searchResult?.hotels?.slice(0, 8) ?? [];
+
+  const destinationResults = useDestinationCounts(DESTINATION_CARDS);
+  const destinations = destinationResults.every((r) => r.data)
+    ? destinationResults.map((r) => r.data)
+    : DEFAULT_DESTINATIONS;
 
   const handleSearch = (q) => {
     setSearchQuery(q);
@@ -359,29 +356,6 @@ export default function HomePage({ navigate, user, onLogout }) {
     sessionStorage.setItem("homeSearch", JSON.stringify(next));
     navigate("hotels", { ...next, sort: "recommended" });
   };
-
-  useEffect(() => {
-    hotelService.searchHotels({ size: 8, sort: "recommended" })
-      .then(({ hotels: h }) => setHotels(h.slice(0, 8)))
-      .catch(() => {})
-      .finally(() => setLoadingHotels(false));
-
-    Promise.all(
-      DESTINATION_CARDS.map((destination) =>
-        hotelService.searchHotels({ province: destination.searchKey, size: 3, sort: "recommended" })
-          .then(({ totalItems }) => ({
-            ...destination,
-            count: totalItems > 0 ? totalItems : 0,
-          }))
-          .catch(() => destination)
-      )
-    ).then((items) => {
-      const nextDestinations = items.filter(Boolean);
-      if (nextDestinations.length > 0) {
-        setDestinations(nextDestinations);
-      }
-    });
-  }, []);
 
   return (
     <div className="customer-homepage">

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { S, EyeOpen, EyeOff, SubmitButton, ImgSide } from "../components/auth/AuthShared";
-import { authService } from "../services/authService";
+import { useRegister } from "../hooks/useAuthMutations";
 import { useLang } from "../contexts/LanguageContext";
 
 const errStyle = { color: "#BE1E2E", fontSize: 12, margin: "4px 0 0" };
@@ -28,9 +28,10 @@ export default function Register({ setPage }) {
   const [agreed, setAgreed] = useState(false);
   const [f, setF] = useState({ email: "", pw: "", cf: "" });
   const [fieldErrors, setFieldErrors] = useState({});
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [registeredEmail, setRegisteredEmail] = useState("");
+
+  const registerMutation = useRegister();
 
   const upd = (k) => (e) => {
     const val = e.target.value;
@@ -39,7 +40,7 @@ export default function Register({ setPage }) {
     setFieldErrors((prev) => ({ ...prev, [k]: validateField(k, val, next, t) }));
   };
 
-  const handleRegister = async () => {
+  const handleRegister = () => {
     const errs = {
       email: validateField("email", f.email, f, t),
       pw:    validateField("pw",    f.pw,    f, t),
@@ -49,26 +50,22 @@ export default function Register({ setPage }) {
     if (Object.values(errs).some(Boolean)) return;
 
     setError("");
-    setLoading(true);
-    try {
-      const result = await authService.register({
-        email: f.email,
-        password: f.pw,
-        confirmPassword: f.cf,
-      });
-      // Dev mode: backend exposes token directly → auto-verify without email
-      if (result?.verificationToken) {
-        window.location.href = `/verify-email?token=${encodeURIComponent(result.verificationToken)}`;
-        return;
-      }
-      setRegisteredEmail(f.email);
-      setF({ email: "", pw: "", cf: "" });
-      setAgreed(false);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
+    registerMutation.mutate(
+      { email: f.email, password: f.pw, confirmPassword: f.cf },
+      {
+        onSuccess: (result) => {
+          // Dev mode: backend exposes token directly → auto-verify without email
+          if (result?.verificationToken) {
+            window.location.href = `/verify-email?token=${encodeURIComponent(result.verificationToken)}`;
+            return;
+          }
+          setRegisteredEmail(f.email);
+          setF({ email: "", pw: "", cf: "" });
+          setAgreed(false);
+        },
+        onError: (err) => setError(err.message),
+      },
+    );
   };
 
   if (registeredEmail) {
@@ -171,9 +168,9 @@ export default function Register({ setPage }) {
           {error && <p style={{ color: "#BE1E2E", fontSize: 13, marginBottom: 10, textAlign: "center" }}>{error}</p>}
 
           <SubmitButton
-            label={loading ? t("register_loading") : t("register_submit")}
+            label={registerMutation.isPending ? t("register_loading") : t("register_submit")}
             onClick={handleRegister}
-            disabled={!f.email || !f.pw || !f.cf || !agreed || loading || Object.values(fieldErrors).some(Boolean)}
+            disabled={!f.email || !f.pw || !f.cf || !agreed || registerMutation.isPending || Object.values(fieldErrors).some(Boolean)}
           />
 
           <p style={S.bottomTxt}>

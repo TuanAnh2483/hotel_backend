@@ -1,26 +1,22 @@
 import { useState } from "react";
 import { C, S, SubmitButton, ImgSide } from "../components/auth/AuthShared";
-import { authService } from "../services/authService";
+import { useForgotPassword } from "../hooks/useAuthMutations";
 import { useLang } from "../contexts/LanguageContext";
 
 const ForgotPassword = ({ setPage }) => {
   const { t } = useLang();
   const [email, setEmail] = useState("");
   const [sent, setSent] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const handleForgot = async () => {
+  const forgotMutation = useForgotPassword();
+
+  const handleForgot = () => {
     setError("");
-    setLoading(true);
-    try {
-      await authService.forgotPassword({ email });
-      setSent(true);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
+    forgotMutation.mutate({ email }, {
+      onSuccess: () => setSent(true),
+      onError: (err) => setError(err.message),
+    });
   };
 
   return (
@@ -45,9 +41,9 @@ const ForgotPassword = ({ setPage }) => {
               </div>
               {error && <p style={{ color: C.primary, fontSize: 13, marginBottom: 10, textAlign: "center" }}>{error}</p>}
               <SubmitButton
-                label={loading ? t("forgot_loading") : t("forgot_submit")}
+                label={forgotMutation.isPending ? t("forgot_loading") : t("forgot_submit")}
                 onClick={handleForgot}
-                disabled={!email || loading}
+                disabled={!email || forgotMutation.isPending}
               />
             </>
           )}
