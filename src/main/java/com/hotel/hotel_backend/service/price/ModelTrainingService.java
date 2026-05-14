@@ -152,10 +152,17 @@ public class ModelTrainingService {
     // ── Phase 1: Weighted feedback learning ──────────────────────────────────
 
     /**
-     * Learn priceAggressiveness and partnerPriceAdjustment from recent feedback.
+     * Phase 1: Học từ phản hồi partner (có trọng số thời gian).
      *
-     * Uses time-decay weights so recent partner decisions have more influence
-     * than older ones, preventing the model from getting stuck on stale patterns.
+     * Outcomes được xử lý:
+     *  - APPLIED        → chấp nhận đúng giá; ratio ≈ 1.0
+     *  - APPLIED_PLUS5  → partner thấy giá thấp, tự tăng ~5%; ratio ≈ 1.05
+     *                     → tín hiệu: mô hình đang đề xuất thấp hơn thực tế thị trường
+     *  - APPLIED_MINUS5 → partner thấy giá cao, tự giảm ~5%; ratio ≈ 0.95
+     *  - SKIPPED        → từ chối; không đóng góp vào ratio
+     *
+     * priceAggressiveness: điều chỉnh mức độ "táo bạo" của mô hình
+     * partnerPriceAdjustment: trung bình tỉ lệ appliedPrice/suggestedPrice (partner preference)
      */
     private void phase1FeedbackLearning(PricingModel model, List<PriceFeedback> feedbacks) {
         LocalDate today = LocalDate.now();
@@ -175,8 +182,19 @@ public class ModelTrainingService {
                 weightedAccepted += w;
             }
 
-            if (accepted && f.getAppliedPrice() != null && f.getSuggestedPrice() > 0) {
-                double ratio = (double) f.getAppliedPrice() / f.getSuggestedPrice();
+            // Tính ratio thực tế từ appliedPrice nếu có, hoặc ước tính từ outcome
+            if (accepted && f.getSuggestedPrice() > 0) {
+                double ratio;
+                if (f.getAppliedPrice() != null && f.getAppliedPrice() > 0) {
+                    ratio = (double) f.getAppliedPrice() / f.getSuggestedPrice();
+                } else {
+                    // Ước tính ratio từ outcome khi appliedPrice không được ghi lại
+                    ratio = switch (f.getOutcome()) {
+                        case "APPLIED_PLUS5"  -> 1.05; // partner tăng thêm ~5%
+                        case "APPLIED_MINUS5" -> 0.95; // partner giảm ~5%
+                        default               -> 1.00; // APPLIED = đúng giá
+                    };
+                }
                 weightedRatioSum += ratio * w;
                 weightedRatioW   += w;
             }
@@ -185,20 +203,21 @@ public class ModelTrainingService {
         double acceptanceRate = totalWeight > 0 ? weightedAccepted / totalWeight : 0.0;
         model.setLastAcceptanceRate(acceptanceRate);
 
-        // Update aggressiveness: lower if partner often rejects, raise if often accepts
+        // Cập nhật aggressiveness: dựa trên tỉ lệ chấp nhận
         double agg = model.getPriceAggressiveness();
         if (acceptanceRate < 0.40) {
-            agg *= 0.95; // partner rejects too often → be more conservative
+            agg *= 0.95; // partner hay từ chối → thận trọng hơn
         } else if (acceptanceRate > 0.75) {
-            agg *= 1.03; // partner accepts easily → can push slightly higher
+            agg *= 1.03; // partner hay chấp nhận → có thể tăng nhẹ
         }
         agg = Math.max(0.75, Math.min(1.25, agg));
         model.setPriceAggressiveness(agg);
 
         if (weightedRatioW > 0) {
             double observedRatio = weightedRatioSum / weightedRatioW;
+            // APPLIED_PLUS5 nhiều → ratio > 1.0 → partnerAdj tăng → đề xuất cao hơn
+            // APPLIED_MINUS5 nhiều → ratio < 1.0 → partnerAdj giảm → đề xuất thấp hơn
             double observed = Math.max(0.75, Math.min(1.10, observedRatio));
-            // Blend: 70% previous knowledge + 30% new observation
             double newAdj = 0.70 * model.getPartnerPriceAdjustment() + 0.30 * observed;
             model.setPartnerPriceAdjustment(newAdj);
         }
