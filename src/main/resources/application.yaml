@@ -77,6 +77,9 @@ app:
     from: ${MAIL_FROM:no-reply@hotel.local}
     expose-debug-tokens: ${MAIL_EXPOSE_DEBUG_TOKENS:false}
 
+  google:
+    client-id: ${GOOGLE_CLIENT_ID:}
+
   uploads:
     provider: ${UPLOAD_PROVIDER:local}
     storage-root: ${UPLOAD_STORAGE_ROOT:./uploads}

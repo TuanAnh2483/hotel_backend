@@ -25,6 +25,7 @@ public class EmailVerificationEmailService {
             @Value("${app.email-verification.frontend-verify-url:http://localhost:3000/verify-email}") String frontendVerifyUrl,
             @Value("${app.mail.enabled:false}") boolean mailEnabled,
             @Value("${app.mail.from:Hotel <onboarding@resend.dev>}") String mailFrom
+
     ) {
         this.resend = resendApiKey == null || resendApiKey.isBlank()
                 ? null

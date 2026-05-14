@@ -19,6 +19,7 @@ import com.hotel.hotel_backend.service.AuthService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.hotel.hotel_backend.dto.request.GoogleLoginRequest;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -80,8 +81,11 @@ public class AuthController {
                 ErrorCode.FORBIDDEN,
                 "Partner self-registration is disabled. Please use the onboarding flow."
         );
-
-
-
+    }
+    @PostMapping("/google")
+    public ResponseEntity<ApiResponse<AuthResponse>> googleLogin(
+            @RequestBody @Valid GoogleLoginRequest request
+    ) {
+        return ResponseEntity.ok(ApiResponse.ok(authService.googleLogin(request)));
     }
 }

@@ -61,7 +61,12 @@ export const authService = {
       body: JSON.stringify({ email, password }),
     });
   },
-
+  googleLogin({ credential }) {
+    return request("/api/auth/google", {
+      method: "POST",
+      body: JSON.stringify({ credential }),
+    });
+  },
   // Backend only accepts: email, password, confirmPassword
   register({ email, password, confirmPassword }) {
     return request("/api/auth/register", {

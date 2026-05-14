@@ -29,6 +29,15 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
+import com.google.api.client.http.javanet.NetHttpTransport;
+import com.google.api.client.json.gson.GsonFactory;
+import com.hotel.hotel_backend.dto.request.GoogleLoginRequest;
+
+import java.io.IOException;
+import java.security.GeneralSecurityException;
+import java.util.Collections;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -61,7 +70,10 @@ public class AuthService {
     private final PasswordResetEmailService passwordResetEmailService;
     private final EmailVerificationEmailService emailVerificationEmailService;
     private final boolean exposeDebugTokens;
+    private final String googleClientId;
     private final SecureRandom secureRandom = new SecureRandom();
+
+
 
     public AuthService(
             UserRepository userRepo,
@@ -72,7 +84,9 @@ public class AuthService {
             SecurityService securityService,
             PasswordResetEmailService passwordResetEmailService,
             EmailVerificationEmailService emailVerificationEmailService,
-            @Value("${app.mail.expose-debug-tokens:false}") boolean exposeDebugTokens
+            @Value("${app.mail.expose-debug-tokens:false}") boolean exposeDebugTokens,
+            @Value("${google.client-id:}") String googleClientId
+
     ) {
         this.userRepo = userRepo;
         this.emailVerificationTokenRepository = emailVerificationTokenRepository;
@@ -83,6 +97,7 @@ public class AuthService {
         this.passwordResetEmailService = passwordResetEmailService;
         this.emailVerificationEmailService = emailVerificationEmailService;
         this.exposeDebugTokens = exposeDebugTokens;
+        this.googleClientId = googleClientId;
     }
 
     private AuthResponse buildAuthResponse(User user, String token) {
@@ -256,6 +271,66 @@ public class AuthService {
 
         User user = createUser(email, req.password(), role);
         return buildRegisterResponse(issueEmailVerification(user));
+    }
+
+    @Transactional
+    public AuthResponse googleLogin(@Valid GoogleLoginRequest request) {
+        if (googleClientId == null || googleClientId.isBlank()) {
+            throw new IllegalStateException("GOOGLE_CLIENT_ID chưa được cấu hình");
+        }
+
+        GoogleIdToken.Payload payload = verifyGoogleCredential(request.credential());
+
+        String email = normalizeEmail(payload.getEmail());
+        Boolean emailVerified = payload.getEmailVerified();
+
+        if (email == null || email.isBlank() || !Boolean.TRUE.equals(emailVerified)) {
+            throw new ApiException(
+                    ErrorCode.UNAUTHORIZED,
+                    "Email Google không hợp lệ hoặc chưa được xác minh"
+            );
+        }
+
+        User user = userRepo.findByEmail(email).orElseGet(() -> {
+            User newUser = new User();
+            newUser.setEmail(email);
+            newUser.setUserType(UserType.CUSTOMER);
+            newUser.setStatus(UserStatus.ACTIVE);
+            newUser.setPasswordHash(passwordEncoder.encode(UUID.randomUUID().toString()));
+            newUser.setEmailVerifiedAt(OffsetDateTime.now());
+            return userRepo.save(newUser);
+        });
+
+        assertActive(user);
+
+        if (!user.isEmailVerified()) {
+            user.setEmailVerifiedAt(OffsetDateTime.now());
+            userRepo.save(user);
+        }
+
+        String token = jwtService.generate(user);
+        return buildAuthResponse(user, token);
+    }
+
+    private GoogleIdToken.Payload verifyGoogleCredential(String credential) {
+        try {
+            GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(
+                    new NetHttpTransport(),
+                    GsonFactory.getDefaultInstance()
+            )
+                    .setAudience(Collections.singletonList(googleClientId))
+                    .build();
+
+            GoogleIdToken idToken = verifier.verify(credential);
+
+            if (idToken == null) {
+                throw new ApiException(ErrorCode.UNAUTHORIZED, "Google token không hợp lệ");
+            }
+
+            return idToken.getPayload();
+        } catch (GeneralSecurityException | IOException ex) {
+            throw new ApiException(ErrorCode.UNAUTHORIZED, "Không thể xác thực Google token");
+        }
     }
 
     private String normalizeEmail(String email) {
