@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
-import { useMyHotels, usePartnerBookings, useAnalyticsSummary, usePartnerRooms } from "../../hooks/usePartnerQueries";
+import { useMyHotels, usePartnerBookings, useAnalyticsSummary } from "../../hooks/usePartnerQueries";
 import { useQueries } from "@tanstack/react-query";
 import { useLang } from "../../contexts/LanguageContext";
 import { 
