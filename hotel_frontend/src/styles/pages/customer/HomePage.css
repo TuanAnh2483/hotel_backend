@@ -719,3 +719,61 @@
     flex-basis: 190px;
   }
 }
+
+@media (max-width: 480px) {
+  .customer-homepage-hero-title {
+    font-size: 24px;
+  }
+
+  .customer-homepage-hero-subtitle {
+    font-size: 13px;
+  }
+
+  /* Each search field takes full width on small phones */
+  .customer-homepage-field {
+    flex: 1 1 100% !important;
+    border-right: none;
+    border-bottom: 1px solid #f0e8e9;
+  }
+
+  /* Anchor pushed down further because fields stack taller */
+  .customer-homepage-searchbar-anchor {
+    bottom: -180px;
+  }
+
+  /* Section padding adjusted for extra searchbar height */
+  .customer-homepage-section {
+    padding: 200px 14px 24px;
+  }
+
+  .customer-homepage-section + .customer-homepage-section {
+    padding-top: 14px;
+  }
+
+  /* Destination mosaic grid becomes a scrollable strip */
+  .customer-homepage-dest-grid {
+    flex-direction: column;
+    height: auto;
+    gap: 10px;
+  }
+
+  .customer-homepage-dest-secondary-col {
+    flex-direction: row;
+    overflow-x: auto;
+    gap: 10px;
+  }
+
+  .customer-homepage-dest-card {
+    min-height: 160px;
+  }
+
+  /* Back button full width */
+  .customer-homepage-back-btn {
+    width: 100%;
+  }
+
+  /* Results padding */
+  .customer-homepage-results-header {
+    padding: 0 14px;
+  }
+}
