@@ -4,6 +4,9 @@ import MainNavbar from "../components/MainNavbar";
 import Footer from "../components/Footer";
 import { useMyBookings } from "../hooks/useBookingQueries";
 import { useLang } from "../contexts/LanguageContext";
+import EmptyState from "../components/ui/EmptyState";
+import { SkeletonBookingCard } from "../components/ui/Skeleton";
+import { CalendarOff, ClipboardList } from "lucide-react";
 
 function useStatusMap() {
   const { t } = useLang();
@@ -135,7 +138,11 @@ export default function MyBookingsPage({ navigate, user, onLogout }) {
         </div>
 
         {loading && (
-          <div style={{ textAlign: "center", padding: "40px 0", color: "#aaa" }}>{t("mybookings_loading")}</div>
+          <>
+            <SkeletonBookingCard />
+            <SkeletonBookingCard />
+            <SkeletonBookingCard />
+          </>
         )}
 
         {error && (
@@ -145,17 +152,19 @@ export default function MyBookingsPage({ navigate, user, onLogout }) {
         )}
 
         {!loading && !error && filtered.length === 0 && (
-          <div style={{ textAlign: "center", padding: "60px 0" }}>
-            <p style={{ fontSize: 16, color: "#aaa", marginBottom: 16 }}>
-              {tab === "ALL" ? t("mybookings_empty_all") : t("mybookings_empty_tab")}
-            </p>
-            {tab === "ALL" && (
-              <button
-                style={{ background: C.primary, color: "#fff", border: "none", borderRadius: 10, padding: "12px 28px", fontSize: 14, fontWeight: 700, cursor: "pointer" }}
-                onClick={() => navigate("hotels")}
-              >{t("mybookings_find_hotel")}</button>
-            )}
-          </div>
+          tab === "ALL" ? (
+            <EmptyState
+              icon={<CalendarOff size={56} />}
+              title={t("mybookings_empty_all")}
+              description={t("mybookings_empty_all_desc")}
+              action={{ label: t("mybookings_find_hotel"), onClick: () => navigate("hotels") }}
+            />
+          ) : (
+            <EmptyState
+              icon={<ClipboardList size={56} />}
+              title={t("mybookings_empty_tab")}
+            />
+          )
         )}
 
         {filtered.map(b => (
