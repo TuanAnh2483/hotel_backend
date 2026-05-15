@@ -2,6 +2,7 @@ import { useState } from "react";
 import AdminLayout, { AP, PageHeader, Card, Badge, Btn, Table, Modal } from "../../components/admin/AdminLayout";
 import { useAdminBookings } from "../../hooks/useAdminQueries";
 import { useLang } from "../../contexts/LanguageContext";
+import { SkeletonTableRows } from "../../components/ui/Skeleton";
 import "../../styles/pages/admin/AdminCommon.css";
 
 const STATUSES = ["", "CONFIRMED", "PENDING_PAYMENT", "CANCELLED", "COMPLETED"];
@@ -90,7 +91,9 @@ export default function AdminBookings({ navigate, user, onLogout }) {
         </div>
 
         {loading ? (
-          <div className="admin-loading">{t("adm_loading")}</div>
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <tbody><SkeletonTableRows rows={6} cols={9} /></tbody>
+          </table>
         ) : (
           <>
             <Table
