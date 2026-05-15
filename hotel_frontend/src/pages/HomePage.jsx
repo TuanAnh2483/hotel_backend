@@ -235,10 +235,22 @@ function SearchBar({ initial = {}, onSearch }) {
           </select>
         </Field>
         <Field iconKey="calendar" label={t("search_checkin")}>
-          <input className="customer-homepage-field-input" type="date" value={q.checkIn} onChange={upd("checkIn")} />
+          <input
+            className="customer-homepage-field-input"
+            type="date"
+            value={q.checkIn}
+            min={isoDate(new Date())}
+            onChange={upd("checkIn")}
+          />
         </Field>
         <Field iconKey="calendar" label={t("search_checkout")}>
-          <input className="customer-homepage-field-input" type="date" value={q.checkOut} onChange={upd("checkOut")} />
+          <input
+            className="customer-homepage-field-input"
+            type="date"
+            value={q.checkOut}
+            min={q.checkIn || isoDate(new Date())}
+            onChange={upd("checkOut")}
+          />
         </Field>
         <Field iconKey="people" label={t("search_guests")} flex="0 0 120px">
           <input className="customer-homepage-field-input" type="number" min="1" placeholder={t("search_guests_ph")} value={q.guests} onChange={upd("guests")} />
