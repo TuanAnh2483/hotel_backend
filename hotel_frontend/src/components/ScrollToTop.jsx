@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { C } from "./auth/AuthShared";
+﻿import { useState, useEffect } from "react";
+import { C } from "../lib/constants";
 
 export default function ScrollToTop() {
   const [visible, setVisible] = useState(false);

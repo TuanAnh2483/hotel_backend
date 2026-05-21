@@ -1,5 +1,6 @@
-import { useState, useEffect, useRef } from "react";
-import { C, S, LOGO_IMG } from "./auth/AuthShared";
+﻿import { useState, useEffect, useRef } from "react";
+import { C } from "../lib/constants";
+import { S, LOGO_IMG } from "./auth/AuthShared";
 import {
   User,
   LogOut,

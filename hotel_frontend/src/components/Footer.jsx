@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { C, LOGO_IMG } from "./auth/AuthShared";
+﻿import { useState } from "react";
+import { C } from "../lib/constants";
+import { LOGO_IMG } from "./auth/AuthShared";
 import { useLang } from "../contexts/LanguageContext";
 
 const H4 = { fontSize: 15, fontWeight: 800, color: "#111", marginBottom: 24, textTransform: "uppercase", letterSpacing: 1 };

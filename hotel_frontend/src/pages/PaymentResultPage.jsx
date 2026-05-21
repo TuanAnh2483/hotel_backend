@@ -1,5 +1,5 @@
-import { useLocation } from "react-router-dom";
-import { C } from "../components/auth/AuthShared";
+﻿import { useLocation } from "react-router-dom";
+import { C } from "../lib/constants";
 import MainNavbar from "../components/MainNavbar";
 import Footer from "../components/Footer";
 

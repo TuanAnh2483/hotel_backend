@@ -1,5 +1,5 @@
-import { useState, useEffect, useMemo } from "react";
-import { C } from "../components/auth/AuthShared";
+﻿import { useState, useEffect, useMemo } from "react";
+import { C } from "../lib/constants";
 import MainNavbar from "../components/MainNavbar";
 import Footer from "../components/Footer";
 import { useHotelLocations, useHotelSearch, useDestinationCounts } from "../hooks/useHotelQueries";

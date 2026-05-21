@@ -1,4 +1,4 @@
-import { C } from "../auth/AuthShared";
+﻿import { C } from "../../lib/constants";
 
 export default function EmptyState({ icon, title, description, action }) {
   return (

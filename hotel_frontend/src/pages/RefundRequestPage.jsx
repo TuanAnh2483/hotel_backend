@@ -1,6 +1,6 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { useParams } from "react-router-dom";
-import { C } from "../components/auth/AuthShared";
+import { C } from "../lib/constants";
 import MainNavbar from "../components/MainNavbar";
 import Footer from "../components/Footer";
 import { useBookingDetail, useCreateRefundRequest } from "../hooks/useBookingQueries";

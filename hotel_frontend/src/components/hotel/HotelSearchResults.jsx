@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from "react";
-import { C } from "../auth/AuthShared";
+﻿import { useState, useEffect, useRef } from "react";
+import { C } from "../../lib/constants";
 import { useHotelSearch } from "../../hooks/useHotelQueries";
 import { useLang } from "../../contexts/LanguageContext";
 import "./HotelSearchResults.css";
