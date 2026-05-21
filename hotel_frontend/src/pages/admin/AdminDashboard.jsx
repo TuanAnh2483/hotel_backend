@@ -2,6 +2,10 @@ import AdminLayout, { AP, Card } from "../../components/admin/AdminLayout";
 import { useAdminStats } from "../../hooks/useAdminQueries";
 import Skeleton from "../../components/ui/Skeleton";
 import { useLang } from "../../contexts/LanguageContext";
+import {
+  Users, Handshake, Building2, ClipboardList, Clock,
+  DollarSign, Settings, Home,
+} from "lucide-react";
 import "../../styles/pages/AdminDashboard.css";
 
 function StatCard({ icon, label, value, color, sub, onClick }) {
@@ -49,20 +53,20 @@ export default function AdminDashboard({ navigate, user, onLogout }) {
   const { data: stats, isLoading: loading } = useAdminStats();
 
   const STATS = [
-    { icon: "👥", label: t("adm_dash_customers"),      key: "totalUsers",     color: "#4361ee", page: "admin-users"    },
-    { icon: "🤝", label: t("adm_dash_partners"),        key: "totalPartners",  color: "#7209b7", page: "admin-partners" },
-    { icon: "🏨", label: t("adm_dash_hotels"),          key: "totalHotels",    color: AP,        page: "admin-hotels"   },
-    { icon: "📋", label: t("adm_dash_total_bookings"),  key: "totalBookings",  color: "#4cc9f0", page: "admin-bookings" },
-    { icon: "⏳", label: t("adm_dash_pending"),         key: "pendingBookings",color: "#f72585", page: "admin-bookings" },
+    { icon: <Users size={24} color="#4361ee" />,     label: t("adm_dash_customers"),     key: "totalUsers",      color: "#4361ee", page: "admin-users"    },
+    { icon: <Handshake size={24} color="#7209b7" />, label: t("adm_dash_partners"),       key: "totalPartners",   color: "#7209b7", page: "admin-partners" },
+    { icon: <Building2 size={24} color={AP} />,      label: t("adm_dash_hotels"),         key: "totalHotels",     color: AP,        page: "admin-hotels"   },
+    { icon: <ClipboardList size={24} color="#4cc9f0" />, label: t("adm_dash_total_bookings"), key: "totalBookings", color: "#4cc9f0", page: "admin-bookings" },
+    { icon: <Clock size={24} color="#f72585" />,     label: t("adm_dash_pending"),        key: "pendingBookings", color: "#f72585", page: "admin-bookings" },
   ];
 
   const QUICK = [
-    { icon: "🤝", label: t("adm_dash_tile_partners"),  desc: t("adm_dash_tile_partners_sub"),  page: "admin-partners" },
-    { icon: "👥", label: t("adm_dash_tile_users"),     desc: t("adm_dash_tile_users_sub"),     page: "admin-users"    },
-    { icon: "🏨", label: t("adm_dash_tile_hotels"),    desc: t("adm_dash_tile_hotels_sub"),    page: "admin-hotels"   },
-    { icon: "📋", label: t("adm_dash_tile_bookings"),  desc: t("adm_dash_tile_bookings_sub"),  page: "admin-bookings" },
-    { icon: "💰", label: t("adm_dash_tile_refunds"),   desc: t("adm_dash_tile_refunds_sub"),   page: "admin-refunds"  },
-    { icon: "⚙️", label: t("adm_dash_tile_system"),   desc: t("adm_dash_tile_system_sub"),    page: "admin-system"   },
+    { icon: <Handshake size={22} color="#555" />, label: t("adm_dash_tile_partners"),  desc: t("adm_dash_tile_partners_sub"),  page: "admin-partners" },
+    { icon: <Users size={22} color="#555" />,     label: t("adm_dash_tile_users"),     desc: t("adm_dash_tile_users_sub"),     page: "admin-users"    },
+    { icon: <Building2 size={22} color="#555" />, label: t("adm_dash_tile_hotels"),    desc: t("adm_dash_tile_hotels_sub"),    page: "admin-hotels"   },
+    { icon: <ClipboardList size={22} color="#555" />, label: t("adm_dash_tile_bookings"), desc: t("adm_dash_tile_bookings_sub"), page: "admin-bookings" },
+    { icon: <DollarSign size={22} color="#555" />,label: t("adm_dash_tile_refunds"),   desc: t("adm_dash_tile_refunds_sub"),   page: "admin-refunds"  },
+    { icon: <Settings size={22} color="#555" />,  label: t("adm_dash_tile_system"),    desc: t("adm_dash_tile_system_sub"),    page: "admin-system"   },
   ];
 
   return (
@@ -142,7 +146,8 @@ export default function AdminDashboard({ navigate, user, onLogout }) {
           ))}
 
           <button onClick={() => navigate("home")} className="admin-dashboard-home-btn">
-            🏠 {t("adm_dash_home")}
+            <Home size={16} />
+            {t("adm_dash_home")}
           </button>
         </Card>
       </div>

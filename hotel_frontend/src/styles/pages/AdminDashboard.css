@@ -80,7 +80,6 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 24px;
   flex-shrink: 0;
 }
 
@@ -150,7 +149,8 @@
 }
 
 .admin-dashboard-quick-btn-icon {
-  font-size: 24px;
+  display: flex;
+  flex-shrink: 0;
 }
 
 .admin-dashboard-quick-btn-label {
