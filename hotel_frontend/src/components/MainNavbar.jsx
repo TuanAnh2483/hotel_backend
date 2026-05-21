@@ -1,6 +1,6 @@
-﻿import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { C } from "../lib/constants";
-import { S, LOGO_IMG } from "./auth/AuthShared";
+import { LOGO_IMG } from "./auth/AuthShared";
 import {
   User,
   LogOut,
@@ -47,18 +47,16 @@ const ROLE_STYLE = {
 };
 
 export default function MainNavbar({ active, navigate, user, onLogout }) {
-  const [hovBtn, setHovBtn]         = useState(null);
-  const [hovLink, setHovLink]       = useState(null);
-  const [showMenu, setShowMenu]     = useState(false);
+  const [showMenu, setShowMenu]           = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
-  const [isDark, setIsDark]         = useState(() => localStorage.getItem("theme") === "dark");
-  const menuRef                     = useRef(null);
-  const { lang, toggleLang, t }     = useLang();
+  const [isDark, setIsDark]               = useState(() => localStorage.getItem("theme") === "dark");
+  const menuRef                           = useRef(null);
+  const { lang, toggleLang, t }           = useLang();
 
-  const isPartner = user?.userType === "PARTNER";
+  const isPartner      = user?.userType === "PARTNER";
   const canApplyPartner = !isPartner && user?.userType !== "ADMIN";
 
-  const baseLinks = BASE_LINK_PAGES.map(l => ({ ...l, label: t(l.key) }));
+  const baseLinks    = BASE_LINK_PAGES.map(l => ({ ...l, label: t(l.key) }));
   const partnerLinks = PARTNER_LINK_PAGES.map(l => ({ ...l, label: lang === "en" ? l.en : l.vi }));
 
   const navLinks = isPartner
@@ -83,8 +81,8 @@ export default function MainNavbar({ active, navigate, user, onLogout }) {
       // invert(0.92) đổi #ffffff thành ~#141414 (xám tối nhẹ)
       // contrast(0.9) làm mềm chữ tránh quá tương phản
       document.documentElement.style.filter = "invert(0.92) hue-rotate(180deg) contrast(0.9)";
-      document.documentElement.style.background = "#fff"; // sẽ bị invert thành màu tối
-      
+      document.documentElement.style.background = "#fff";
+
       let style = document.getElementById("dark-mode-fixes");
       if (!style) {
         style = document.createElement("style");
@@ -115,50 +113,34 @@ export default function MainNavbar({ active, navigate, user, onLogout }) {
   };
 
   return (
-    <nav style={S.nav} className="main-navbar-nav">
-      <button style={S.navLogoWrap} onClick={() => navigate("home")}>
-        <img src={LOGO_IMG} alt="VLU Hotel Hub" style={S.navLogo} />
+    <nav className="main-navbar-nav">
+      <button className="navbar-logo-wrap" onClick={() => navigate("home")}>
+        <img src={LOGO_IMG} alt="VLU Hotel Hub" className="navbar-logo" />
       </button>
 
-      <ul style={{ ...S.navLinks, gap: isPartner ? 18 : 32 }} className="main-navbar-links">
-        {navLinks.map(({ label, page }) => {
-          const isActive = active === page;
-          const isHov    = hovLink === page;
-          return (
-            <li key={page}>
-              <a
-                style={{
-                  ...S.navLink,
-                  color: isActive || isHov ? C.primary : C.text,
-                  fontWeight: isActive ? 700 : 500,
-                  borderBottom: isActive || isHov ? `2px solid ${C.primary}` : "2px solid transparent",
-                  paddingBottom: 3,
-                  transition: "color 0.15s ease, border-color 0.15s ease",
-                  cursor: "pointer",
-                }}
-                onClick={() => navigate(page)}
-                onMouseEnter={() => setHovLink(page)}
-                onMouseLeave={() => setHovLink(null)}
-              >{label}</a>
-            </li>
-          );
-        })}
+      <ul className={`main-navbar-links${isPartner ? " partner" : ""}`}>
+        {navLinks.map(({ label, page }) => (
+          <li key={page}>
+            <a
+              className={`navbar-nav-link${active === page ? " active" : ""}`}
+              onClick={() => navigate(page)}
+            >{label}</a>
+          </li>
+        ))}
       </ul>
 
-      <div style={{ ...S.navActions, gap: 10 }} className="main-navbar-actions">
-        <button style={S.iconBtn} onClick={toggleDark} title={isDark ? "Chế độ sáng" : "Chế độ tối"}>
+      <div className="main-navbar-actions">
+        <button className="navbar-icon-btn" onClick={toggleDark} title={isDark ? "Chế độ sáng" : "Chế độ tối"}>
           {isDark ? <Sun size={20} color="#1a1a1a" /> : <Moon size={20} color="#1a1a1a" />}
         </button>
 
         <button
-          style={{ ...S.iconBtn, display: "flex", alignItems: "center", gap: 4, padding: "6px 10px", borderRadius: 8 }}
+          className="navbar-lang-btn"
           onClick={toggleLang}
           title={lang === "vi" ? "Switch to English" : "Chuyển sang tiếng Việt"}
         >
           <Globe size={16} color="#1a1a1a" />
-          <span style={{ fontSize: 12, fontWeight: 700, color: "#1a1a1a", letterSpacing: 0.5 }}>
-            {lang === "vi" ? "VI" : "EN"}
-          </span>
+          <span className="navbar-lang-label">{lang === "vi" ? "VI" : "EN"}</span>
         </button>
 
         {user ? (
@@ -171,9 +153,9 @@ export default function MainNavbar({ active, navigate, user, onLogout }) {
               onMouseLeave={e => e.currentTarget.style.background = "transparent"}
             >
               <div
-                style={{ 
-                  width: 32, height: 32, borderRadius: "50%", background: C.primary, 
-                  display: "flex", alignItems: "center", justifyContent: "center", 
+                style={{
+                  width: 32, height: 32, borderRadius: "50%", background: C.primary,
+                  display: "flex", alignItems: "center", justifyContent: "center",
                   color: "#fff", fontWeight: 700, fontSize: 13,
                   boxShadow: "0 2px 8px rgba(190,30,46,0.2)"
                 }}
@@ -184,7 +166,7 @@ export default function MainNavbar({ active, navigate, user, onLogout }) {
             </div>
             {showMenu && (
               <div className="navbar-dropdown" style={{ position: "absolute", right: 0, top: 46, background: "#fff", borderRadius: 14, boxShadow: "0 10px 40px rgba(0,0,0,0.12)", border: "1px solid rgba(0,0,0,0.06)", minWidth: 220, zIndex: 200, overflow: "hidden" }}>
-  
+
                 <div style={{ padding: "16px 20px", borderBottom: "1px solid #f0f0f0", background: "linear-gradient(to bottom, #fff, #fdfdfd)" }}>
                   <p style={{ fontSize: 10, color: "#aaa", margin: 0, textTransform: "uppercase", letterSpacing: 1.2, fontWeight: 700 }}>{t("nav_account")}</p>
                   <p style={{ fontSize: 13, fontWeight: 700, color: "#1a1a1a", margin: "4px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{user.email}</p>
@@ -194,7 +176,7 @@ export default function MainNavbar({ active, navigate, user, onLogout }) {
                     </span>
                   )}
                 </div>
-                
+
                 <div style={{ padding: "6px 0" }}>
                   {user?.userType === "PARTNER" && (
                     <button
@@ -253,28 +235,12 @@ export default function MainNavbar({ active, navigate, user, onLogout }) {
         ) : (
           <>
             <button
-              style={{
-                ...S.btnDefault,
-                background: hovBtn === "login" ? C.primary : "#F7F7F7",
-                color: hovBtn === "login" ? "#fff" : C.text,
-                transition: "background 0.15s ease, color 0.15s ease",
-              }}
+              className="navbar-auth-btn"
               onClick={() => navigate("login")}
-              onMouseEnter={() => setHovBtn("login")}
-              onMouseLeave={() => setHovBtn(null)}
             >{t("nav_login")}</button>
             <button
-              style={{
-                ...S.btnDefault,
-                background: hovBtn === "register" ? C.primary : "#F7F7F7",
-                color: hovBtn === "register" ? "#fff" : C.text,
-                border: "none",
-                borderRadius: 8,
-                transition: "background 0.15s ease, color 0.15s ease",
-              }}
+              className="navbar-auth-btn"
               onClick={() => navigate("register")}
-              onMouseEnter={() => setHovBtn("register")}
-              onMouseLeave={() => setHovBtn(null)}
             >{t("nav_register")}</button>
           </>
         )}
@@ -314,18 +280,16 @@ export default function MainNavbar({ active, navigate, user, onLogout }) {
 
         {/* Dark mode + language */}
         <div className="main-navbar-drawer-tools">
-          <button style={S.iconBtn} onClick={toggleDark} title={isDark ? "Chế độ sáng" : "Chế độ tối"}>
+          <button className="navbar-icon-btn" onClick={toggleDark} title={isDark ? "Chế độ sáng" : "Chế độ tối"}>
             {isDark ? <Sun size={20} color="#1a1a1a" /> : <Moon size={20} color="#1a1a1a" />}
           </button>
           <button
-            style={{ ...S.iconBtn, display: "flex", alignItems: "center", gap: 4, padding: "6px 10px", borderRadius: 8 }}
+            className="navbar-lang-btn"
             onClick={toggleLang}
             title={lang === "vi" ? "Switch to English" : "Chuyển sang tiếng Việt"}
           >
             <Globe size={16} color="#1a1a1a" />
-            <span style={{ fontSize: 12, fontWeight: 700, color: "#1a1a1a", letterSpacing: 0.5 }}>
-              {lang === "vi" ? "VI" : "EN"}
-            </span>
+            <span className="navbar-lang-label">{lang === "vi" ? "VI" : "EN"}</span>
           </button>
         </div>
 
