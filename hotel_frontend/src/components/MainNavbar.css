@@ -45,7 +45,7 @@
 
 .navbar-nav-link {
   font-size: 14px;
-  color: #1a1a1a;
+  color: var(--text-main);
   text-decoration: none;
   font-weight: 500;
   cursor: pointer;
@@ -57,8 +57,8 @@
 
 .navbar-nav-link:hover,
 .navbar-nav-link.active {
-  color: #BE1E2E;
-  border-bottom-color: #BE1E2E;
+  color: var(--primary);
+  border-bottom-color: var(--primary);
 }
 
 .navbar-nav-link.active {
@@ -100,7 +100,7 @@
 .navbar-lang-label {
   font-size: 12px;
   font-weight: 700;
-  color: #1a1a1a;
+  color: var(--text-main);
   letter-spacing: 0.5px;
 }
 
@@ -108,8 +108,8 @@
   padding: 8px 18px;
   border-radius: 8px;
   border: none;
-  background: #f7f7f7;
-  color: #1a1a1a;
+  background: var(--secondary);
+  color: var(--text-main);
   font-weight: 600;
   font-size: 13px;
   cursor: pointer;
@@ -118,8 +118,17 @@
 }
 
 .navbar-auth-btn:hover {
-  background: #BE1E2E;
+  background: var(--primary);
   color: #fff;
+}
+
+/* Keyboard focus rings — only visible on keyboard navigation, not mouse */
+.navbar-logo-wrap:focus-visible,
+.navbar-icon-btn:focus-visible,
+.navbar-lang-btn:focus-visible,
+.navbar-auth-btn:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 3px;
 }
 
 @keyframes navbar-fade-in-up {

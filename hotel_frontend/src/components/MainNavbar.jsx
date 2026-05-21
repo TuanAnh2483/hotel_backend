@@ -113,8 +113,8 @@ export default function MainNavbar({ active, navigate, user, onLogout }) {
   };
 
   return (
-    <nav className="main-navbar-nav">
-      <button className="navbar-logo-wrap" onClick={() => navigate("home")}>
+    <nav className="main-navbar-nav" aria-label="Điều hướng chính">
+      <button className="navbar-logo-wrap" onClick={() => navigate("home")} aria-label={t("nav_home")}>
         <img src={LOGO_IMG} alt="VLU Hotel Hub" className="navbar-logo" />
       </button>
 
@@ -123,6 +123,7 @@ export default function MainNavbar({ active, navigate, user, onLogout }) {
           <li key={page}>
             <a
               className={`navbar-nav-link${active === page ? " active" : ""}`}
+              aria-current={active === page ? "page" : undefined}
               onClick={() => navigate(page)}
             >{label}</a>
           </li>
@@ -130,7 +131,12 @@ export default function MainNavbar({ active, navigate, user, onLogout }) {
       </ul>
 
       <div className="main-navbar-actions">
-        <button className="navbar-icon-btn" onClick={toggleDark} title={isDark ? "Chế độ sáng" : "Chế độ tối"}>
+        <button
+          className="navbar-icon-btn"
+          onClick={toggleDark}
+          title={isDark ? "Chế độ sáng" : "Chế độ tối"}
+          aria-label={isDark ? "Chế độ sáng" : "Chế độ tối"}
+        >
           {isDark ? <Sun size={20} color="#1a1a1a" /> : <Moon size={20} color="#1a1a1a" />}
         </button>
 
@@ -138,6 +144,7 @@ export default function MainNavbar({ active, navigate, user, onLogout }) {
           className="navbar-lang-btn"
           onClick={toggleLang}
           title={lang === "vi" ? "Switch to English" : "Chuyển sang tiếng Việt"}
+          aria-label={lang === "vi" ? "Switch to English" : "Chuyển sang tiếng Việt"}
         >
           <Globe size={16} color="#1a1a1a" />
           <span className="navbar-lang-label">{lang === "vi" ? "VI" : "EN"}</span>
@@ -147,6 +154,8 @@ export default function MainNavbar({ active, navigate, user, onLogout }) {
           <div ref={menuRef} style={{ position: "relative" }}>
             <div
               title={user.email}
+              aria-expanded={showMenu}
+              aria-haspopup="true"
               style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 6px", borderRadius: 20, cursor: "pointer", userSelect: "none", transition: "all 0.2s" }}
               onClick={() => setShowMenu(p => !p)}
               onMouseEnter={e => e.currentTarget.style.background = "rgba(0,0,0,0.04)"}
@@ -280,13 +289,19 @@ export default function MainNavbar({ active, navigate, user, onLogout }) {
 
         {/* Dark mode + language */}
         <div className="main-navbar-drawer-tools">
-          <button className="navbar-icon-btn" onClick={toggleDark} title={isDark ? "Chế độ sáng" : "Chế độ tối"}>
+          <button
+            className="navbar-icon-btn"
+            onClick={toggleDark}
+            title={isDark ? "Chế độ sáng" : "Chế độ tối"}
+            aria-label={isDark ? "Chế độ sáng" : "Chế độ tối"}
+          >
             {isDark ? <Sun size={20} color="#1a1a1a" /> : <Moon size={20} color="#1a1a1a" />}
           </button>
           <button
             className="navbar-lang-btn"
             onClick={toggleLang}
             title={lang === "vi" ? "Switch to English" : "Chuyển sang tiếng Việt"}
+            aria-label={lang === "vi" ? "Switch to English" : "Chuyển sang tiếng Việt"}
           >
             <Globe size={16} color="#1a1a1a" />
             <span className="navbar-lang-label">{lang === "vi" ? "VI" : "EN"}</span>
