@@ -4,28 +4,55 @@
 
 @layer base {
   :root {
-    --primary: #BE1E2E;
-    --primary-hover: #A01925;
-    --secondary: #F7F7F7;
-    --secondary-hover: #E5E5E5;
-    
-    --background: #F8F9FA;
-    --surface: #FFFFFF;
-    
-    --text-main: #111827;
-    --text-muted: #4B5563;
-    --text-light: #6B7280;
-    
-    --border: #E5E7EB;
-    
-    --success: #10B981;
-    --warning: #F59E0B;
-    --danger: #EF4444;
-    --info: #3B82F6;
+    /* ── Brand ──────────────────────────────────────────── */
+    --primary:              #BE1E2E;
+    --primary-hover:        #A01925;
+    --primary-dark:         #a31825;
+    --primary-light:        #fdf4f5;
+    --primary-bg:           rgba(190, 30, 46, 0.08);
+    --primary-border:       rgba(190, 30, 46, 0.14);
+
+    /* ── Surface ────────────────────────────────────────── */
+    --background:           #F8F9FA;
+    --surface:              #FFFFFF;
+    --secondary:            #F7F7F7;
+    --secondary-hover:      #E5E5E5;
+    --border:               #E5E7EB;
+
+    /* ── Text ───────────────────────────────────────────── */
+    --text-main:            #111827;
+    --text-muted:           #4B5563;
+    --text-light:           #6B7280;
+
+    /* ── Semantic ───────────────────────────────────────── */
+    --success:              #10B981;
+    --warning:              #F59E0B;
+    --danger:               #EF4444;
+    --info:                 #3B82F6;
+
+    /* ── Shadows ────────────────────────────────────────── */
+    --shadow-sm:            0 2px 8px rgba(0, 0, 0, 0.05);
+    --shadow-md:            0 4px 20px rgba(0, 0, 0, 0.08);
+    --shadow-lg:            0 8px 32px rgba(0, 0, 0, 0.12);
+    --shadow-xl:            0 20px 60px rgba(0, 0, 0, 0.2);
+
+    /* ── Radius ─────────────────────────────────────────── */
+    --radius-sm:            8px;
+    --radius-md:            12px;
+    --radius-lg:            16px;
+    --radius-xl:            20px;
+    --radius-full:          9999px;
+
+    /* ── Gradient ───────────────────────────────────────── */
+    --gradient-brand:       linear-gradient(135deg, #ffffff 0%, #fdf4f5 45%, #f7ebeb 100%);
+
+    /* ── Font ───────────────────────────────────────────── */
+    --font-sans:            'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
   }
 
   body {
-    @apply bg-[var(--background)] text-[var(--text-main)] font-sans antialiased m-0 p-0;
+    @apply bg-[var(--background)] text-[var(--text-main)] antialiased m-0 p-0;
+    font-family: var(--font-sans);
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -37,13 +64,9 @@
   }
 }
 
-@layer components {
-  /* We will implement components in standard React files, but some generic classes can live here if needed */
-}
-
 @layer utilities {
   @keyframes shimmer {
-    0% { background-position: -200% 0; }
+    0%   { background-position: -200% 0; }
     100% { background-position: 200% 0; }
   }
   .animate-shimmer {

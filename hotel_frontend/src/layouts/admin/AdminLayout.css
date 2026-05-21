@@ -2,8 +2,8 @@
 
 .admin-root {
   min-height: 100vh;
-  background: var(--gradient-bg);
-  font-family: var(--font-family);
+  background: var(--gradient-brand);
+  font-family: var(--font-sans);
 }
 
 /* ── Sidebar ──────────────────────────────────────────────────────────── */

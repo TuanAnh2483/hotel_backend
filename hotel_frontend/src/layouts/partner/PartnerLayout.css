@@ -2,7 +2,7 @@
 
 .partner-root {
   min-height: 100vh;
-  background: var(--gradient-bg);
+  background: var(--gradient-brand);
   display: flex;
   flex-direction: column;
 }

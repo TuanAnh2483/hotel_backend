@@ -1,35 +1,13 @@
-/* ── CSS Custom Properties ────────────────────────────────────────────── */
-:root {
-  --color-primary:        #BE1E2E;
-  --color-primary-dark:   #a31825;
-  --color-primary-light:  #fdf4f5;
-  --color-primary-bg:     rgba(190, 30, 46, 0.08);
-  --color-primary-border: rgba(190, 30, 46, 0.14);
-
-  --gradient-bg: linear-gradient(135deg, #ffffff 0%, #fdf4f5 45%, #f7ebeb 100%);
-
-  --font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
-
-  --shadow-sm:  0 2px 8px rgba(0, 0, 0, 0.05);
-  --shadow-md:  0 4px 20px rgba(0, 0, 0, 0.08);
-  --shadow-lg:  0 8px 32px rgba(0, 0, 0, 0.12);
-  --shadow-xl:  0 20px 60px rgba(0, 0, 0, 0.2);
-
-  --radius-sm:  8px;
-  --radius-md:  12px;
-  --radius-lg:  16px;
-  --radius-xl:  20px;
-  --radius-full: 9999px;
-}
-
 /* ── Reset ────────────────────────────────────────────────────────────── */
+/* CSS variables are defined in src/index.css                            */
+
 *, *::before, *::after {
   box-sizing: border-box;
 }
 
 body {
   margin: 0;
-  font-family: var(--font-family);
+  font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
