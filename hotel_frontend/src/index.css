@@ -57,7 +57,7 @@
     --gradient-brand:       linear-gradient(135deg, #ffffff 0%, #fdf4f5 45%, #f7ebeb 100%);
 
     /* ── Font ───────────────────────────────────────────── */
-    --font-sans:            'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-sans:            'Be Vietnam Pro', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
 
     /* ── Admin sidebar (brand-derived) ──────────────────── */
     --sidebar-bg:           #EFD6D6;
