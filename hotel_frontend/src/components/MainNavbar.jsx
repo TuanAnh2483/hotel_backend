@@ -157,10 +157,8 @@ export default function MainNavbar({ active, navigate, user, onLogout }) {
               aria-label={`Tài khoản: ${user.email}`}
               aria-expanded={showMenu}
               aria-haspopup="menu"
-              style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 6px", borderRadius: 20, cursor: "pointer", userSelect: "none", transition: "all 0.2s", background: "none", border: "none" }}
+              className="navbar-avatar-btn"
               onClick={() => setShowMenu(p => !p)}
-              onMouseEnter={e => e.currentTarget.style.background = "rgba(0,0,0,0.04)"}
-              onMouseLeave={e => e.currentTarget.style.background = "transparent"}
             >
               <div
                 style={{

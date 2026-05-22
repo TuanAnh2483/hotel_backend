@@ -122,11 +122,30 @@
   color: var(--surface);
 }
 
+/* Avatar menu trigger button */
+.navbar-avatar-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 6px;
+  border-radius: 20px;
+  cursor: pointer;
+  user-select: none;
+  background: none;
+  border: none;
+  transition: background 0.2s;
+}
+
+.navbar-avatar-btn:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
 /* Keyboard focus rings — only visible on keyboard navigation, not mouse */
 .navbar-logo-wrap:focus-visible,
 .navbar-icon-btn:focus-visible,
 .navbar-lang-btn:focus-visible,
-.navbar-auth-btn:focus-visible {
+.navbar-auth-btn:focus-visible,
+.navbar-avatar-btn:focus-visible {
   outline: 2px solid var(--primary);
   outline-offset: 3px;
 }
