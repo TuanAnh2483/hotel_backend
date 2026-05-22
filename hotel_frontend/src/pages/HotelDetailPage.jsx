@@ -282,9 +282,8 @@ export default function HotelDetailPage({ navigate, params = {}, user, onLogout,
   // ENTIRE: luôn dùng room duy nhất với quantity=1
   const entireRoom = isEntire ? rooms[0] : null;
   const cartItems = Object.values(roomCart); // [{ room, quantity }]
-  const searchedGuests     = Number(params.guests) || 2;
   const totalCartCapacity  = cartItems.reduce((s, { room: r, quantity }) => s + r.capacity * quantity, 0);
-  const capacityDiff       = totalCartCapacity - searchedGuests; // <0 thiếu, 0 đủ, >0 dư
+  const capacityDiff       = totalCartCapacity - guests; // so với guests hiện tại, không phải searchedGuests
   const totalPrice = isEntire
     ? (entireRoom?.price || 0) * nights
     : cartItems.reduce((s, { room: r, quantity }) => s + r.price * quantity * nights, 0);
@@ -591,7 +590,7 @@ export default function HotelDetailPage({ navigate, params = {}, user, onLogout,
                   <div style={{ display: "flex", gap: 10, alignItems: "center", background: "#f0fdf4", border: "1px solid #86efac", borderRadius: 10, padding: "10px 12px", marginBottom: 14 }}>
                     <span style={{ fontSize: 18, flexShrink: 0 }}>✅</span>
                     <div style={{ fontSize: 13, color: "#166534", lineHeight: 1.5 }}>
-                      Đủ chỗ cho tất cả <strong>{searchedGuests} khách</strong>.
+                      Đủ chỗ cho tất cả <strong>{guests} khách</strong>.
                     </div>
                   </div>
                 );
