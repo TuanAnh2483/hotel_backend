@@ -75,23 +75,8 @@ export function SkeletonTableRows({ rows = 5, cols = 6 }) {
 
 export function PageLoader() {
   return (
-    <>
-      <style>{`
-        @keyframes page-loader-slide {
-          0%   { transform: translateX(-100%); }
-          100% { transform: translateX(100%); }
-        }
-      `}</style>
-      <div style={{
-        position: "fixed", top: 0, left: 0, right: 0, height: 3,
-        background: "#f0d8da", zIndex: 9999, overflow: "hidden",
-      }}>
-        <div style={{
-          height: "100%", width: "40%",
-          background: "linear-gradient(90deg, transparent, #BE1E2E, transparent)",
-          animation: "page-loader-slide 1.2s ease-in-out infinite",
-        }} />
-      </div>
-    </>
+    <div className="ui-page-loader">
+      <div className="ui-page-loader-bar" />
+    </div>
   );
 }

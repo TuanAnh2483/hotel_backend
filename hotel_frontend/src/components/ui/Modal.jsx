@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { X } from "lucide-react";
 import "./Modal.css";
 
 export default function Modal({ title, children, onClose, width = 460 }) {
@@ -30,7 +31,7 @@ export default function Modal({ title, children, onClose, width = 460 }) {
             onClick={onClose}
             aria-label="Đóng"
             className="ui-modal-close"
-          >×</button>
+          ><X size={16} /></button>
         </div>
         {children}
       </div>
