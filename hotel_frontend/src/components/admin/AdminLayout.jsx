@@ -224,46 +224,20 @@ export { default as Badge } from "../ui/Badge";
 export { default as Modal } from "../ui/Modal";
 
 export function Btn({ children, onClick, variant = "primary", disabled = false, small = false, loading = false, style: extraStyle = {} }) {
-  const [hov, setHov] = useState(false);
-  const active = hov && !disabled && !loading;
-
-  const styles = {
-    primary:   { background: active ? "#a31825" : AP, color: "#fff", border: "none", boxShadow: active ? "0 4px 12px rgba(163, 24, 37, 0.3)" : "none" },
-    secondary: { background: active ? "#f0f0f5" : "#fff", color: "#333", border: "1px solid #ddd" },
-    danger:    { background: active ? "#c62828" : "#ffebee", color: active ? "#fff" : "#c62828", border: active ? "none" : "1px solid #ffcdd2" },
-    success:   { background: active ? "#2e7d32" : "#e8f5e9", color: active ? "#fff" : "#2e7d32", border: active ? "none" : "1px solid #c8e6c9" },
-    ghost:     { background: active ? "#f5f5f5" : "transparent", color: active ? AP : "#666", border: active ? "1px solid #ddd" : "1px solid transparent" },
-    action:    { background: active ? AP : "#F7F7F7", color: active ? "#fff" : "#1a1a1a", border: "none" },
-  };
-  
-  const s = styles[variant] || styles.primary;
-  
   return (
     <button
       onClick={onClick}
       disabled={disabled || loading}
-      onMouseEnter={() => setHov(true)}
-      onMouseLeave={() => setHov(false)}
-      style={{
-        ...s, padding: small ? "5px 14px" : "10px 24px",
-        borderRadius: 10, cursor: (disabled || loading) ? "not-allowed" : "pointer",
-        fontSize: small ? 12 : 13, fontWeight: 700,
-        opacity: (disabled || loading) ? 0.6 : 1, 
-        transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
-        display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8,
-        transform: active ? "translateY(-1px)" : "none",
-        fontFamily: "inherit",
-        ...extraStyle,
-      }}
+      data-variant={variant}
+      data-small={small || undefined}
+      className="admin-btn"
+      style={extraStyle}
     >
       {loading && (
-        <svg className="animate-spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ animation: "spin 1s linear infinite" }}>
+        <svg className="admin-btn-spinner" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
           <path d="M21 12a9 9 0 1 1-6.219-8.56" />
         </svg>
       )}
-      <style>{`
-        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-      `}</style>
       {children}
     </button>
   );

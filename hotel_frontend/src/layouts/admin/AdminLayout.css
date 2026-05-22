@@ -389,3 +389,107 @@
     font-size: 13px;
   }
 }
+
+/* ── Btn component ────────────────────────────────────────────────────── */
+
+.admin-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 24px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  border: none;
+}
+
+.admin-btn[data-small] {
+  padding: 5px 14px;
+  font-size: 12px;
+}
+
+.admin-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.admin-btn:not(:disabled):hover {
+  transform: translateY(-1px);
+}
+
+/* primary */
+.admin-btn[data-variant="primary"] {
+  background: var(--primary);
+  color: #fff;
+}
+
+.admin-btn[data-variant="primary"]:not(:disabled):hover {
+  background: var(--primary-hover);
+  box-shadow: 0 4px 12px rgba(163, 24, 37, 0.3);
+}
+
+/* secondary */
+.admin-btn[data-variant="secondary"] {
+  background: #fff;
+  color: #333;
+  border: 1px solid #ddd;
+}
+
+.admin-btn[data-variant="secondary"]:not(:disabled):hover {
+  background: #f0f0f5;
+}
+
+/* danger */
+.admin-btn[data-variant="danger"] {
+  background: #ffebee;
+  color: #c62828;
+  border: 1px solid #ffcdd2;
+}
+
+.admin-btn[data-variant="danger"]:not(:disabled):hover {
+  background: #c62828;
+  color: #fff;
+  border-color: #c62828;
+}
+
+/* success */
+.admin-btn[data-variant="success"] {
+  background: #e8f5e9;
+  color: #2e7d32;
+  border: 1px solid #c8e6c9;
+}
+
+.admin-btn[data-variant="success"]:not(:disabled):hover {
+  background: #2e7d32;
+  color: #fff;
+  border-color: #2e7d32;
+}
+
+/* ghost */
+.admin-btn[data-variant="ghost"] {
+  background: transparent;
+  color: #666;
+  border: 1px solid transparent;
+}
+
+.admin-btn[data-variant="ghost"]:not(:disabled):hover {
+  background: #f5f5f5;
+  color: var(--primary);
+  border-color: #ddd;
+}
+
+/* action */
+.admin-btn[data-variant="action"] {
+  background: #f7f7f7;
+  color: #1a1a1a;
+  border: none;
+}
+
+.admin-btn[data-variant="action"]:not(:disabled):hover {
+  background: var(--primary);
+  color: #fff;
+}
