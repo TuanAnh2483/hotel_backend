@@ -36,8 +36,8 @@
 }
 
 .admin-dashboard-banner-icon {
-  font-size: 64px;
   opacity: 0.4;
+  display: flex;
 }
 
 /* Stats */

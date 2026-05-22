@@ -245,19 +245,13 @@ export function Btn({ children, onClick, variant = "primary", disabled = false, 
 
 export function SearchInput({ value, onChange, placeholder = "Tìm kiếm..." }) {
   return (
-    <div style={{ position: "relative" }}>
-      <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#aaa", display: "flex" }}><Search size={ACTION_ICON} /></span>
+    <div className="ui-search-wrap">
+      <span className="ui-search-icon"><Search size={ACTION_ICON} /></span>
       <input
         value={value}
         onChange={e => onChange(e.target.value)}
         placeholder={placeholder}
-        style={{
-          padding: "9px 14px 9px 36px", borderRadius: 9, border: "1px solid #e5e5e5",
-          fontSize: 13, outline: "none", width: 260, background: "#f8f9fa",
-          transition: "border-color 0.15s",
-        }}
-        onFocus={e => e.target.style.borderColor = AP}
-        onBlur={e => e.target.style.borderColor = "#e5e5e5"}
+        className="ui-search-input"
       />
     </div>
   );
@@ -292,9 +286,7 @@ export function Table({ headers, rows, empty = "Không có dữ liệu" }) {
             : rows.map((row, i) => (
               <tr
                 key={i}
-                style={{ borderBottom: "1px solid #f5f5f5", transition: "background 0.1s" }}
-                onMouseEnter={e => e.currentTarget.style.background = "#fafafa"}
-                onMouseLeave={e => e.currentTarget.style.background = ""}
+                className="admin-table-row"
               >
                 {row.map((cell, j) => (
                   <td key={j} style={{ padding: "12px 14px", color: "#333", verticalAlign: "middle" }}>{cell}</td>
@@ -328,14 +320,7 @@ export function Input({ value, onChange, type = "text", placeholder, disabled })
       type={type}
       placeholder={placeholder}
       disabled={disabled}
-      style={{
-        width: "100%", padding: "9px 12px", borderRadius: 8,
-        border: "1px solid #e0e0e0", fontSize: 13, boxSizing: "border-box",
-        background: disabled ? "#f5f5f5" : "#fff", outline: "none",
-        transition: "border-color 0.15s",
-      }}
-      onFocus={e => e.target.style.borderColor = AP}
-      onBlur={e => e.target.style.borderColor = "#e0e0e0"}
+      className="ui-input"
     />
   );
 }
