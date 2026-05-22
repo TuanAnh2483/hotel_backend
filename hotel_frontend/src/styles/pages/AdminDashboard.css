@@ -121,6 +121,12 @@
   margin-bottom: 24px;
 }
 
+@media (max-width: 900px) {
+  .admin-dashboard-two-col {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* Quick actions */
 .admin-dashboard-quick-grid {
   display: grid;
@@ -175,6 +181,11 @@
 }
 
 .admin-dashboard-sysinfo-key { color: #888; }
+.admin-dashboard-sysinfo-key-icon {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
 .admin-dashboard-sysinfo-val { font-weight: 700; color: #333; }
 
 .admin-dashboard-home-btn {
@@ -200,6 +211,18 @@
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 14px;
+}
+
+@media (max-width: 1024px) {
+  .admin-dashboard-feature-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .admin-dashboard-feature-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* Skeleton grid */
