@@ -258,7 +258,7 @@ export default function PartnerRevenue() {
             <Filter size={14} /> {t("pt_rev_filter")}
           </div>
         </div>
-        <table className="partner-revenue-table">
+        <div className="ui-table-wrap"><table className="partner-revenue-table">
           <thead>
             <tr style={{ background: "#f8fafc" }}>
               {[t("pt_rev_col_month"), t("pt_rev_col_bookings"), t("pt_rev_col_revenue"), t("pt_rev_col_avg")].map(h => (
@@ -292,7 +292,7 @@ export default function PartnerRevenue() {
               </tr>
             )}
           </tbody>
-        </table>
+        </table></div>
       </div>
     </div>
   );

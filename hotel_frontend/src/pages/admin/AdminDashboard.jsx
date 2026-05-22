@@ -5,6 +5,8 @@ import { useLang } from "../../contexts/LanguageContext";
 import {
   Users, Handshake, Building2, ClipboardList, Clock,
   DollarSign, Settings, Home,
+  Tag, Globe, Server, Database, Shield, Calendar,
+  Bed, Star, BarChart3, Bot,
 } from "lucide-react";
 import "../../styles/pages/AdminDashboard.css";
 
@@ -84,7 +86,9 @@ export default function AdminDashboard({ navigate, user, onLogout }) {
             {t("adm_dash_subtitle")}
           </p>
         </div>
-        <div className="admin-dashboard-banner-icon">🏨</div>
+        <div className="admin-dashboard-banner-icon" aria-hidden="true">
+          <Building2 size={64} strokeWidth={1} />
+        </div>
       </div>
 
       {/* Stats */}
@@ -132,16 +136,18 @@ export default function AdminDashboard({ navigate, user, onLogout }) {
         <Card>
           <h3 className="admin-dashboard-section-title">{t("adm_dash_sysinfo")}</h3>
           {[
-            [`🔖 ${t("adm_dash_version")}`,  "1.0.0"],
-            [`🌐 ${t("adm_dash_env")}`,       "Development"],
-            [`⚙️ ${t("adm_dash_backend")}`,   "Spring Boot"],
-            [`🗄️ ${t("adm_dash_db")}`,        "PostgreSQL"],
-            [`🔐 ${t("adm_dash_jwt")}`,        "24h"],
-            [`📅 ${t("adm_dash_date")}`,       new Date().toLocaleDateString("vi-VN")],
-          ].map(([k, v]) => (
-            <div key={k} className="admin-dashboard-sysinfo-row">
-              <span className="admin-dashboard-sysinfo-key">{k}</span>
-              <span className="admin-dashboard-sysinfo-val">{v}</span>
+            { icon: <Tag size={13} />,      label: t("adm_dash_version"), value: "1.0.0" },
+            { icon: <Globe size={13} />,    label: t("adm_dash_env"),     value: "Development" },
+            { icon: <Server size={13} />,   label: t("adm_dash_backend"), value: "Spring Boot" },
+            { icon: <Database size={13} />, label: t("adm_dash_db"),      value: "PostgreSQL" },
+            { icon: <Shield size={13} />,   label: t("adm_dash_jwt"),     value: "24h" },
+            { icon: <Calendar size={13} />, label: t("adm_dash_date"),    value: new Date().toLocaleDateString("vi-VN") },
+          ].map(({ icon, label, value }) => (
+            <div key={label} className="admin-dashboard-sysinfo-row">
+              <span className="admin-dashboard-sysinfo-key admin-dashboard-sysinfo-key-icon">
+                {icon} {label}
+              </span>
+              <span className="admin-dashboard-sysinfo-val">{value}</span>
             </div>
           ))}
 
@@ -159,31 +165,31 @@ export default function AdminDashboard({ navigate, user, onLogout }) {
         <div className="admin-dashboard-feature-grid">
           {[
             {
-              icon: "🏨", color: "#4361ee", title: t("adm_dash_feat_hotel"),
+              Icon: Building2, color: "#4361ee", title: t("adm_dash_feat_hotel"),
               items: [t("adm_dash_feat_hotel_1"), t("adm_dash_feat_hotel_2"), t("adm_dash_feat_hotel_3")],
             },
             {
-              icon: "🛏️", color: "#7209b7", title: t("adm_dash_feat_rooms"),
+              Icon: Bed, color: "#7209b7", title: t("adm_dash_feat_rooms"),
               items: [t("adm_dash_feat_rooms_1"), t("adm_dash_feat_rooms_2"), t("adm_dash_feat_rooms_3")],
             },
             {
-              icon: "💰", color: "#e65100", title: t("adm_dash_feat_price"),
+              Icon: DollarSign, color: "#e65100", title: t("adm_dash_feat_price"),
               items: [t("adm_dash_feat_price_1"), t("adm_dash_feat_price_2"), t("adm_dash_feat_calendar")],
             },
             {
-              icon: "⭐", color: "#f59e0b", title: t("adm_dash_feat_reviews"),
+              Icon: Star, color: "#f59e0b", title: t("adm_dash_feat_reviews"),
               items: [t("adm_dash_feat_reviews_1"), t("adm_dash_feat_reviews_2"), t("adm_dash_feat_reviews_3")],
             },
             {
-              icon: "📊", color: "#2e7d32", title: t("adm_dash_feat_stats"),
+              Icon: BarChart3, color: "#2e7d32", title: t("adm_dash_feat_stats"),
               items: [t("adm_dash_feat_stats_1"), t("adm_dash_feat_stats_2"), t("adm_dash_feat_stats_3")],
             },
             {
-              icon: "🤖", color: "#c62828", title: t("adm_dash_feat_ai"),
+              Icon: Bot, color: "#c62828", title: t("adm_dash_feat_ai"),
               items: [t("adm_dash_feat_ai_1"), t("adm_dash_feat_ai_2"), t("adm_dash_feat_ai_3")],
             },
           ].map(f => (
-            <div key={f.title} 
+            <div key={f.title}
               className="admin-dashboard-feature-card"
               style={{
                 "--bg-base": `${f.color}06`,
@@ -196,9 +202,9 @@ export default function AdminDashboard({ navigate, user, onLogout }) {
                 <div style={{
                   width: 40, height: 40, borderRadius: 10,
                   background: `${f.color}18`, display: "flex",
-                  alignItems: "center", justifyContent: "center", fontSize: 20,
+                  alignItems: "center", justifyContent: "center",
                 }}>
-                  {f.icon}
+                  <f.Icon size={20} color={f.color} />
                 </div>
                 <div style={{ fontSize: 13, fontWeight: 800, color: "#1a1a1a" }}>{f.title}</div>
               </div>

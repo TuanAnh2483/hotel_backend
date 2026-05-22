@@ -30,6 +30,16 @@
     --danger:               #EF4444;
     --info:                 #3B82F6;
 
+    /* ── Semantic backgrounds & borders ─────────────────── */
+    --success-bg:           rgba(16, 185, 129, 0.1);
+    --success-border:       rgba(16, 185, 129, 0.25);
+    --warning-bg:           rgba(245, 158, 11, 0.1);
+    --warning-border:       rgba(245, 158, 11, 0.25);
+    --danger-bg:            rgba(239, 68, 68, 0.1);
+    --danger-border:        rgba(239, 68, 68, 0.25);
+    --info-bg:              rgba(59, 130, 246, 0.1);
+    --info-border:          rgba(59, 130, 246, 0.25);
+
     /* ── Shadows ────────────────────────────────────────── */
     --shadow-sm:            0 2px 8px rgba(0, 0, 0, 0.05);
     --shadow-md:            0 4px 20px rgba(0, 0, 0, 0.08);
@@ -47,7 +57,13 @@
     --gradient-brand:       linear-gradient(135deg, #ffffff 0%, #fdf4f5 45%, #f7ebeb 100%);
 
     /* ── Font ───────────────────────────────────────────── */
-    --font-sans:            'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-sans:            'Be Vietnam Pro', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+
+    /* ── Admin sidebar (brand-derived) ──────────────────── */
+    --sidebar-bg:           #EFD6D6;
+    --sidebar-text:         #5a1a22;
+    --sidebar-border:       var(--primary-border);
+    --sidebar-hover:        rgba(190, 30, 46, 0.09);
   }
 
   body {

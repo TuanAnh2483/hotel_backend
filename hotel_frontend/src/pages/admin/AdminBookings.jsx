@@ -91,9 +91,9 @@ export default function AdminBookings({ navigate, user, onLogout }) {
         </div>
 
         {loading ? (
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <div className="ui-table-wrap"><table style={{ width: "100%", borderCollapse: "collapse" }}>
             <tbody><SkeletonTableRows rows={6} cols={9} /></tbody>
-          </table>
+          </table></div>
         ) : (
           <>
             <Table

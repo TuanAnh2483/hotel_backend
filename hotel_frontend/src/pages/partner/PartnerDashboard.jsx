@@ -1,15 +1,15 @@
-import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useOutletContext } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { useMyHotels, usePartnerBookings, useAnalyticsSummary, usePartnerRooms } from "../../hooks/usePartnerQueries";
 import { useLang } from "../../contexts/LanguageContext";
 import {
-  AlertCircle, Building2, ClipboardList, CircleDollarSign, BarChart3,
+  Building2, ClipboardList, CircleDollarSign, BarChart3,
   Bed, Calendar, ArrowRight, User, TrendingUp, BedDouble,
 } from "lucide-react";
 import { getPropertyGroup, getGroupColor, getTypeLabel } from "../../utils/propertyGroupUtils";
 import { calcADR, calcOccupancyRate, calcRevPAR, sumBookingNights, periodDays, fmtMetric } from "../../utils/metricsCalculator";
+import { SkeletonRow } from "../../components/ui/Skeleton";
 import "../../styles/pages/PartnerDashboard.css";
 
 const HOTEL_LIKE = ["HOTEL", "RESORT", "HOSTEL"];
@@ -158,7 +158,6 @@ export default function PartnerDashboard() {
   const bookingTotal = Number(bookingData?.totalItems ?? analyticsData?.totalBookings ?? bookings.length ?? 0);
   const analytics    = analyticsData || null;
   const loading      = hotelsLoading || bookingsLoading || analyticsLoading;
-  const [error]      = useState("");
 
   const totalPhysicalRooms = rooms.reduce((sum, r) => sum + Number(r.quantity || 0), 0);
   const monthlyRevenue     = Number(analytics?.netRevenue ?? analytics?.grossRevenue ?? 0);
@@ -251,18 +250,12 @@ export default function PartnerDashboard() {
           </div>
         </div>
 
-        <div style={{ position: "absolute", right: -50, top: -50, width: 200, height: 200, borderRadius: "50%", background: "rgba(59, 130, 246, 0.1)" }} />
-        <div style={{ position: "absolute", right: 80, bottom: -80, width: 160, height: 160, borderRadius: "50%", background: "rgba(139, 92, 246, 0.1)" }} />
+        <div aria-hidden="true" style={{ position: "absolute", right: -50, top: -50, width: 200, height: 200, borderRadius: "50%", background: "rgba(59, 130, 246, 0.1)" }} />
+        <div aria-hidden="true" style={{ position: "absolute", right: 80, bottom: -80, width: 160, height: 160, borderRadius: "50%", background: "rgba(139, 92, 246, 0.1)" }} />
       </div>
 
-      {error && (
-        <div style={{ marginBottom: 20, padding: "12px 14px", borderRadius: 12, background: "#fef2f2", color: "#b91c1c", border: "1px solid #fecaca", display: "flex", alignItems: "center", gap: 8, fontSize: 13, fontWeight: 700 }}>
-          <AlertCircle size={16} /> {error}
-        </div>
-      )}
-
       {/* Main stat cards */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 20, marginBottom: 24 }}>
+      <div className="partner-dashboard-stats-grid">
         {stats.map(card => (
           <KpiCard key={card.label} {...card} navigate={rrNavigate} loading={loading} />
         ))}
@@ -278,7 +271,7 @@ export default function PartnerDashboard() {
         />
       )}
 
-      <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 24 }}>
+      <div className="partner-dashboard-main-grid">
         {/* Recent Bookings */}
         <div style={{ background: "#fff", borderRadius: 16, padding: "24px", border: "1px solid #f1f5f9", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
@@ -308,13 +301,11 @@ export default function PartnerDashboard() {
                     </td>
                   </tr>
                 )}
-                {loading && (
-                  <tr>
-                    <td colSpan={5} style={{ padding: "36px 16px", textAlign: "center", color: "#94a3b8", fontWeight: 700 }}>
-                      {t("pt_dash_loading_bk")}
-                    </td>
-                  </tr>
-                )}
+                {loading && <>
+                  <SkeletonRow cols={5} />
+                  <SkeletonRow cols={5} />
+                  <SkeletonRow cols={5} />
+                </>}
                 {!loading && bookings.slice(0, 6).map((b) => {
                   const s = statusConfig(b.status);
                   return (

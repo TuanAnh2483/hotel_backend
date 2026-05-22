@@ -14,6 +14,7 @@ import {
 import ProvinceCombobox from "../components/ui/ProvinceCombobox";
 import { useVietnamProvinces, useVietnamDistricts } from "../hooks/useVietnamAdmin";
 import { stripProvincePrefix, nfc } from "../services/vnAdminService";
+import { Bed, Calendar, ChevronRight, MapPin, Search, Users, X as XIcon, AlertCircle } from "lucide-react";
 import "../styles/pages/customer/HomePage.css";
 
 const PLACEHOLDER_BG = "repeating-conic-gradient(#ccc 0% 25%,#e8e8e8 0% 50%) 0 0/20px 20px";
@@ -39,25 +40,12 @@ const PROP_TYPE_KEY = {
   VILLA: "prop_villa", HOMESTAY: "prop_homestay", HOSTEL: "prop_hostel",
 };
 
-// ── SVG icon set ──────────────────────────────────────────────────────
-const PATHS = {
-  pin:      "M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z",
-  map:      "M20.5 3l-.16.03L15 5.1 9 3 3.36 4.9c-.21.07-.36.25-.36.48V20.5c0 .28.22.5.5.5l.16-.03L9 18.9l6 2.1 5.64-1.9c.21-.07.36-.25.36-.48V3.5c0-.28-.22-.5-.5-.5zM15 19l-6-2.11V5l6 2.11V19z",
-  calendar: "M19 3h-1V1h-2v2H8V1H6v2H5C3.9 4 3 4.9 3 6v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v10zm0-12H5V6h14v1zm-7 4H7v5h5v-5z",
-  people:   "M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5C15 14.17 10.33 13 8 13zm8 0c-.29 0-.62.02-.97.05C16.19 13.84 17 15 17 16.5V19h6v-2.5C23 14.17 18.33 13 16 13z",
-  bed:      "M7 13c1.66 0 3-1.34 3-3S8.66 7 7 7 4 8.34 4 10s1.34 3 3 3zm12-6h-8v7H3V5H1v15h2v-3h18v3h2v-9c0-2.21-1.79-4-4-4z",
-  search:   "M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z",
-  arrow:    "M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z",
-};
+const ICON_MAP = { pin: MapPin, calendar: Calendar, people: Users, bed: Bed, search: Search, arrow: ChevronRight };
 
 function Ic({ k, size = 14, color = "currentColor" }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill={color} style={{ flexShrink: 0, display: "block" }}>
-      <path d={PATHS[k]} />
-    </svg>
-  );
+  const Icon = ICON_MAP[k];
+  return Icon ? <Icon size={size} color={color} style={{ flexShrink: 0, display: "block" }} /> : null;
 }
-// ─────────────────────────────────────────────────────────────────────
 
 function ImgBox({ src, alt = "", h, style = {} }) {
   const [err, setErr] = useState(false);
@@ -259,11 +247,8 @@ function SearchBar({ initial = {}, onSearch }) {
           <input className="customer-homepage-field-input" type="number" min="1" placeholder={t("search_rooms_ph")} value={q.rooms} onChange={upd("rooms")} />
         </Field>
         {hasData && (
-          <button onClick={clearAll} title={t("search_btn")} className="customer-homepage-clear-btn">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="18" y1="6" x2="6" y2="18"></line>
-              <line x1="6" y1="6" x2="18" y2="18"></line>
-            </svg>
+          <button onClick={clearAll} title={t("search_clear")} aria-label={t("search_clear")} className="customer-homepage-clear-btn">
+            <XIcon size={14} strokeWidth={2.5} />
           </button>
         )}
         <div className="customer-homepage-searchbar-divider" />
@@ -274,7 +259,7 @@ function SearchBar({ initial = {}, onSearch }) {
       </div>
       {(provinceErr || searchErr) && (
         <div className="customer-homepage-error-tip">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="#BE1E2E"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+          <AlertCircle size={13} color="var(--primary)" style={{ flexShrink: 0 }} />
           {searchErr || t("search_err_province")}
         </div>
       )}
@@ -423,9 +408,8 @@ export default function HomePage({ navigate, user, onLogout }) {
         </div>
       </div>
 
-      <>
-          {/* ── Featured Hotels ── */}
-          <div className="customer-homepage-section">
+      {/* ── Featured Hotels ── */}
+      <div className="customer-homepage-section">
             <p className="customer-homepage-section-eyebrow">{t("section_featured_eyebrow")}</p>
             <div className="customer-homepage-section-header">
               <div>
@@ -489,8 +473,7 @@ export default function HomePage({ navigate, user, onLogout }) {
                 />
               ))}
             </div>
-          </div>
-      </>
+      </div>
 
       <Footer />
     </div>
