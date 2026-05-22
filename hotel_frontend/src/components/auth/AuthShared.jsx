@@ -110,6 +110,7 @@ const ImgSide = () => (
 // ─── SHARED: Navbar ───────────────────────────────────────────────────────────
 const AUTH_NAV_LINKS = [
   { tkey: "nav_home",           page: "home"           },
+  { tkey: "nav_hotels",         page: "hotels"         },
   { tkey: "nav_mybookings",     page: "my-bookings"    },
   { tkey: "nav_become_partner", page: "become-partner" },
 ];
