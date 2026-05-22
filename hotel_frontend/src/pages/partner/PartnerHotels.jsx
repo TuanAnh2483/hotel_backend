@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useOutletContext } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   useMyHotels, useCatalogOptions, partnerKeys,
-  useCreateHotel, useUpdateHotel, useDeleteHotel,
+  useUpdateHotel, useDeleteHotel,
   useUploadHotelImages, useDeleteHotelImage,
 } from "../../hooks/usePartnerQueries";
 import {
@@ -16,11 +16,14 @@ import {
 } from "../../utils/imageFormItems";
 import { PageHeader, Card, Btn, Modal } from "../../components/admin/AdminLayout";
 import {
-  Building2, MapPin, Star, MoreVertical, Edit2, Trash2, Bed,
-  Wifi, Waves, Car, Dumbbell, Sparkles, Utensils, Dog, Search, Plus, ArrowRight, Layout
+  Building2, MapPin, Star, Edit2, Trash2,
+  Search, Plus, LayoutDashboard
 } from "lucide-react";
+import AmenityPicker from "../../components/partner/AmenityPicker";
+import { HOTEL_AMENITY_CATEGORIES, HOTEL_AMENITIES_FLAT, HOTEL_AMENITY_KEYS } from "../../utils/amenityConfig";
 import "../../styles/pages/partner/PartnerHotels.css";
 import { useLang } from "../../contexts/LanguageContext";
+import { getGroupColor, getTypeLabel } from "../../utils/propertyGroupUtils";
 
 // --- Configuration & Helpers ---
 const HOTEL_TYPES = ["HOTEL", "APARTMENT", "RESORT", "VILLA", "HOMESTAY", "HOSTEL", "GUEST_HOUSE"];
@@ -29,19 +32,9 @@ const HOTEL_TYPE_LABELS = {
   VILLA: "Villa", HOMESTAY: "Homestay", HOSTEL: "Hostel", GUEST_HOUSE: "Nhà khách",
 };
 
-const AMENITIES = [
-  { key: "WIFI", label: "WiFi", Icon: Wifi },
-  { key: "POOL", label: "Hồ bơi", Icon: Waves },
-  { key: "PARKING", label: "Bãi đỗ xe", Icon: Car },
-  { key: "GYM", label: "Gym", Icon: Dumbbell },
-  { key: "SPA", label: "Spa", Icon: Sparkles },
-  { key: "RESTAURANT", label: "Nhà hàng", Icon: Utensils },
-  { key: "PET_ALLOWED", label: "Thú cưng", Icon: Dog },
-];
-
 const EMPTY_FORM = {
   name: "", province: "", district: "", address: "",
-  hotelType: "HOTEL", description: "", amenities: [],
+  hotelType: "HOTEL", description: "", amenities: [], customAmenities: [],
   images: [],
 };
 
@@ -69,20 +62,12 @@ function Field({ label, children, required }) {
   );
 }
 
-function HotelForm({ form, setForm, onSubmit, onCancel, saving, title, hotelTypes, amenities }) {
+function HotelForm({ form, setForm, onSubmit, onCancel, saving, title, hotelTypes, saveError }) {
   const { t } = useLang();
   const HOTEL_TYPE_LABELS = {
     HOTEL: t("pt_type_hotel"), APARTMENT: t("pt_type_apartment"), RESORT: t("pt_type_resort"),
     VILLA: t("pt_type_villa"), HOMESTAY: t("pt_type_homestay"), HOSTEL: t("pt_type_hostel"), GUEST_HOUSE: t("pt_type_guest_house"),
   };
-  function toggleAmenity(key) {
-    setForm(f => ({
-      ...f,
-      amenities: f.amenities.includes(key)
-        ? f.amenities.filter(a => a !== key)
-        : [...f.amenities, key],
-    }));
-  }
 
   return (
     <Modal title={title} onClose={onCancel} width={640}>
@@ -115,15 +100,12 @@ function HotelForm({ form, setForm, onSubmit, onCancel, saving, title, hotelType
         </Field>
 
         <Field label={t("pt_hotels_amenities")}>
-          <div className="partner-hotel-amenity-wrap">
-            {amenities.map(a => (
-              <label key={a.key} className={`partner-hotel-amenity-label${form.amenities.includes(a.key) ? " selected" : ""}`}>
-                <input type="checkbox" style={{ display: "none" }} checked={form.amenities.includes(a.key)} onChange={() => toggleAmenity(a.key)} />
-                <a.Icon size={16} />
-                {a.label}
-              </label>
-            ))}
-          </div>
+          <AmenityPicker
+            categories={HOTEL_AMENITY_CATEGORIES}
+            selected={form.amenities}
+            customAmenities={form.customAmenities || []}
+            onChange={(amenities, customAmenities) => setForm(f => ({ ...f, amenities, customAmenities }))}
+          />
         </Field>
 
         <Field label={t("pt_hotels_images")}>
@@ -163,6 +145,11 @@ function HotelForm({ form, setForm, onSubmit, onCancel, saving, title, hotelType
           <p className="partner-hotel-img-hint">{t("pt_hotels_img_hint")}</p>
         </Field>
 
+        {saveError && (
+          <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 10, color: "#b91c1c", fontSize: 13, fontWeight: 600, lineHeight: 1.5, padding: "10px 14px", marginBottom: 8 }}>
+            {saveError}
+          </div>
+        )}
         <div className="partner-hotel-form-actions">
           <Btn variant="ghost" onClick={onCancel}>{t("adm_cancel")}</Btn>
           <Btn onClick={onSubmit} disabled={saving || !form.name.trim()}>
@@ -181,29 +168,21 @@ export default function PartnerHotels() {
     HOTEL: t("pt_type_hotel"), APARTMENT: t("pt_type_apartment"), RESORT: t("pt_type_resort"),
     VILLA: t("pt_type_villa"), HOMESTAY: t("pt_type_homestay"), HOSTEL: t("pt_type_hostel"), GUEST_HOUSE: t("pt_type_guest_house"),
   };
-  const AMENITIES = [
-    { key: "WIFI",        label: t("pt_am_wifi"),        Icon: Wifi },
-    { key: "POOL",        label: t("pt_am_pool"),        Icon: Waves },
-    { key: "PARKING",     label: t("pt_am_parking"),     Icon: Car },
-    { key: "GYM",         label: t("pt_am_gym"),         Icon: Dumbbell },
-    { key: "SPA",         label: t("pt_am_spa"),         Icon: Sparkles },
-    { key: "RESTAURANT",  label: t("pt_am_restaurant"),  Icon: Utensils },
-    { key: "PET_ALLOWED", label: t("pt_am_pet"),         Icon: Dog },
-  ];
   const queryClient = useQueryClient();
   const [modal, setModal]       = useState(null);
   const [selected, setSelected] = useState(null);
   const [form, setForm]         = useState(EMPTY_FORM);
   const [saving, setSaving]     = useState(false);
+  const [saveError, setSaveError] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [page, setPage]         = useState(1);
   const pageSize = 8;
 
+  const { setSelectedHotelId } = useOutletContext() || {};
   const { data: hotelData, isLoading: loading, error: queryError } = useMyHotels();
   const { data: catalogData } = useCatalogOptions();
   const error = queryError?.message || "";
 
-  const createHotel      = useCreateHotel();
   const updateHotel      = useUpdateHotel();
   const deleteHotelMut   = useDeleteHotel();
   const uploadImages     = useUploadHotelImages();
@@ -212,7 +191,7 @@ export default function PartnerHotels() {
   const hotels  = Array.isArray(hotelData) ? hotelData : [];
   const catalog = {
     hotelTypes:    Array.isArray(catalogData?.hotelTypes)    && catalogData.hotelTypes.length    ? catalogData.hotelTypes    : HOTEL_TYPES,
-    hotelAmenities: Array.isArray(catalogData?.hotelAmenities) && catalogData.hotelAmenities.length ? catalogData.hotelAmenities : AMENITIES.map(a => a.key),
+    hotelAmenities: Array.isArray(catalogData?.hotelAmenities) && catalogData.hotelAmenities.length ? catalogData.hotelAmenities : [...HOTEL_AMENITY_KEYS],
   };
 
   function load() {
@@ -220,7 +199,6 @@ export default function PartnerHotels() {
   }
 
   const hotelTypeOptions = Array.isArray(catalog.hotelTypes) && catalog.hotelTypes.length ? catalog.hotelTypes : HOTEL_TYPES;
-  const amenityOptions = AMENITIES.filter((amenity) => catalog.hotelAmenities?.includes(amenity.key));
 
   const filteredHotels = hotels.filter(h => 
     (h.name || "").toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -228,18 +206,18 @@ export default function PartnerHotels() {
   );
 
   function openAdd() {
-    revokePendingImageUrls(form.images);
-    setSelected(null);
-    setForm({ ...EMPTY_FORM, images: [] });
-    setModal("add");
+    rrNavigate("/partner/add-property");
   }
   function openEdit(hotel) {
     revokePendingImageUrls(form.images);
+    setSaveError("");
     setSelected(hotel);
     setForm({
       name: hotel.name || "", province: hotel.province || "", district: hotel.district || "",
       address: hotel.address || "", hotelType: hotel.hotelType || "HOTEL",
-      description: hotel.description || "", amenities: hotel.amenities ? [...hotel.amenities] : [],
+      description: hotel.description || "",
+      amenities: hotel.amenities ? [...hotel.amenities] : [],
+      customAmenities: hotel.customAmenities ? [...hotel.customAmenities] : [],
       images: createExistingImageItems(getHotelImageUrls(hotel)),
     });
     setModal("edit");
@@ -254,7 +232,12 @@ export default function PartnerHotels() {
   }
 
   async function handleSave() {
+    if (!form.name.trim())     { setSaveError("Vui lòng nhập tên cơ sở"); return; }
+    if (!form.province.trim()) { setSaveError("Vui lòng nhập Tỉnh / Thành phố"); return; }
+    if (!form.district.trim()) { setSaveError("Vui lòng nhập Quận / Huyện"); return; }
+    if (!form.address.trim())  { setSaveError("Vui lòng nhập địa chỉ"); return; }
     setSaving(true);
+    setSaveError("");
     try {
       const images = form.images || [];
       const existingImageUrls = existingImageUrlsFromItems(images);
@@ -262,33 +245,22 @@ export default function PartnerHotels() {
       const payload = { ...form, imageUrls: existingImageUrls };
       delete payload.images;
 
-      if (modal === "add") {
-        const created = await createHotel.mutateAsync(payload);
-        if (pendingFiles.length > 0) {
-          await uploadImages.mutateAsync({ id: created.id, files: pendingFiles });
-        }
-      } else {
-        await updateHotel.mutateAsync({
-          id: selected.id,
-          ...payload,
-          imageUrls: getHotelImageUrls(selected),
-        });
-        // Delete removed images
-        const remaining = new Set(existingImageUrls);
-        const removed = getHotelImageUrls(selected).filter(url => !remaining.has(url));
-        for (const imageUrl of removed) {
-          await deleteImageMut.mutateAsync({ id: selected.id, imageUrl });
-        }
-        if (pendingFiles.length > 0) {
-          await uploadImages.mutateAsync({ id: selected.id, files: pendingFiles });
-        }
+      await updateHotel.mutateAsync({ id: selected.id, ...payload });
+      // Xóa trên Cloudinary các ảnh bị remove khỏi form
+      const remaining = new Set(existingImageUrls);
+      const removed = getHotelImageUrls(selected).filter(url => !remaining.has(url));
+      for (const imageUrl of removed) {
+        await deleteImageMut.mutateAsync({ id: selected.id, imageUrl });
+      }
+      if (pendingFiles.length > 0) {
+        await uploadImages.mutateAsync({ id: selected.id, files: pendingFiles });
       }
       revokePendingImageUrls(images);
       setModal(null);
       setSelected(null);
       setForm({ ...EMPTY_FORM, images: [] });
       load();
-    } catch (e) { alert(e.message); }
+    } catch (e) { setSaveError(e.message); }
     finally { setSaving(false); }
   }
 
@@ -364,8 +336,8 @@ export default function PartnerHotels() {
                     <Building2 size={46} />
                   </div>
                 )}
-                <span className="partner-hotel-card-type-badge">
-                  {(HOTEL_TYPE_LABELS[h.hotelType] || h.hotelType || t("pt_type_hotel")).toUpperCase()}
+                <span className="partner-hotel-card-type-badge" style={{ background: getGroupColor(h.hotelType) }}>
+                  {(getTypeLabel(h.hotelType, "vi") || "").toUpperCase()}
                 </span>
                 <button onClick={() => openEdit(h)} className="partner-hotel-card-edit-btn">
                   <Edit2 size={18} color="#475569" />
@@ -389,7 +361,7 @@ export default function PartnerHotels() {
 
                 <div className="partner-hotel-card-amenities">
                   {h.amenities?.slice(0, 4).map(a => {
-                    const am = AMENITIES.find(x => x.key === a);
+                    const am = HOTEL_AMENITIES_FLAT.find(x => x.key === a);
                     return (
                       <span key={a} className="partner-hotel-card-chip">
                         {am && <am.Icon size={14} color="#64748b" />}
@@ -403,21 +375,47 @@ export default function PartnerHotels() {
                 {/* Card Actions */}
                 <div className="partner-hotel-card-actions">
                   <button
-                    onClick={() => rrNavigate(`/partner/rooms?hotelId=${h.id}`)}
+                    onClick={() => { setSelectedHotelId?.(h.id); rrNavigate("/partner"); }}
                     className="partner-hotel-card-btn partner-hotel-card-btn-manage"
+                    style={{ flex: 1 }}
                   >
-                    <Layout size={18} /> {t("pt_hotels_manage_rooms")}
+                    <LayoutDashboard size={16} /> {t("pt_hotels_view_dashboard") || "Xem Dashboard"}
+                  </button>
+                  <button
+                    onClick={() => openEdit(h)}
+                    className="partner-hotel-card-btn"
+                    style={{ background: "#f1f5f9", color: "#475569", padding: "8px 12px" }}
+                  >
+                    <Edit2 size={16} />
                   </button>
                   <button
                     onClick={() => openDelete(h)}
                     className="partner-hotel-card-btn partner-hotel-card-btn-delete"
+                    style={{ padding: "8px 12px" }}
                   >
-                    <Trash2 size={18} /> {t("adm_delete")}
+                    <Trash2 size={16} />
                   </button>
                 </div>
               </div>
             </div>
           ))}
+
+          {/* Dashed card: Thêm cơ sở mới */}
+          <button
+            onClick={openAdd}
+            style={{
+              display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+              gap: 12, minHeight: 220, borderRadius: 20, border: "2px dashed #e2e8f0",
+              background: "transparent", cursor: "pointer", color: "#94a3b8", transition: "all 0.2s",
+            }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = "#BE1E2E"; e.currentTarget.style.color = "#BE1E2E"; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = "#e2e8f0"; e.currentTarget.style.color = "#94a3b8"; }}
+          >
+            <div style={{ width: 48, height: 48, borderRadius: "50%", background: "#f1f5f9", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Plus size={24} />
+            </div>
+            <span style={{ fontSize: 14, fontWeight: 700 }}>{t("pt_hotels_add_btn") || "+ Thêm cơ sở mới"}</span>
+          </button>
         </div>
       )}
 
@@ -437,12 +435,12 @@ export default function PartnerHotels() {
       )}
 
       {/* Modals */}
-      {(modal === "add" || modal === "edit") && (
+      {modal === "edit" && (
         <HotelForm
-          title={modal === "add" ? t("pt_hotels_form_add") : t("pt_hotels_form_edit")}
+          title={t("pt_hotels_form_edit")}
           form={form} setForm={setForm} onSubmit={handleSave} onCancel={closeFormModal} saving={saving}
           hotelTypes={hotelTypeOptions}
-          amenities={amenityOptions.length ? amenityOptions : AMENITIES}
+          saveError={saveError}
         />
       )}
 

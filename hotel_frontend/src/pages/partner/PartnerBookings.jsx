@@ -1,11 +1,26 @@
-import { createElement, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { createElement, useState, useEffect } from "react";
+import { useNavigate, useOutletContext } from "react-router-dom";
 import { useMyHotels, usePartnerBookings, usePartnerBookingDetail, useCompleteBooking } from "../../hooks/usePartnerQueries";
 import { PageHeader, Card, Badge, Btn, Table, Modal } from "../../components/admin/AdminLayout";
 import { Filter, Calendar, Download, User, Building2, Eye, CheckCircle2 } from "lucide-react";
 import { useLang } from "../../contexts/LanguageContext";
 
 const fmtPrice = (n) => new Intl.NumberFormat("vi-VN").format(n) + " ₫";
+
+function calcNights(checkIn, checkOut) {
+  if (!checkIn || !checkOut) return "—";
+  const diff = new Date(checkOut) - new Date(checkIn);
+  const nights = Math.round(diff / (1000 * 60 * 60 * 24));
+  return nights > 0 ? nights : "—";
+}
+
+const STATUS_TABS = [
+  { label: "pt_all_statuses", value: "" },
+  { label: "pt_bk_s_confirmed", value: "CONFIRMED" },
+  { label: "pt_bk_s_pending", value: "PENDING_PAYMENT" },
+  { label: "pt_bk_s_completed", value: "COMPLETED" },
+  { label: "pt_bk_s_cancelled", value: "CANCELLED" },
+];
 
 function canCheckoutBooking(booking) {
   if (booking?.status !== "CONFIRMED" || !booking.checkOut) return false;
@@ -18,7 +33,12 @@ function canCheckoutBooking(booking) {
 export default function PartnerBookings() {
   const navigate = useNavigate();
   const { t } = useLang();
-  const [filters, setFilters] = useState({ hotelId: "", status: "", checkInFrom: "", checkInTo: "", page: 1 });
+  const { selectedHotelId: ctxHotelId, setSelectedHotelId: setCtxHotelId } = useOutletContext() || {};
+  const [filters, setFilters] = useState({ hotelId: ctxHotelId ? String(ctxHotelId) : "", status: "", checkInFrom: "", checkInTo: "", page: 1 });
+
+  useEffect(() => {
+    setFilters(f => ({ ...f, hotelId: ctxHotelId ? String(ctxHotelId) : "", page: 1 }));
+  }, [ctxHotelId]);
   const [detailId, setDetailId] = useState(null);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
@@ -29,6 +49,31 @@ export default function PartnerBookings() {
   const completeBooking = useCompleteBooking();
 
   const items = pageData?.items || [];
+
+  const handleExport = () => {
+    if (!items.length) return;
+    const headers = [t("pt_bk_col_code"), t("pt_bk_col_hotel"), t("pt_bk_col_customer"), t("pt_bk_col_checkin"), t("pt_bk_col_checkout"), t("pt_bk_col_nights"), t("pt_bk_col_total"), t("pt_bk_col_status")];
+    const rows = items.map(b => [
+      `#${b.bookingId}`,
+      b.hotelName || "",
+      b.customerName || "",
+      b.checkIn || "",
+      b.checkOut || "",
+      calcNights(b.checkIn, b.checkOut),
+      b.totalPrice,
+      b.status,
+    ]);
+    const csv = [headers, ...rows]
+      .map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(","))
+      .join("\n");
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `bookings_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   const handleCheckout = (booking) => {
     if (!booking || !window.confirm(t("pt_bk_confirm_checkout"))) return;
@@ -61,7 +106,8 @@ export default function PartnerBookings() {
       </div>,
       <div style={{ fontSize: 13, color: "#1e293b" }}>{b.checkIn}</div>,
       <div style={{ fontSize: 13, color: "#1e293b" }}>{b.checkOut}</div>,
-      <span style={{ fontWeight: 800, color: "#BE1E2E" }}>{fmtPrice(b.totalPrice)}</span>,
+      <div style={{ fontSize: 13, fontWeight: 600, color: "#475569", textAlign: "center" }}>{calcNights(b.checkIn, b.checkOut)} đêm</div>,
+      <span style={{ fontWeight: 800, color: b.status === "CANCELLED" ? "#94a3b8" : "#BE1E2E" }}>{fmtPrice(b.totalPrice)}</span>,
       <Badge status={b.status} />,
       <button
         onClick={() => setDetailId(b.bookingId)}
@@ -100,21 +146,43 @@ export default function PartnerBookings() {
         title={t("pt_bk_title")}
         subtitle={t("pt_bk_subtitle")}
         action={
-          <button style={{
-            padding: "10px 18px", borderRadius: 10, background: "#fff", color: "#475569",
-            border: "1px solid #e2e8f0", fontWeight: 700, fontSize: 13, cursor: "pointer",
-            display: "flex", alignItems: "center", gap: 8
-          }}>
+          <button
+            onClick={handleExport}
+            disabled={!items.length}
+            style={{
+              padding: "10px 18px", borderRadius: 10, background: "#fff", color: "#475569",
+              border: "1px solid #e2e8f0", fontWeight: 700, fontSize: 13, cursor: items.length ? "pointer" : "not-allowed",
+              display: "flex", alignItems: "center", gap: 8, opacity: items.length ? 1 : 0.5,
+            }}
+          >
             <Download size={16} /> {t("pt_bk_export")}
           </button>
         }
       />
 
+      {/* Status Tabs */}
+      <div style={{ display: "flex", gap: 8, marginBottom: 20, flexWrap: "wrap" }}>
+        {STATUS_TABS.map(tab => (
+          <button
+            key={tab.value}
+            onClick={() => setFilters({ ...filters, status: tab.value, page: 1 })}
+            style={{
+              padding: "8px 18px", borderRadius: 20, border: "none", cursor: "pointer",
+              fontWeight: 700, fontSize: 13, transition: "all 0.15s",
+              background: filters.status === tab.value ? "#BE1E2E" : "#f1f5f9",
+              color: filters.status === tab.value ? "#fff" : "#475569",
+            }}
+          >
+            {t(tab.label)}
+          </button>
+        ))}
+      </div>
+
       {/* Filter Bar */}
       <div style={{
         background: "#fff", borderRadius: 20, padding: "24px", marginBottom: 32,
         border: "1px solid #f1f5f9", boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
-        display: "grid", gridTemplateColumns: "repeat(4, 1fr) auto", gap: 16, alignItems: "end"
+        display: "grid", gridTemplateColumns: "2fr 1fr 1fr auto", gap: 16, alignItems: "end"
       }}>
         <div>
           <div style={{ fontSize: 12, fontWeight: 700, color: "#64748b", marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
@@ -123,27 +191,14 @@ export default function PartnerBookings() {
           <select
             style={selectSt}
             value={filters.hotelId}
-            onChange={e => setFilters({ ...filters, hotelId: e.target.value, page: 1 })}
+            onChange={e => {
+              const val = e.target.value;
+              setFilters({ ...filters, hotelId: val, page: 1 });
+              setCtxHotelId?.(val ? Number(val) : null);
+            }}
           >
             <option value="">{t("pt_all_hotels")}</option>
             {hotels.map(h => <option key={h.id} value={h.id}>{h.name}</option>)}
-          </select>
-        </div>
-
-        <div>
-          <div style={{ fontSize: 12, fontWeight: 700, color: "#64748b", marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
-            <Filter size={14} /> {t("pt_bk_status_label")}
-          </div>
-          <select
-            style={selectSt}
-            value={filters.status}
-            onChange={e => setFilters({ ...filters, status: e.target.value, page: 1 })}
-          >
-            <option value="">{t("pt_all_statuses")}</option>
-            <option value="CONFIRMED">{t("pt_bk_s_confirmed")}</option>
-            <option value="PENDING_PAYMENT">{t("pt_bk_s_pending")}</option>
-            <option value="COMPLETED">{t("pt_bk_s_completed")}</option>
-            <option value="CANCELLED">{t("pt_bk_s_cancelled")}</option>
           </select>
         </div>
 
@@ -190,7 +245,7 @@ export default function PartnerBookings() {
           ? <div style={{ textAlign: "center", padding: 60, color: "#94a3b8" }}>{t("pt_bk_loading")}</div>
           : <>
               <Table
-                headers={[t("pt_bk_col_code"), t("pt_bk_col_hotel"), t("pt_bk_col_customer"), t("pt_bk_col_checkin"), t("pt_bk_col_checkout"), t("pt_bk_col_total"), t("pt_bk_col_status"), "", t("pt_bk_col_actions")]}
+                headers={[t("pt_bk_col_code"), t("pt_bk_col_hotel"), t("pt_bk_col_customer"), t("pt_bk_col_checkin"), t("pt_bk_col_checkout"), t("pt_bk_col_nights"), t("pt_bk_col_total"), t("pt_bk_col_status"), "", t("pt_bk_col_actions")]}
                 rows={rows}
                 empty={t("pt_all")}
               />

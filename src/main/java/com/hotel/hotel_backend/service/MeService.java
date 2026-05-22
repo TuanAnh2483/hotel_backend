@@ -241,9 +241,9 @@ public class MeService {
         profile.setPasswordChangedAt(currentUser.getCreatedAt());
 
         partnerApplicationRepository.findTopByUserIdOrderByIdDesc(currentUser.getId()).ifPresent(application -> {
-            profile.setBrandName(normalizeOptionalText(application.getBussinessName()));
+            profile.setBrandName(normalizeOptionalText(application.getBusinessName()));
             profile.setPhone(normalizeOptionalText(application.getPhoneNumber()));
-            profile.setTaxCode(normalizeOptionalText(application.getTax_code()));
+            profile.setTaxCode(normalizeOptionalText(application.getTaxCode()));
             profile.setContactEmail(normalizeEmailOrFallback(application.getEmail(), currentUser.getEmail()));
         });
 
@@ -336,8 +336,8 @@ public class MeService {
         return new NotificationEvent(
                 "SYSTEM",
                 title,
-                application.getBussinessName() != null
-                        ? "Doanh nghiệp: " + application.getBussinessName()
+                application.getBusinessName() != null
+                        ? "Doanh nghiệp: " + application.getBusinessName()
                         : "Hồ sơ đối tác của bạn đã có cập nhật mới.",
                 resolveApplicationEventTime(application)
         );
@@ -367,8 +367,8 @@ public class MeService {
             if (StringUtils.hasText(profile.getBrandName())) {
                 return profile.getBrandName().trim();
             }
-            if (latestApplication != null && StringUtils.hasText(latestApplication.getBussinessName())) {
-                return latestApplication.getBussinessName().trim();
+            if (latestApplication != null && StringUtils.hasText(latestApplication.getBusinessName())) {
+                return latestApplication.getBusinessName().trim();
             }
         }
 

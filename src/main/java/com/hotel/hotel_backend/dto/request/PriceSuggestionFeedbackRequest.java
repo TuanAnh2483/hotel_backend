@@ -5,7 +5,6 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 
 public record PriceSuggestionFeedbackRequest(
-        @NotNull Long roomId,
         @NotBlank String date,
         @NotNull Long suggested,
         Long appliedPrice,   // actual price applied; null when SKIPPED

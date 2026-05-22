@@ -126,7 +126,9 @@ class AdminPartnerIntegrationTest {
                                 {
                                   "businessName": "Restart Villas",
                                   "email": "partner-reject@example.com",
-                                  "phone": "01234567"
+                                  "phone": "01234567",
+                                  "taxCode": "1234567890",
+                                  "propertyType": "HOTEL"
                                 }
                                 """))
                 .andExpect(status().isOk())
@@ -200,7 +202,9 @@ class AdminPartnerIntegrationTest {
                                 {
                                   "businessName": "%s",
                                   "email": "%s",
-                                  "phone": "01234567"
+                                  "phone": "01234567",
+                                  "taxCode": "1234567890",
+                                  "propertyType": "HOTEL"
                                 }
                                 """.formatted(businessName, extractEmailFromToken(token))))
                 .andExpect(status().isOk())

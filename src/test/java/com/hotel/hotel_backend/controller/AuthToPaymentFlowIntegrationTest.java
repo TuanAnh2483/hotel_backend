@@ -104,7 +104,9 @@ class AuthToPaymentFlowIntegrationTest {
                                 {
                                   "businessName": "Flow Suites",
                                   "email": "partner-flow@test.com",
-                                  "phone": "01234567"
+                                  "phone": "01234567",
+                                  "taxCode": "1234567890",
+                                  "propertyType": "HOTEL"
                                 }
                                 """))
                 .andExpect(status().isOk())

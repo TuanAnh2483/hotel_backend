@@ -1,5 +1,6 @@
 package com.hotel.hotel_backend.service;
 
+import com.hotel.hotel_backend.entity.HotelType;
 import com.hotel.hotel_backend.entity.PartnerApplication;
 import com.hotel.hotel_backend.entity.PartnerApplicationStatus;
 import com.hotel.hotel_backend.entity.User;
@@ -34,7 +35,9 @@ public class PartnerOnboardingService {
             User currentUser,
             String businessName,
             String email,
-            String phone
+            String phone,
+            String taxCode,
+            HotelType propertyType
     ) {
         assertVerifiedCustomer(currentUser);
 
@@ -45,12 +48,20 @@ public class PartnerOnboardingService {
             );
         }
 
+        boolean taxCodeInUse = partnerApplicationRepository.findByTaxCode(taxCode).stream()
+                .anyMatch(a -> BLOCKING_STATUSES.contains(a.getStatus()));
+        if (taxCodeInUse) {
+            throw new ApiException(ErrorCode.CONFLICT, "Tax code already exist");
+        }
+
         PartnerApplication partnerApplication = new PartnerApplication();
         partnerApplication.setUser(currentUser);
         partnerApplication.setEmail(email);
-        partnerApplication.setBussinessName(businessName);
+        partnerApplication.setBusinessName(businessName);
         partnerApplication.setPhoneNumber(phone);
         partnerApplication.setStatus(PartnerApplicationStatus.DRAFT);
+        partnerApplication.setTaxCode(taxCode);
+        partnerApplication.setPropertyType(propertyType);
 
         return partnerApplicationRepository.save(partnerApplication);
     }

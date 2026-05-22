@@ -9,13 +9,13 @@ import { SkeletonRow } from "../../components/ui/Skeleton";
 import { useLang } from "../../contexts/LanguageContext";
 import "../../styles/pages/admin/AdminCommon.css";
 
-const STATUSES = ["", "SUBMITTED", "APPROVED", "REJECTED"];
-const REVIEWABLE_STATUSES = new Set(["SUBMITTED", "PENDING"]);
+const STATUSES = ["", "SUBMITTED", "UNDER_REVIEW", "APPROVED", "REJECTED"];
+const REVIEWABLE_STATUSES = new Set(["SUBMITTED", "UNDER_REVIEW"]);
 const isReviewable = status => REVIEWABLE_STATUSES.has(status);
 
 export default function AdminPartners({ navigate, user, onLogout }) {
   const { t } = useLang();
-  const STATUS_LABEL = { "": t("adm_partners_tab_all"), SUBMITTED: t("adm_partners_tab_pending"), APPROVED: t("adm_partners_tab_approved"), REJECTED: t("adm_partners_tab_rejected") };
+  const STATUS_LABEL = { "": t("adm_partners_tab_all"), SUBMITTED: t("adm_partners_tab_pending"), UNDER_REVIEW: t("adm_partners_tab_under_review"), APPROVED: t("adm_partners_tab_approved"), REJECTED: t("adm_partners_tab_rejected") };
   const [filter, setFilter]     = useState("");
   const [rejectModal, setRejectModal] = useState(null);
   const [rejectReason, setRejectReason] = useState("");
@@ -111,9 +111,9 @@ export default function AdminPartners({ navigate, user, onLogout }) {
               headers={[t("adm_id"), t("adm_partners_col_biz"), t("adm_email"), t("adm_partners_col_phone"), t("adm_status"), t("adm_actions")]}
               rows={apps.slice((page - 1) * pageSize, page * pageSize).map(a => [
               <span className="admin-cell-id">#{a.id}</span>,
-              <div className="admin-cell-name">{a.bussinessName || a.businessName || "—"}</div>,
+              <div className="admin-cell-name">{a.businessName || "—"}</div>,
               <span className="admin-cell-text">{a.email || "—"}</span>,
-              <span className="admin-cell-text">{a.phoneNumber || a.phone || "—"}</span>,
+              <span className="admin-cell-text">{a.phone || "—"}</span>,
               <Badge status={a.status} />,
               <div className="admin-cell-actions">
                 <Btn small variant="action" onClick={() => setDetailModal(a)}>{t("adm_view")}</Btn>
@@ -151,9 +151,10 @@ export default function AdminPartners({ navigate, user, onLogout }) {
         <Modal title={t("adm_partners_modal_title")} onClose={() => setDetailModal(null)}>
           {[
             ["ID", `#${detailModal.id}`],
-            [t("adm_partners_col_biz"), detailModal.bussinessName || detailModal.businessName || "—"],
+            [t("adm_partners_col_biz"), detailModal.businessName || "—"],
             [t("adm_email"), detailModal.email || "—"],
-            [t("adm_partners_col_phone"), detailModal.phoneNumber || detailModal.phone || "—"],
+            [t("adm_partners_col_phone"), detailModal.phone || "—"],
+            [t("adm_partners_col_tax_code"), detailModal.taxCode || "—"],
             [t("adm_status"), <Badge status={detailModal.status} />],
           ].map(([k, v]) => (
             <div key={k} className="admin-modal-row">

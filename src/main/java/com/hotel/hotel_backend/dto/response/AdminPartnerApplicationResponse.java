@@ -6,6 +6,8 @@ public record AdminPartnerApplicationResponse(
         String email,
         String phone,
         String businessName,
-        String status
+        String status,
+        String taxCode,
+        String propertyType
 ) {
 }

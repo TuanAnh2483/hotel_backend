@@ -28,3 +28,13 @@ app:
     storage-root: ./target/test-uploads
     public-base-path: /uploads
     max-file-size-bytes: 10485760
+  payment:
+    provider: sepay-vietqr
+    transfer-prefix: HHB
+    qr-image-url: /payments/QR_Code.png
+    bank:
+      account-no: "0966927203"
+      account-name: "Test Account"
+      bank-name: "MB Bank"
+    sepay:
+      webhook-api-key: hhb_sepay_webhook_2026

@@ -2,10 +2,14 @@ package com.hotel.hotel_backend.service;
 
 import com.hotel.hotel_backend.dto.request.CreateRoomRequest;
 import com.hotel.hotel_backend.dto.response.RoomResponse;
+import com.hotel.hotel_backend.entity.BookingMode;
 import com.hotel.hotel_backend.entity.Hotel;
 import com.hotel.hotel_backend.entity.Room;
+import com.hotel.hotel_backend.entity.RoomStatus;
 import com.hotel.hotel_backend.exeption.ApiException;
 import com.hotel.hotel_backend.exeption.ErrorCode;
+import com.hotel.hotel_backend.repository.BookingItemRepository;
+import com.hotel.hotel_backend.repository.DailyInventoryRepository;
 import com.hotel.hotel_backend.repository.HotelRepository;
 import com.hotel.hotel_backend.repository.RoomRepository;
 import com.hotel.hotel_backend.security.JwtPrincipal;
@@ -26,12 +30,25 @@ public class RoomService {
 
     private final RoomRepository roomRepository;
     private final HotelRepository hotelRepository;
+    private final BookingItemRepository bookingItemRepository;
+    private final DailyInventoryRepository dailyInventoryRepository;
     private final InventoryService inventoryService;
     private final SecurityService securityService;
 
     public RoomResponse create(Long hotelId, CreateRoomRequest request) {
         // Tạo phòng mới cho khách sạn thuộc sở hữu hiện tại.
         Hotel hotel = findOwnedHotel(hotelId);
+
+        // ENTIRE hotels chỉ được phép có đúng 1 room type (toàn bộ căn).
+        if (hotel.getBookingMode() == BookingMode.ENTIRE) {
+            long activeRoomCount = roomRepository.findByHotelId(hotel.getId()).stream()
+                    .filter(r -> r.getStatus() == null || r.getStatus() == RoomStatus.ACTIVE)
+                    .count();
+            if (activeRoomCount >= 1) {
+                throw new ApiException(ErrorCode.VALIDATION_ERROR,
+                        "Cơ sở thuê nguyên căn chỉ được phép có 1 đơn vị phòng");
+            }
+        }
 
         Room room = new Room();
         room.setName(request.name());
@@ -42,6 +59,7 @@ public class RoomService {
         room.setRoomCategory(request.roomCategory());
         room.setBedType(request.bedType());
         room.setAmenities(request.amenities() == null ? new HashSet<>() : new HashSet<>(request.amenities()));
+        room.setCustomAmenities(normalizeCustomAmenities(request.customAmenities()));
         room.setImageUrls(normalizeImageUrls(request.imageUrls()));
         room.setCoverImageUrl(resolveCoverImageUrl(null, room.getImageUrls()));
         room.setDescription(request.description());
@@ -59,6 +77,7 @@ public class RoomService {
 
         return roomRepository.findByHotelId(hotel.getId())
                 .stream()
+                .filter(r -> r.getStatus() == null || r.getStatus() == RoomStatus.ACTIVE)
                 .map(this::mapToResponse)
                 .toList();
     }
@@ -74,6 +93,7 @@ public class RoomService {
         room.setRoomCategory(request.roomCategory());
         room.setBedType(request.bedType());
         room.setAmenities(request.amenities() == null ? new HashSet<>() : new HashSet<>(request.amenities()));
+        room.setCustomAmenities(normalizeCustomAmenities(request.customAmenities()));
         room.setImageUrls(normalizedImageUrls);
         room.setCoverImageUrl(resolveCoverImageUrl(room.getCoverImageUrl(), room.getImageUrls()));
         room.setDescription(request.description());
@@ -135,9 +155,15 @@ public class RoomService {
     }
 
     public void delete(Long roomId) {
-        // Xóa phòng thuộc sở hữu hiện tại.
         Room room = findOwnedRoom(roomId);
-        roomRepository.delete(room);
+        if (bookingItemRepository.existsByRoomId(roomId)) {
+            // Có booking tham chiếu → soft-delete để giữ lịch sử
+            room.setStatus(RoomStatus.INACTIVE);
+        } else {
+            // Chưa có booking nào → hard-delete thật sự
+            dailyInventoryRepository.deleteByIdRoomId(roomId);
+            roomRepository.delete(room);
+        }
     }
 
     // ---------------- Helper methods ----------------
@@ -180,10 +206,25 @@ public class RoomService {
                 room.getRoomCategory(),
                 room.getBedType(),
                 room.getAmenities(),
+                room.getCustomAmenities() == null ? new HashSet<>() : new HashSet<>(room.getCustomAmenities()),
                 resolveCoverImageUrl(room.getCoverImageUrl(), room.getImageUrls()),
                 copyImageUrls(room.getImageUrls()),
                 room.getDescription()
         );
+    }
+
+    private java.util.Set<String> normalizeCustomAmenities(java.util.Set<String> raw) {
+        if (raw == null) return new HashSet<>();
+        java.util.Set<String> result = new HashSet<>();
+        for (String s : raw) {
+            if (s != null) {
+                String trimmed = s.trim();
+                if (!trimmed.isEmpty() && trimmed.length() <= 100) {
+                    result.add(trimmed);
+                }
+            }
+        }
+        return result;
     }
 
     private List<String> normalizeImageUrls(List<String> imageUrls) {

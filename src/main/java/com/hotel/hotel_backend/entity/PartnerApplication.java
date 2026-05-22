@@ -21,14 +21,14 @@ public class PartnerApplication {
     @Column(name = "email", nullable = false)
     private String email;
 
-    @Column(name ="bussiness_name")
-    private String bussinessName;
+    @Column(name ="business_name")
+    private String businessName;
 
     @Column(name="phone")
     private String phoneNumber;
 
     @Column(name="tax_code")
-    private String tax_code;
+    private String taxCode;    // ma so thue
 
     @Column(name = "verification_status")
     private String verification_status;
@@ -36,6 +36,10 @@ public class PartnerApplication {
     @Enumerated(EnumType.STRING)
     @Column(name="status")
     private PartnerApplicationStatus status;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "property_type")
+    private HotelType propertyType;
 
     @Column(name = "reject_reason")
     private String rejectReason;

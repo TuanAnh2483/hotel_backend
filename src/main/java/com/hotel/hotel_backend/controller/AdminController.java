@@ -6,6 +6,7 @@ import com.hotel.hotel_backend.dto.request.AdminUpdateHotelRequest;
 import com.hotel.hotel_backend.dto.response.AdminPartnerApplicationResponse;
 import com.hotel.hotel_backend.dto.response.AdminBookingResponse;
 import com.hotel.hotel_backend.dto.response.AdminHotelResponse;
+import com.hotel.hotel_backend.dto.response.AdminRoomResponse;
 import com.hotel.hotel_backend.dto.response.AdminReviewResponse;
 import com.hotel.hotel_backend.dto.response.AdminStatsResponse;
 import com.hotel.hotel_backend.dto.response.AdminSystemDataResponse;
@@ -18,6 +19,7 @@ import com.hotel.hotel_backend.entity.PartnerApplicationStatus;
 import com.hotel.hotel_backend.entity.RefundRequestStatus;
 import com.hotel.hotel_backend.service.AdminPartnerService;
 import com.hotel.hotel_backend.service.AdminOperationsService;
+
 import com.hotel.hotel_backend.service.RefundRequestService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -73,6 +75,12 @@ public class AdminController {
             @Valid @RequestBody AdminUpdateHotelRequest request
     ) {
         return ok(adminOperationsService.updateHotel(hotelId, request));
+    }
+
+    @GetMapping("/hotels/{hotelId}/rooms")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ApiResponse<List<AdminRoomResponse>> getHotelRooms(@PathVariable Long hotelId) {
+        return ok(adminOperationsService.getHotelRooms(hotelId));
     }
 
     @DeleteMapping("/hotels/{hotelId}")
@@ -157,7 +165,7 @@ public class AdminController {
         return new PartnerApplicationResponse(
                 application.getId(),
                 application.getStatus().name(),
-                application.getBussinessName()
+                application.getBusinessName()
         );
     }
 
@@ -167,10 +175,13 @@ public class AdminController {
                 application.getUser().getId(),
                 application.getEmail(),
                 application.getPhoneNumber(),
-                application.getBussinessName(),
-                application.getStatus().name()
+                application.getBusinessName(),
+                application.getStatus().name(),
+                application.getTaxCode(),
+                application.getPropertyType() != null ? application.getPropertyType().name() : null
         );
     }
+
 }
 
 

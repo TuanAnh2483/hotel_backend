@@ -16,6 +16,7 @@ import com.hotel.hotel_backend.repository.BookingRepository;
 import com.hotel.hotel_backend.repository.DailyInventoryRepository;
 import com.hotel.hotel_backend.repository.DailyRateRepository;
 import com.hotel.hotel_backend.repository.HotelRepository;
+import com.hotel.hotel_backend.repository.HotelReviewRepository;
 import com.hotel.hotel_backend.repository.PaymentTransactionRepository;
 import com.hotel.hotel_backend.repository.RoomRepository;
 import com.hotel.hotel_backend.repository.UserRepository;
@@ -93,10 +94,14 @@ class PartnerHotelRoomIntegrationTest {
     private PaymentTransactionRepository paymentTransactionRepository;
 
     @Autowired
+    private HotelReviewRepository hotelReviewRepository;
+
+    @Autowired
     private UploadStorageProperties uploadStorageProperties;
 
     @BeforeEach
     void setUp() throws IOException {
+        hotelReviewRepository.deleteAll();
         bookingItemRepository.deleteAll();
         bookingRepository.deleteAll();
         paymentTransactionRepository.deleteAll();

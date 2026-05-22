@@ -291,7 +291,9 @@ class AuthFlowIntegrationTest {
                                 {
                                   "businessName": "Sunrise Suites",
                                   "email": "partner-candidate@example.com",
-                                  "phone": "01234567"
+                                  "phone": "01234567",
+                                  "taxCode": "1234567890",
+                                  "propertyType": "HOTEL"
                                 }
                                 """))
                 .andExpect(status().isOk())
@@ -306,7 +308,9 @@ class AuthFlowIntegrationTest {
                                 {
                                   "businessName": "Sunrise Suites",
                                   "email": "partner-candidate@example.com",
-                                  "phone": "01234567"
+                                  "phone": "01234567",
+                                  "taxCode": "1234567890",
+                                  "propertyType": "HOTEL"
                                 }
                                 """))
                 .andExpect(status().isConflict())
@@ -326,7 +330,9 @@ class AuthFlowIntegrationTest {
                                 {
                                   "businessName": "Blocked Suites",
                                   "email": "partner-unverified@example.com",
-                                  "phone": "01234567"
+                                  "phone": "01234567",
+                                  "taxCode": "1234567890",
+                                  "propertyType": "HOTEL"
                                 }
                                 """))
                 .andExpect(status().isForbidden())

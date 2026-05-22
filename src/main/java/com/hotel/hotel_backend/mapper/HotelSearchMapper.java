@@ -22,7 +22,8 @@ public class HotelSearchMapper {
                 hotel.getRatingCount(),
                 minPrice,
                 availableRoomTypes,
-                availableUnits
+                availableUnits,
+                hotel.getHotelType()
         );
     }
 

@@ -9,3 +9,7 @@ public enum HotelType {
     HOSTEL,
     GUEST_HOUSE
 }
+
+
+
+

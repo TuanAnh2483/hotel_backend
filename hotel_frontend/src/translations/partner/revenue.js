@@ -22,6 +22,9 @@ export const vi = {
   pt_rev_col_bookings:  "Số booking",
   pt_rev_col_avg:       "Trung bình",
   pt_rev_empty_month:   "Chưa có dữ liệu giao dịch cho năm này",
+  pt_rev_adr_sub:       "Giá phòng trung bình / đêm",
+  pt_rev_cancel_warning: "Tỷ lệ hủy đang cao bất thường.",
+  pt_rev_cancel_suggestion: "Kiểm tra chính sách hủy hoặc điều chỉnh giá phòng để cải thiện.",
 };
 
 export const en = {
@@ -45,4 +48,7 @@ export const en = {
   pt_rev_col_bookings:  "Bookings",
   pt_rev_col_avg:       "Average",
   pt_rev_empty_month:   "No transaction data for this year",
+  pt_rev_adr_sub:       "Average room rate per night",
+  pt_rev_cancel_warning: "Cancellation rate is unusually high.",
+  pt_rev_cancel_suggestion: "Review your cancellation policy or adjust pricing to improve.",
 };

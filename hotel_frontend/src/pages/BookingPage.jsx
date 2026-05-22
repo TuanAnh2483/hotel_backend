@@ -122,7 +122,7 @@ function Field({ label, icon, children }) {
 
 export default function BookingPage({ navigate, user, params = {}, onLogout }) {
   const { t } = useLang();
-  const { hotelId, hotelName, room, checkin, checkout, guests = 1, nights = 1 } = params;
+  const { hotelId, hotelName, rooms = [], checkin, checkout, guests = 1, nights = 1 } = params;
 
   const [contact, setContact] = useState({ fullName: "", email: user?.email || "", phone: "" });
   const [error, setError]     = useState("");
@@ -132,22 +132,21 @@ export default function BookingPage({ navigate, user, params = {}, onLogout }) {
 
   const upd = k => e => setContact(p => ({ ...p, [k]: e.target.value }));
 
-  const roomPrice = room?.price || 0;
-  const subtotal  = roomPrice * nights;
-  const tax       = Math.round(subtotal * 0.1);
-  const total     = subtotal + tax;
+  const subtotal = rooms.reduce((s, r) => s + (r.price || 0) * (r.quantity || 1) * nights, 0);
+  const tax      = Math.round(subtotal * 0.1);
+  const total    = subtotal + tax;
 
   const hasContact = contact.fullName.trim() && contact.email.trim() && contact.phone.trim();
 
   const handleConfirm = async () => {
-    if (!hasContact) { setError("Vui lòng điền đầy đủ thông tin liên hệ."); return; }
-    if (!room?.id)   { setError("Thiếu thông tin phòng. Vui lòng quay lại và chọn phòng."); return; }
+    if (!hasContact)     { setError("Vui lòng điền đầy đủ thông tin liên hệ."); return; }
+    if (rooms.length === 0) { setError("Thiếu thông tin phòng. Vui lòng quay lại và chọn phòng."); return; }
     setError("");
     createBooking.mutate(
       {
         checkIn:  checkin,
         checkOut: checkout,
-        rooms:    [{ roomTypeId: room.id, quantity: 1 }],
+        rooms:    rooms.map(r => ({ roomTypeId: r.id, quantity: r.quantity || 1 })),
         contact:  { fullName: contact.fullName, email: contact.email, phone: contact.phone },
       },
       {
@@ -205,15 +204,16 @@ export default function BookingPage({ navigate, user, params = {}, onLogout }) {
           {/* Booking summary card */}
           <Card title={t("booking_info_title")} icon="bed">
             {hotelName && <div className="bkp-hotel-name">{hotelName}</div>}
-            <div className="bkp-room-name">{room?.name || t("booking_room_selected")}</div>
+            {rooms.map((r, i) => (
+              <div key={r.id ?? i} className="bkp-room-name" style={{ marginBottom: 2 }}>
+                {r.name}{r.quantity > 1 ? ` × ${r.quantity}` : ""}
+              </div>
+            ))}
 
             <InfoRow icon="calendar" label={t("booking_checkin_full")} value={fmtDate(checkin)} />
             <InfoRow icon="calendar" label={t("booking_checkout_full")} value={fmtDate(checkout)} />
             <InfoRow icon="moon"     label={t("booking_duration")} value={`${nights}${t("night")}`} />
             <InfoRow icon="people"   label={t("booking_guests")}   value={`${guests}${t("guests")}`} />
-            {room?.beds && (
-              <InfoRow icon="bed" label={t("booking_bed")} value={room.beds} />
-            )}
           </Card>
 
           {/* Contact form */}
@@ -281,12 +281,16 @@ export default function BookingPage({ navigate, user, params = {}, onLogout }) {
           <div className="bkp-price-box">
             <h3 className="bkp-price-title">{t("booking_price_title")}</h3>
 
-            {roomPrice > 0 ? (
+            {subtotal > 0 ? (
               <>
-                <div className="bkp-price-row">
-                  <span>{fmt(roomPrice)} × {nights}{t("night")}</span>
-                  <span className="bkp-price-row-val">{fmt(subtotal)}</span>
-                </div>
+                {rooms.map((r, i) => (
+                  <div key={r.id ?? i} className="bkp-price-row">
+                    <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginRight: 8 }}>
+                      {r.name}{r.quantity > 1 ? ` × ${r.quantity}` : ""} × {nights}{t("night")}
+                    </span>
+                    <span className="bkp-price-row-val">{fmt((r.price || 0) * (r.quantity || 1) * nights)}</span>
+                  </div>
+                ))}
                 <div className="bkp-price-row bkp-price-row-tax">
                   <span>{t("booking_tax")}</span>
                   <span className="bkp-price-row-val">{fmt(tax)}</span>

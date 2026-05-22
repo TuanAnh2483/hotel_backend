@@ -10,7 +10,10 @@ import java.util.List;
 import java.util.Optional;
 
 public interface RoomRepository extends JpaRepository<Room, Long> {
+    @EntityGraph(attributePaths = {"amenities", "customAmenities", "imageUrls"})
     List<Room> findByHotelId(Long hotelId);
+
+    List<Room> findByHotelIdAndHotelOwnerId(Long hotelId, Long ownerId);
 
     Optional<Room> findByIdAndHotelOwnerId(Long roomId, Long ownerId);
 
@@ -21,10 +24,10 @@ public interface RoomRepository extends JpaRepository<Room, Long> {
 
     boolean existsByHotelIdAndStatus(Long hotelId, RoomStatus  roomStatus);
 
-    @EntityGraph(attributePaths = "amenities")
-    List<Room>findByHotelIdInAndStatus(List<Long> hotelIds, RoomStatus  roomStatus);
+    List<Room> findByHotelIdInAndStatus(List<Long> hotelIds, RoomStatus roomStatus);
 
     List<Room> status(RoomStatus status);
 
     List<Long> hotelId(Long hotelId);
+
 }

@@ -3,10 +3,16 @@ package com.hotel.hotel_backend.service;
 import com.hotel.hotel_backend.dto.request.CreateHotelRequest;
 import com.hotel.hotel_backend.dto.request.UpdateHotelRequest;
 import com.hotel.hotel_backend.dto.response.HotelResponse;
+import com.hotel.hotel_backend.entity.BookingMode;
 import com.hotel.hotel_backend.entity.Hotel;
+import com.hotel.hotel_backend.entity.HotelStatus;
+import com.hotel.hotel_backend.entity.HotelType;
+import com.hotel.hotel_backend.entity.RoomStatus;
 import com.hotel.hotel_backend.entity.User;
 import com.hotel.hotel_backend.exeption.ApiException;
 import com.hotel.hotel_backend.exeption.ErrorCode;
+import com.hotel.hotel_backend.repository.BookingItemRepository;
+import com.hotel.hotel_backend.repository.DailyInventoryRepository;
 import com.hotel.hotel_backend.repository.HotelRepository;
 import com.hotel.hotel_backend.repository.RoomRepository;
 import com.hotel.hotel_backend.repository.UserRepository;
@@ -29,21 +35,30 @@ public class HotelService {
     private final HotelRepository hotelRepository;
     private final UserRepository userRepository;
     private final RoomRepository roomRepository;
+    private final BookingItemRepository bookingItemRepository;
+    private final DailyInventoryRepository dailyInventoryRepository;
     private final SecurityService securityService;
 
     public HotelResponse create(CreateHotelRequest request) {
         // Tạo khách sạn mới cho partner hiện tại.
         User owner = getCurrentUser();
 
+        String normalizedName = normalizeRequiredText(request.name());
+        if (hotelRepository.existsByOwnerIdAndNameIgnoreCase(owner.getId(), normalizedName)) {
+            throw new ApiException(ErrorCode.VALIDATION_ERROR, "Bạn đã có cơ sở lưu trú với tên này");
+        }
+
         Hotel hotel = new Hotel();
-        hotel.setName(normalizeRequiredText(request.name()));
+        hotel.setName(normalizedName);
         hotel.setAddress(normalizeRequiredText(request.address()));
         hotel.setDistrict(LocationNormalizer.normalizeDistrictLabel(request.district()));
         hotel.setProvince(LocationNormalizer.normalizeProvinceLabel(request.province()));
         hotel.setOwner(owner);
         hotel.setDescription(normalizeOptionalText(request.description()));
         hotel.setHotelType(request.hotelType());
+        hotel.setBookingMode(resolveBookingMode(request.bookingMode(), request.hotelType()));
         hotel.setAmenities(request.amenities() == null ? new HashSet<>() : new HashSet<>(request.amenities()));
+        hotel.setCustomAmenities(normalizeCustomAmenities(request.customAmenities()));
         hotel.setImageUrls(normalizeImageUrls(request.imageUrls()));
         hotel.setCoverImageUrl(resolveCoverImageUrl(null, hotel.getImageUrls()));
         hotelRepository.save(hotel);
@@ -58,6 +73,7 @@ public class HotelService {
 
         return hotelRepository.findByOwnerId(userId)
                 .stream()
+                .filter(h -> h.getStatus() == null || h.getStatus() == HotelStatus.ACTIVE)
                 .map(this::mapToResponse)
                 .toList();
     }
@@ -66,13 +82,20 @@ public class HotelService {
         // Cập nhật thông tin khách sạn thuộc sở hữu hiện tại.
         Hotel hotel = findOwnedHotel(id);
 
-        hotel.setName(normalizeRequiredText(request.name()));
+        String normalizedName = normalizeRequiredText(request.name());
+        if (hotelRepository.existsByOwnerIdAndNameIgnoreCaseAndIdNot(hotel.getOwner().getId(), normalizedName, id)) {
+            throw new ApiException(ErrorCode.VALIDATION_ERROR, "Bạn đã có cơ sở lưu trú với tên này");
+        }
+
+        hotel.setName(normalizedName);
         hotel.setAddress(normalizeRequiredText(request.address()));
         hotel.setDistrict(LocationNormalizer.normalizeDistrictLabel(request.district()));
         hotel.setProvince(LocationNormalizer.normalizeProvinceLabel(request.province()));
         hotel.setDescription(normalizeOptionalText(request.description()));
         hotel.setHotelType(request.hotelType());
+        hotel.setBookingMode(resolveBookingMode(request.bookingMode(), request.hotelType()));
         hotel.setAmenities(request.amenities() == null ? new HashSet<>() : new HashSet<>(request.amenities()));
+        hotel.setCustomAmenities(normalizeCustomAmenities(request.customAmenities()));
         hotel.setImageUrls(normalizeImageUrls(request.imageUrls()));
         hotel.setCoverImageUrl(resolveCoverImageUrl(hotel.getCoverImageUrl(), hotel.getImageUrls()));
 
@@ -134,14 +157,20 @@ public class HotelService {
 
     @Transactional
     public void delete(Long id) {
-        // Xóa khách sạn nếu không có phòng liên kết.
         Hotel hotel = findOwnedHotel(id);
+        var rooms = roomRepository.findByHotelId(id);
 
-        if (roomRepository.existsByHotelId(id)) {
-            throw new ApiException(ErrorCode.HOTEL_HAS_ROOMS);
+        if (bookingItemRepository.existsByRoomHotelId(id)) {
+            // Có booking tham chiếu → soft-delete để giữ lịch sử
+            rooms.forEach(r -> r.setStatus(RoomStatus.INACTIVE));
+            hotel.setStatus(HotelStatus.INACTIVE);
+        } else {
+            // Chưa có booking nào → hard-delete thật sự
+            var roomIds = rooms.stream().map(r -> r.getId()).toList();
+            dailyInventoryRepository.deleteByIdRoomIdIn(roomIds);
+            roomRepository.deleteAll(rooms);
+            hotelRepository.delete(hotel);
         }
-
-        hotelRepository.delete(hotel);
     }
 
     // ---------------- Helper methods ----------------
@@ -175,12 +204,42 @@ public class HotelService {
                 hotel.getProvince(),
                 hotel.getDescription(),
                 hotel.getHotelType(),
+                hotel.getBookingMode() != null ? hotel.getBookingMode() : BookingMode.BY_ROOM,
                 hotel.getAmenities(),
+                hotel.getCustomAmenities() == null ? new HashSet<>() : new HashSet<>(hotel.getCustomAmenities()),
                 hotel.getRatingAvg(),
                 hotel.getRatingCount(),
                 resolveCoverImageUrl(hotel.getCoverImageUrl(), hotel.getImageUrls()),
                 copyImageUrls(hotel.getImageUrls())
         );
+    }
+
+    /**
+     * Nếu partner truyền bookingMode tường minh thì dùng, ngược lại tự derive từ hotelType.
+     * VILLA, APARTMENT → ENTIRE; tất cả còn lại → BY_ROOM.
+     */
+    private BookingMode resolveBookingMode(BookingMode requested, HotelType hotelType) {
+        if (requested != null) {
+            return requested;
+        }
+        if (hotelType == HotelType.VILLA || hotelType == HotelType.APARTMENT) {
+            return BookingMode.ENTIRE;
+        }
+        return BookingMode.BY_ROOM;
+    }
+
+    private java.util.Set<String> normalizeCustomAmenities(java.util.Set<String> raw) {
+        if (raw == null) return new HashSet<>();
+        java.util.Set<String> result = new HashSet<>();
+        for (String s : raw) {
+            if (s != null) {
+                String trimmed = s.trim();
+                if (!trimmed.isEmpty() && trimmed.length() <= 100) {
+                    result.add(trimmed);
+                }
+            }
+        }
+        return result;
     }
 
     private List<String> normalizeImageUrls(List<String> imageUrls) {

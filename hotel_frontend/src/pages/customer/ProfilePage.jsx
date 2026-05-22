@@ -221,7 +221,7 @@ export default function ProfilePage({ navigate, onLogout }) {
     { id: "general",  label: "Cá nhân", icon: User, hidden: isPartner },
     { id: "business", label: "Thông tin doanh nghiệp", icon: Building2, hidden: !isPartner },
     { id: "security", label: "Bảo mật tài khoản", icon: Lock },
-    { id: "billing",  label: isPartner ? "Lịch sử nhận tiền" : "Lịch sử thanh toán", icon: CreditCard, hidden: effectiveUserType === "ADMIN" },
+    { id: "billing",  label: "Lịch sử thanh toán", icon: CreditCard, hidden: effectiveUserType === "ADMIN" || isPartner },
     { id: "notify",   label: "Thông báo", icon: Bell },
   ].filter(t => !t.hidden);
 

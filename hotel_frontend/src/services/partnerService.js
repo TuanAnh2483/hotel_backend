@@ -80,6 +80,9 @@ export const partnerService = {
   updateRoomCalendar: (roomId, data) =>
     apiClient.put(`/api/partner/rooms/${roomId}/calendar`, data),
 
+  setHotelBasePricing: (hotelId, data) =>
+    apiClient.put(`/api/partner/hotels/${hotelId}/base-pricing`, data),
+
   // ── Refunds ─────────────────────────────────────────────────────────
   getRefunds: (params = {}) => {
     const p = {};

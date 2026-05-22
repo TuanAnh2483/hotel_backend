@@ -35,7 +35,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ApiException.class)
 
     public ResponseEntity<ApiResponse<Void>> handleApiException(ApiException ex) {
-        log.warn("ApiException: code={}, message={}", ex.getCode(), ex.getMessage());
+         log.warn("ApiException: code={}, message={}", ex.getCode(), ex.getMessage());
         ErrorCode code = ex.getCode();
         String message = ex.getMessage();
         if (message == null || message.isBlank()) {

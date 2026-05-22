@@ -51,6 +51,11 @@ public class Room {
     @Enumerated(EnumType.STRING)
     private Set<RoomAmenity> amenities = new HashSet<>();
 
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "room_custom_amenities", joinColumns = @JoinColumn(name = "room_id"))
+    @Column(name = "amenity", nullable = false, length = 100)
+    private Set<String> customAmenities = new HashSet<>();
+
     // Hình ảnh phòng được lưu trữ dưới dạng URL công khai có thứ tự để giao diện người dùng của khách hàng có thể hiển thị thư viện hình ảnh phòng.
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "room_images", joinColumns = @JoinColumn(name = "room_id"))

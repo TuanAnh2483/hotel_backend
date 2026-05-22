@@ -46,6 +46,7 @@ import AdminSystem    from "./pages/admin/AdminSystem";
 
 // Trang đối tác
 import PartnerDashboard from "./pages/partner/PartnerDashboard";
+import AddPropertyWizard from "./pages/partner/AddPropertyWizard";
 import PartnerHotels    from "./pages/partner/PartnerHotels";
 import PartnerRooms     from "./pages/partner/PartnerRooms";
 import PartnerCalendar  from "./pages/partner/PartnerCalendar";
@@ -186,6 +187,7 @@ function HotelDetailRoute() {
     checkIn:  sp.get("checkIn")  || "",
     checkOut: sp.get("checkOut") || "",
     guests:   Number(sp.get("guests")) || 2,
+    rooms:    Number(sp.get("rooms"))  || 1,
   };
 
   function requireAuth(pageName, p = {}) {
@@ -314,6 +316,7 @@ function AppRoutes() {
         <Route path="reviews"   element={<PartnerReviews />} />
         <Route path="revenue"   element={<PartnerRevenue />} />
         <Route path="forecast"  element={<PartnerForecast />} />
+        <Route path="add-property" element={<AddPropertyWizard />} />
       </Route>
 
       {/* ── Admin (ADMIN only) ────────────────────────────────────── */}

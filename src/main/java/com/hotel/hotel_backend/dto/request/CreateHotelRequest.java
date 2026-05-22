@@ -1,5 +1,6 @@
 package com.hotel.hotel_backend.dto.request;
 
+import com.hotel.hotel_backend.entity.BookingMode;
 import com.hotel.hotel_backend.entity.HotelAmenity;
 import com.hotel.hotel_backend.entity.HotelType;
 import jakarta.validation.constraints.NotBlank;
@@ -25,6 +26,8 @@ public record CreateHotelRequest(
         String description,
         @NotNull(message = "Hotel type is required")
         HotelType hotelType,
+        BookingMode bookingMode,
         Set<HotelAmenity> amenities,
+        Set<String> customAmenities,
         List<@NotBlank(message = "imageUrl must not be blank") String> imageUrls
 ) {}

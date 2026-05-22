@@ -2,21 +2,38 @@
 
 .partner-root {
   min-height: 100vh;
-  background: var(--gradient-brand);
+  background: #f1f5f9;
+  display: flex;
+  flex-direction: row;
+}
+
+.partner-main {
+  flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
+  overflow-y: auto;
 }
 
 .partner-content {
-  max-width: 1440px;
+  max-width: 1200px;
   width: 100%;
   margin: 0 auto;
-  padding: 28px 24px 56px;
+  padding: 28px 28px 56px;
   box-sizing: border-box;
   flex: 1;
 }
 
+/* Mobile: ẩn sidebar, hiện theo overlay */
 @media (max-width: 768px) {
+  .partner-root {
+    flex-direction: column;
+  }
+
+  aside {
+    display: none;
+  }
+
   .partner-content {
     padding: 16px 14px 40px;
   }

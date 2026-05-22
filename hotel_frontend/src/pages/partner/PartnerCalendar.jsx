@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useOutletContext } from "react-router-dom";
 import {
   useMyHotels, usePartnerRooms, useRoomCalendar, useUpdateRoomCalendar,
   usePartnerRefunds, useApproveRefund, useRejectRefund, usePriceSuggestions,
@@ -265,6 +266,7 @@ function WarningModal({ available, total, onClose }) {
 
 export default function PartnerCalendar() {
   const { t } = useLang();
+  const { selectedHotelId: ctxHotelId, setSelectedHotelId: setCtxHotelId } = useOutletContext() || {};
   const DAY_NAMES = [t("pt_cal_sun"), t("pt_cal_mon"), t("pt_cal_tue"), t("pt_cal_wed"), t("pt_cal_thu"), t("pt_cal_fri"), t("pt_cal_sat")];
   const MONTH_NAMES = [
     t("pt_cal_m1"), t("pt_cal_m2"), t("pt_cal_m3"), t("pt_cal_m4"),
@@ -285,7 +287,7 @@ export default function PartnerCalendar() {
   const [activeTab, setActiveTab] = useState("CALENDAR");
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth());
-  const [selectedHotelId, setSelectedHotelId] = useState("");
+  const [selectedHotelId, setSelectedHotelId] = useState(ctxHotelId ? String(ctxHotelId) : "");
   const [selectedRoomId, setSelectedRoomId] = useState("");
   const [calendarError, setCalendarError] = useState("");
   const [rateModal, setRateModal] = useState(null);
@@ -354,6 +356,12 @@ export default function PartnerCalendar() {
       return String(hotels[0].id);
     });
   }, [hotels]);
+
+  // Sync with sidebar hotel selection
+  useEffect(() => {
+    if (!ctxHotelId) return;
+    setSelectedHotelId(String(ctxHotelId));
+  }, [ctxHotelId]);
 
   // Auto-select first room when hotel changes or rooms load
   useEffect(() => {
@@ -585,7 +593,8 @@ export default function PartnerCalendar() {
       }
       closeRateModal();
     } catch (error) {
-      setCalendarError(error.message || "Không thể cập nhật giá phòng.");
+      const fieldErrors = error.details?.map(d => `${d.field}: ${d.message}`).join("; ");
+      setCalendarError(fieldErrors ? `${error.message} (${fieldErrors})` : error.message || "Không thể cập nhật giá phòng.");
     }
   }
 
@@ -740,7 +749,10 @@ export default function PartnerCalendar() {
                   />
                   <select
                     value={selectedHotelId}
-                    onChange={(event) => setSelectedHotelId(event.target.value)}
+                    onChange={(event) => {
+                      setSelectedHotelId(event.target.value);
+                      setCtxHotelId?.(event.target.value ? Number(event.target.value) : null);
+                    }}
                     style={{
                       minWidth: 240,
                       padding: "11px 14px 11px 42px",
@@ -1120,7 +1132,10 @@ export default function PartnerCalendar() {
               <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
                 <select
                   value={selectedHotelId}
-                  onChange={(event) => setSelectedHotelId(event.target.value)}
+                  onChange={(event) => {
+                    setSelectedHotelId(event.target.value);
+                    setCtxHotelId?.(event.target.value ? Number(event.target.value) : null);
+                  }}
                   style={selectFilterStyle}
                 >
                   {!hotels.length && <option value="">{t("pt_cal_no_hotels")}</option>}

@@ -979,4 +979,94 @@ class HotelSearchIntegrationTest {
                 .andExpect(jsonPath("$.error.details[0].field").value("size"));
     }
 
+    @Test
+    void searchShouldSortHotelsByPriceAscending() throws Exception {
+        // Contract:
+        // sort=price_asc phai tra ket qua theo thu tu minPrice tang dan.
+        // Hotel re nhat phai o vi tri dau tien.
+        User owner = createOwner("owner-price-asc@test.com");
+
+        Hotel expensiveHotel = createHotel(owner, "Expensive Hotel", "Bangkok", "District 1");
+        Room expensiveRoom = createRoom(expensiveHotel, "Expensive Room", 1);
+        initInventory(expensiveRoom);
+        createDailyRate(expensiveRoom, checkIn, 900_000L, 1, false);
+        createDailyRate(expensiveRoom, checkIn.plusDays(1), 1_000_000L, 1, false);
+
+        Hotel cheapHotel = createHotel(owner, "Cheap Hotel", "Bangkok", "District 1");
+        Room cheapRoom = createRoom(cheapHotel, "Cheap Room", 1);
+        initInventory(cheapRoom);
+        createDailyRate(cheapRoom, checkIn, 500_000L, 1, false);
+        createDailyRate(cheapRoom, checkIn.plusDays(1), 600_000L, 1, false);
+
+        Hotel middleHotel = createHotel(owner, "Middle Hotel", "Bangkok", "District 1");
+        Room middleRoom = createRoom(middleHotel, "Middle Room", 1);
+        initInventory(middleRoom);
+        createDailyRate(middleRoom, checkIn, 700_000L, 1, false);
+        createDailyRate(middleRoom, checkIn.plusDays(1), 800_000L, 1, false);
+
+        mockMvc.perform(get("/api/hotels/search")
+                        .param("province", "Bangkok")
+                        .param("district", "District 1")
+                        .param("checkIn", checkIn.toString())
+                        .param("checkOut", checkOut.toString())
+                        .param("adults", "2")
+                        .param("rooms", "1")
+                        .param("sort", "price_asc"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.items.length()").value(3))
+                .andExpect(jsonPath("$.data.items[0].hotelId").value(cheapHotel.getId()))
+                .andExpect(jsonPath("$.data.items[0].minPrice").value(1_100_000))
+                .andExpect(jsonPath("$.data.items[1].hotelId").value(middleHotel.getId()))
+                .andExpect(jsonPath("$.data.items[1].minPrice").value(1_500_000))
+                .andExpect(jsonPath("$.data.items[2].hotelId").value(expensiveHotel.getId()))
+                .andExpect(jsonPath("$.data.items[2].minPrice").value(1_900_000))
+                .andExpect(jsonPath("$.data.sort").value("price_asc"));
+    }
+
+    @Test
+    void searchShouldSortHotelsByPriceDescending() throws Exception {
+        // Contract:
+        // sort=price_desc phai tra ket qua theo thu tu minPrice giam dan.
+        // Hotel dat nhat phai o vi tri dau tien.
+        User owner = createOwner("owner-price-desc@test.com");
+
+        Hotel cheapHotel = createHotel(owner, "Cheap Hotel Desc", "Bangkok", "District 1");
+        Room cheapRoom = createRoom(cheapHotel, "Cheap Room Desc", 1);
+        initInventory(cheapRoom);
+        createDailyRate(cheapRoom, checkIn, 500_000L, 1, false);
+        createDailyRate(cheapRoom, checkIn.plusDays(1), 600_000L, 1, false);
+
+        Hotel expensiveHotel = createHotel(owner, "Expensive Hotel Desc", "Bangkok", "District 1");
+        Room expensiveRoom = createRoom(expensiveHotel, "Expensive Room Desc", 1);
+        initInventory(expensiveRoom);
+        createDailyRate(expensiveRoom, checkIn, 900_000L, 1, false);
+        createDailyRate(expensiveRoom, checkIn.plusDays(1), 1_000_000L, 1, false);
+
+        Hotel middleHotel = createHotel(owner, "Middle Hotel Desc", "Bangkok", "District 1");
+        Room middleRoom = createRoom(middleHotel, "Middle Room Desc", 1);
+        initInventory(middleRoom);
+        createDailyRate(middleRoom, checkIn, 700_000L, 1, false);
+        createDailyRate(middleRoom, checkIn.plusDays(1), 800_000L, 1, false);
+
+        mockMvc.perform(get("/api/hotels/search")
+                        .param("province", "Bangkok")
+                        .param("district", "District 1")
+                        .param("checkIn", checkIn.toString())
+                        .param("checkOut", checkOut.toString())
+                        .param("adults", "2")
+                        .param("rooms", "1")
+                        .param("sort", "price_desc"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.items.length()").value(3))
+                .andExpect(jsonPath("$.data.items[0].hotelId").value(expensiveHotel.getId()))
+                .andExpect(jsonPath("$.data.items[0].minPrice").value(1_900_000))
+                .andExpect(jsonPath("$.data.items[1].hotelId").value(middleHotel.getId()))
+                .andExpect(jsonPath("$.data.items[1].minPrice").value(1_500_000))
+                .andExpect(jsonPath("$.data.items[2].hotelId").value(cheapHotel.getId()))
+                .andExpect(jsonPath("$.data.items[2].minPrice").value(1_100_000))
+                .andExpect(jsonPath("$.data.sort").value("price_desc"));
+    }
+
 }
