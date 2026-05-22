@@ -5,8 +5,133 @@ import Footer from "../components/Footer";
 import { useHotelDetail, useAvailableRooms } from "../hooks/useHotelQueries";
 import { useHotelReviews } from "../hooks/useReviewQueries";
 import { useLang } from "../contexts/LanguageContext";
+import { ROOM_AMENITIES_FLAT } from "../utils/amenityConfig";
 
 const PLACEHOLDER = "repeating-conic-gradient(#ccc 0% 25%,#e8e8e8 0% 50%) 0 0/20px 20px";
+
+const ROOM_CATEGORY_LABEL = { STANDARD: "Phòng tiêu chuẩn", DELUXE: "Phòng Deluxe", SUITE: "Suite", FAMILY: "Phòng gia đình" };
+const BED_TYPE_LABEL       = { SINGLE: "1 giường đơn", DOUBLE: "1 giường đôi", TWIN: "2 giường đơn" };
+const AMENITY_LABEL = Object.fromEntries(ROOM_AMENITIES_FLAT.map(a => [a.key, a.label]));
+
+function RoomDetailModal({ room, nights, onClose, onAdd, onRemove, cartQty }) {
+  const [imgIdx, setImgIdx] = useState(0);
+  const images = room.imageUrls?.length ? room.imageUrls : (room.imageUrl ? [room.imageUrl] : []);
+  const fmt = n => (n || 0).toLocaleString("vi-VN") + "₫";
+
+  useEffect(() => {
+    const onKey = e => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  return (
+    <div
+      onClick={onClose}
+      style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}
+    >
+      <div
+        onClick={e => e.stopPropagation()}
+        style={{ background: "#fff", borderRadius: 16, width: "100%", maxWidth: 680, maxHeight: "90vh", overflowY: "auto", boxShadow: "0 8px 40px rgba(0,0,0,0.2)" }}
+      >
+        {/* Image gallery */}
+        <div style={{ position: "relative", borderRadius: "16px 16px 0 0", overflow: "hidden" }}>
+          {images[imgIdx] ? (
+            <img src={images[imgIdx]} alt={room.name} style={{ width: "100%", height: 280, objectFit: "cover", display: "block" }} />
+          ) : (
+            <div style={{ background: PLACEHOLDER, height: 280 }} />
+          )}
+          <button
+            onClick={onClose}
+            style={{ position: "absolute", top: 12, right: 12, background: "rgba(0,0,0,0.45)", border: "none", color: "#fff", width: 36, height: 36, borderRadius: "50%", fontSize: 20, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+          >×</button>
+          {images.length > 1 && (
+            <>
+              {[[-1, "‹", "left"], [1, "›", "right"]].map(([dir, label, pos]) => (
+                <button key={pos} onClick={() => setImgIdx((imgIdx + dir + images.length) % images.length)}
+                  style={{ position: "absolute", top: "50%", [pos]: 10, transform: "translateY(-50%)", background: "rgba(0,0,0,0.35)", border: "none", color: "#fff", width: 36, height: 36, borderRadius: "50%", fontSize: 22, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  {label}
+                </button>
+              ))}
+              <div style={{ position: "absolute", bottom: 10, left: 0, right: 0, display: "flex", justifyContent: "center", gap: 6 }}>
+                {images.map((_, i) => (
+                  <button key={i} onClick={() => setImgIdx(i)} style={{ width: 7, height: 7, borderRadius: "50%", background: i === imgIdx ? "#fff" : "rgba(255,255,255,0.4)", border: "none", cursor: "pointer", padding: 0 }} />
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Content */}
+        <div style={{ padding: "20px 24px 24px" }}>
+          {/* Name + category */}
+          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, marginBottom: 8 }}>
+            <h2 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: "#1a1a1a" }}>{room.name}</h2>
+            <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+              {room.roomCategory && <span style={{ background: "#f0f4ff", color: C.primary, borderRadius: 6, padding: "3px 10px", fontSize: 12, fontWeight: 700 }}>{ROOM_CATEGORY_LABEL[room.roomCategory] || room.roomCategory}</span>}
+            </div>
+          </div>
+
+          {/* Meta row */}
+          <div style={{ display: "flex", gap: 16, fontSize: 13, color: "#666", marginBottom: 16 }}>
+            <span>👥 {room.capacity} khách tối đa</span>
+            {room.bedType && <span>🛏 {BED_TYPE_LABEL[room.bedType] || room.bedType}</span>}
+            {room.availableUnits != null && (
+              <span style={{ color: room.availableUnits <= 3 ? "#e57373" : "#888" }}>✦ Còn {room.availableUnits} phòng</span>
+            )}
+          </div>
+
+          {/* Description */}
+          {room.description && (
+            <p style={{ margin: "0 0 16px", fontSize: 14, color: "#555", lineHeight: 1.75 }}>{room.description}</p>
+          )}
+
+          {/* Amenities */}
+          {(room.amenities?.length > 0 || room.customAmenities?.length > 0) && (
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#1a1a1a", marginBottom: 8 }}>Tiện nghi phòng</div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                {room.amenities?.map(key => (
+                  <span key={key} style={{ background: "#f7f8fa", borderRadius: 6, padding: "5px 10px", fontSize: 12, color: "#444" }}>
+                    {AMENITY_LABEL[key] || key}
+                  </span>
+                ))}
+                {room.customAmenities?.map((label, i) => (
+                  <span key={i} style={{ background: "#f7f8fa", borderRadius: 6, padding: "5px 10px", fontSize: 12, color: "#444" }}>{label}</span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Price + action */}
+          <div style={{ borderTop: "1px solid #eee", paddingTop: 16, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div>
+              <div style={{ fontSize: 22, fontWeight: 800, color: C.primary }}>{fmt(room.price)}<span style={{ fontSize: 13, fontWeight: 400, color: "#888" }}>/đêm</span></div>
+              {nights > 1 && <div style={{ fontSize: 12, color: "#aaa" }}>{fmt(room.price * nights)} cho {nights} đêm</div>}
+            </div>
+            {room.available ? (
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                {cartQty > 0 && (
+                  <>
+                    <button onClick={onRemove} style={{ width: 32, height: 32, border: `1.5px solid ${C.primary}`, borderRadius: 8, background: "#fff", color: C.primary, fontSize: 20, cursor: "pointer", fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>−</button>
+                    <span style={{ fontSize: 16, fontWeight: 800, color: "#1a1a1a", minWidth: 24, textAlign: "center" }}>{cartQty}</span>
+                  </>
+                )}
+                <button
+                  onClick={onAdd}
+                  style={{ background: C.primary, color: "#fff", border: "none", borderRadius: 10, padding: "10px 20px", fontSize: 14, fontWeight: 700, cursor: "pointer" }}
+                >
+                  {cartQty > 0 ? "Thêm phòng +" : "Chọn phòng"}
+                </button>
+              </div>
+            ) : (
+              <span style={{ color: "#bbb", fontSize: 13, fontWeight: 600 }}>Hết phòng</span>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function ReviewSection({ hotelId, rating, ratingCount }) {
   const { t } = useLang();
@@ -109,13 +234,15 @@ export default function HotelDetailPage({ navigate, params = {}, user, onLogout,
   const [checkin, setCheckin]           = useState(params.checkIn  || params.checkin  || "");
   const [checkout, setCheckout]         = useState(params.checkOut || params.checkout || "");
   const [guests, setGuests]             = useState(params.guests || 2);
-  const [selectedRoom, setSelectedRoom] = useState(null);
+  // roomCart: { [roomId]: { room, quantity } } — chỉ dùng cho BY_ROOM
+  const [roomCart, setRoomCart] = useState({});
+  const [detailRoom, setDetailRoom] = useState(null);
   // Committed room search params — only update when user clicks Refresh
   const [roomParams, setRoomParams]     = useState({
     checkIn: params.checkIn || params.checkin || "",
     checkOut: params.checkOut || params.checkout || "",
     adults: params.guests || 2,
-    rooms: 1,
+    rooms: Number(params.rooms) || 1,
   });
 
   const { data: hotel, isLoading: loadingHotel } = useHotelDetail(params.hotelId);
@@ -127,9 +254,23 @@ export default function HotelDetailPage({ navigate, params = {}, user, onLogout,
   }, [hotel?.id]);
 
   const refreshRooms = () => {
-    setSelectedRoom(null);
-    setRoomParams({ checkIn: checkin, checkOut: checkout, adults: guests, rooms: 1 });
+    setRoomCart({});
+    setRoomParams({ checkIn: checkin, checkOut: checkout, adults: guests, rooms: Number(params.rooms) || 1 });
   };
+
+  const addRoom = (r) => {
+    setRoomCart(prev => {
+      const qty = (prev[r.id]?.quantity || 0) + 1;
+      if (qty > r.availableUnits) return prev;
+      return { ...prev, [r.id]: { room: r, quantity: qty } };
+    });
+  };
+
+  const removeRoom = (r) => setRoomCart(prev => {
+    const qty = (prev[r.id]?.quantity || 0) - 1;
+    if (qty <= 0) { const next = { ...prev }; delete next[r.id]; return next; }
+    return { ...prev, [r.id]: { room: r, quantity: qty } };
+  });
 
   const nights = (() => {
     if (!checkin || !checkout) return 1;
@@ -137,10 +278,24 @@ export default function HotelDetailPage({ navigate, params = {}, user, onLogout,
     return d > 0 ? d : 1;
   })();
 
-  const roomPrice = selectedRoom ? selectedRoom.price : (rooms[0]?.price || 0);
-  const totalPrice = roomPrice * nights;
+  const isEntire = hotel?.bookingMode === "ENTIRE";
+  // ENTIRE: luôn dùng room duy nhất với quantity=1
+  const entireRoom = isEntire ? rooms[0] : null;
+  const cartItems = Object.values(roomCart); // [{ room, quantity }]
+  const searchedGuests     = Number(params.guests) || 2;
+  const totalCartCapacity  = cartItems.reduce((s, { room: r, quantity }) => s + r.capacity * quantity, 0);
+  const capacityDiff       = totalCartCapacity - searchedGuests; // <0 thiếu, 0 đủ, >0 dư
+  const totalPrice = isEntire
+    ? (entireRoom?.price || 0) * nights
+    : cartItems.reduce((s, { room: r, quantity }) => s + r.price * quantity * nights, 0);
   const tax = Math.round(totalPrice * 0.1);
-  const images = hotel?.imageUrls?.length ? hotel.imageUrls : (hotel?.imageUrl ? [hotel.imageUrl] : []);
+  // Số khách tối đa = tổng sức chứa các phòng đã chọn; fallback 30 khi chưa chọn phòng
+  const maxGuests = isEntire
+    ? (entireRoom?.capacity || 30)
+    : cartItems.length > 0
+      ? cartItems.reduce((s, { room: r, quantity }) => s + r.capacity * quantity, 0)
+      : 30;
+  const images = hotel?.imageUrls?.length ? hotel.imageUrls : (hotel?.coverImageUrl ? [hotel.coverImageUrl] : []);
   const imageCount = Math.max(images.length, 1);
 
   if (loadingHotel) {
@@ -278,63 +433,96 @@ export default function HotelDetailPage({ navigate, params = {}, user, onLogout,
             </div>
           )}
 
-          {/* Rooms */}
-          <div style={{ background: "#fff", borderRadius: 12, padding: "20px 24px", marginBottom: 20, boxShadow: "0 1px 6px rgba(0,0,0,0.07)" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-              <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: C.dark }}>{t("detail_rooms")}</h2>
-              <button
-                onClick={refreshRooms}
-                style={{ background: "none", border: `1px solid ${C.primary}`, color: C.primary, borderRadius: 8, padding: "6px 14px", fontSize: 12, fontWeight: 600, cursor: "pointer" }}
-              >
-                {t("detail_refresh")}
-              </button>
+          {/* Rooms — chỉ hiển thị cho BY_ROOM */}
+          {!isEntire && (
+            <div style={{ background: "#fff", borderRadius: 12, padding: "20px 24px", marginBottom: 20, boxShadow: "0 1px 6px rgba(0,0,0,0.07)" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: C.dark }}>{t("detail_rooms")}</h2>
+                <button
+                  onClick={refreshRooms}
+                  style={{ background: "none", border: `1px solid ${C.primary}`, color: C.primary, borderRadius: 8, padding: "6px 14px", fontSize: 12, fontWeight: 600, cursor: "pointer" }}
+                >
+                  {t("detail_refresh")}
+                </button>
+              </div>
+              {loadingRooms ? (
+                <div style={{ color: "#aaa", textAlign: "center", padding: "24px 0" }}>{t("detail_loading_rooms")}</div>
+              ) : rooms.length === 0 ? (
+                <div style={{ color: "#aaa", textAlign: "center", padding: "24px 0", fontSize: 14 }}>
+                  {t("detail_no_rooms")}
+                </div>
+              ) : (
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+                  {rooms.map((r) => {
+                    const cartQty = roomCart[r.id]?.quantity || 0;
+                    return (
+                      <div key={r.id} style={{ border: cartQty > 0 ? `2px solid ${C.primary}` : "2px solid #eee", borderRadius: 12, overflow: "hidden", opacity: r.available ? 1 : 0.55 }}>
+                        <div onClick={() => setDetailRoom(r)} style={{ cursor: "pointer", position: "relative" }}>
+                          {r.imageUrl ? (
+                            <img src={r.imageUrl} alt={r.name} style={{ width: "100%", height: 140, objectFit: "cover", display: "block" }} />
+                          ) : (
+                            <div style={{ background: PLACEHOLDER, height: 140 }} />
+                          )}
+                          {r.imageUrls?.length > 1 && (
+                            <span style={{ position: "absolute", bottom: 6, right: 8, background: "rgba(0,0,0,0.45)", color: "#fff", borderRadius: 4, padding: "2px 7px", fontSize: 11 }}>1/{r.imageUrls.length} ảnh</span>
+                          )}
+                        </div>
+                        <div style={{ padding: "14px 16px" }}>
+                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+                            <div style={{ fontWeight: 700, fontSize: 15, color: C.dark }}>{r.name}</div>
+                            <button onClick={() => setDetailRoom(r)} style={{ background: "none", border: "none", color: C.primary, fontSize: 12, fontWeight: 600, cursor: "pointer", padding: 0, flexShrink: 0 }}>Xem chi tiết</button>
+                          </div>
+                          <div style={{ fontSize: 12, color: "#888", marginBottom: 8 }}>
+                            🛏 {r.beds}{r.size ? ` · 📐 ${r.size}` : ""}
+                            {r.availableUnits != null && (
+                              <span style={{ marginLeft: 8, color: r.availableUnits <= 3 ? "#e57373" : "#aaa" }}>
+                                · {t("detail_available_units") || "Còn"} {r.availableUnits}
+                              </span>
+                            )}
+                          </div>
+                          {r.tags.length > 0 && (
+                            <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 10 }}>
+                              {r.tags.map((tag) => (
+                                <span key={tag} style={{ background: "#f0f4ff", color: C.primary, borderRadius: 4, padding: "2px 8px", fontSize: 11, fontWeight: 600 }}>{tag}</span>
+                              ))}
+                            </div>
+                          )}
+                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                            <div>
+                              <div style={{ fontSize: 17, fontWeight: 800, color: C.primary }}>{r.price > 0 ? fmt(r.price) : t("contact")}</div>
+                              {r.price > 0 && <div style={{ fontSize: 11, color: "#aaa" }}>{t("detail_per_night")}</div>}
+                            </div>
+                            {!r.available ? (
+                              <span style={{ color: "#bbb", fontSize: 12, fontWeight: 600 }}>{t("detail_full")}</span>
+                            ) : (
+                              <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                                {cartQty > 0 && (
+                                  <>
+                                    <button
+                                      onClick={() => removeRoom(r)}
+                                      style={{ width: 30, height: 30, border: `1.5px solid ${C.primary}`, borderRadius: 6, background: "#fff", color: C.primary, fontSize: 18, lineHeight: 1, cursor: "pointer", fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}
+                                    >−</button>
+                                    <span style={{ fontSize: 14, fontWeight: 700, color: C.dark, minWidth: 20, textAlign: "center" }}>{cartQty}</span>
+                                  </>
+                                )}
+                                <button
+                                  onClick={() => addRoom(r)}
+                                  disabled={cartQty >= r.availableUnits}
+                                  style={{ background: cartQty >= r.availableUnits ? "#ccc" : C.primary, color: "#fff", border: "none", borderRadius: 8, padding: "8px 14px", fontSize: 13, fontWeight: 700, cursor: cartQty >= r.availableUnits ? "not-allowed" : "pointer" }}
+                                >
+                                  {cartQty > 0 ? "+" : t("detail_select")}
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
-            {loadingRooms ? (
-              <div style={{ color: "#aaa", textAlign: "center", padding: "24px 0" }}>{t("detail_loading_rooms")}</div>
-            ) : rooms.length === 0 ? (
-              <div style={{ color: "#aaa", textAlign: "center", padding: "24px 0", fontSize: 14 }}>
-                {t("detail_no_rooms")}
-              </div>
-            ) : (
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-                {rooms.map((r) => (
-                  <div key={r.id} style={{ border: selectedRoom?.id === r.id ? `2px solid ${C.primary}` : "2px solid #eee", borderRadius: 12, overflow: "hidden", opacity: r.available ? 1 : 0.55 }}>
-                    {r.imageUrl ? (
-                      <img src={r.imageUrl} alt={r.name} style={{ width: "100%", height: 140, objectFit: "cover", display: "block" }} />
-                    ) : (
-                      <div style={{ background: PLACEHOLDER, height: 140 }} />
-                    )}
-                    <div style={{ padding: "14px 16px" }}>
-                      <div style={{ fontWeight: 700, fontSize: 15, color: C.dark, marginBottom: 4 }}>{r.name}</div>
-                      <div style={{ fontSize: 12, color: "#888", marginBottom: 8 }}>
-                        🛏 {r.beds}{r.size ? ` · 📐 ${r.size}` : ""}
-                      </div>
-                      {r.tags.length > 0 && (
-                        <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 10 }}>
-                          {r.tags.map((t) => (
-                            <span key={t} style={{ background: "#f0f4ff", color: C.primary, borderRadius: 4, padding: "2px 8px", fontSize: 11, fontWeight: 600 }}>{t}</span>
-                          ))}
-                        </div>
-                      )}
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                        <div>
-                          <div style={{ fontSize: 17, fontWeight: 800, color: C.primary }}>{r.price > 0 ? fmt(r.price) : t("contact")}</div>
-                          {r.price > 0 && <div style={{ fontSize: 11, color: "#aaa" }}>{t("detail_per_night")}</div>}
-                        </div>
-                        <button
-                          disabled={!r.available}
-                          onClick={() => setSelectedRoom(r)}
-                          style={{ background: !r.available ? "#ccc" : selectedRoom?.id === r.id ? C.dark : C.primary, color: "#fff", border: "none", borderRadius: 8, padding: "8px 16px", fontSize: 13, fontWeight: 700, cursor: r.available ? "pointer" : "not-allowed" }}
-                        >
-                          {!r.available ? t("detail_full") : selectedRoom?.id === r.id ? t("detail_selected") : t("detail_select")}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+          )}
 
           {/* Guest Reviews */}
           <ReviewSection hotelId={hotel?.id} rating={hotel?.rating} ratingCount={hotel?.ratingCount} />
@@ -352,10 +540,14 @@ export default function HotelDetailPage({ navigate, params = {}, user, onLogout,
         <div style={{ width: 340, flexShrink: 0, position: "sticky", top: 80 }}>
           <div style={{ background: "#fff", borderRadius: 16, boxShadow: "0 4px 24px rgba(0,0,0,0.10)", padding: "24px 20px" }}>
             <div style={{ fontSize: 20, fontWeight: 800, color: C.primary, marginBottom: 4 }}>
-              {roomPrice > 0 ? fmt(roomPrice) : "—"} <span style={{ fontSize: 13, fontWeight: 400, color: "#888" }}>{t("detail_per_night_lbl")}</span>
+              {totalPrice > 0 ? fmt(totalPrice) : "—"} <span style={{ fontSize: 13, fontWeight: 400, color: "#888" }}>{nights} đêm</span>
             </div>
-            <div style={{ fontSize: 13, color: "#aaa", marginBottom: 16 }}>
-              {selectedRoom ? selectedRoom.name : rooms[0]?.name || hotel?.name || ""}
+            <div style={{ fontSize: 13, color: "#aaa", marginBottom: 8 }}>
+              {isEntire
+                ? (t("detail_entire_title") || "Thuê nguyên căn")
+                : cartItems.length > 0
+                  ? `${cartItems.length} loại phòng, ${cartItems.reduce((s, { quantity }) => s + quantity, 0)} phòng`
+                  : (t("detail_select_room") || "Chưa chọn phòng")}
             </div>
 
             <h3 style={{ margin: "0 0 12px", fontSize: 15, fontWeight: 700, color: C.dark }}>{t("detail_your_trip")}</h3>
@@ -376,17 +568,59 @@ export default function HotelDetailPage({ navigate, params = {}, user, onLogout,
               <div style={{ display: "flex", alignItems: "center", border: "1px solid #ddd", borderRadius: 8, overflow: "hidden" }}>
                 <button onClick={() => setGuests(Math.max(1, guests - 1))} style={{ width: 40, height: 38, background: "#f5f5f5", border: "none", fontSize: 18, cursor: "pointer", color: C.dark }}>−</button>
                 <div style={{ flex: 1, textAlign: "center", fontSize: 14, fontWeight: 600 }}>{guests}{t("guests")}</div>
-                <button onClick={() => setGuests(guests + 1)} style={{ width: 40, height: 38, background: "#f5f5f5", border: "none", fontSize: 18, cursor: "pointer", color: C.dark }}>+</button>
+                <button onClick={() => setGuests(Math.min(maxGuests, guests + 1))} disabled={guests >= maxGuests} style={{ width: 40, height: 38, background: "#f5f5f5", border: "none", fontSize: 18, cursor: guests >= maxGuests ? "not-allowed" : "pointer", color: guests >= maxGuests ? "#ccc" : C.dark }}>+</button>
               </div>
             </div>
 
-            {roomPrice > 0 && (
-              <div style={{ borderTop: "1px solid #eee", paddingTop: 14, marginBottom: 14 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: "#555", marginBottom: 6 }}>
-                  <span>{fmt(roomPrice)} × {nights} đêm</span>
-                  <span>{fmt(roomPrice * nights)}</span>
+            {/* Capacity banner — BY_ROOM only, chỉ khi đã chọn ít nhất 1 phòng */}
+            {!isEntire && cartItems.length > 0 && (() => {
+              if (capacityDiff < 0) {
+                // Thiếu chỗ
+                return (
+                  <div style={{ display: "flex", gap: 10, alignItems: "flex-start", background: "#fff8e1", border: "1px solid #ffe082", borderRadius: 10, padding: "10px 12px", marginBottom: 14 }}>
+                    <span style={{ fontSize: 18, flexShrink: 0 }}>⚠️</span>
+                    <div style={{ fontSize: 13, color: "#7a5800", lineHeight: 1.5 }}>
+                      Bạn vẫn cần chỗ cho <strong>{Math.abs(capacityDiff)} người lớn</strong> nữa.
+                    </div>
+                  </div>
+                );
+              }
+              if (capacityDiff === 0) {
+                // Đủ chỗ
+                return (
+                  <div style={{ display: "flex", gap: 10, alignItems: "center", background: "#f0fdf4", border: "1px solid #86efac", borderRadius: 10, padding: "10px 12px", marginBottom: 14 }}>
+                    <span style={{ fontSize: 18, flexShrink: 0 }}>✅</span>
+                    <div style={{ fontSize: 13, color: "#166534", lineHeight: 1.5 }}>
+                      Đủ chỗ cho tất cả <strong>{searchedGuests} khách</strong>.
+                    </div>
+                  </div>
+                );
+              }
+              // Dư chỗ
+              return (
+                <div style={{ display: "flex", gap: 10, alignItems: "center", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 10, padding: "10px 12px", marginBottom: 14 }}>
+                  <span style={{ fontSize: 18, flexShrink: 0 }}>ℹ️</span>
+                  <div style={{ fontSize: 13, color: "#64748b", lineHeight: 1.5 }}>
+                    Phòng bạn chọn có thể chứa thêm <strong>{capacityDiff} người</strong> so với nhu cầu.
+                  </div>
                 </div>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: "#555", marginBottom: 6 }}>
+              );
+            })()}
+
+            {totalPrice > 0 && (
+              <div style={{ borderTop: "1px solid #eee", paddingTop: 14, marginBottom: 14 }}>
+                {isEntire ? (
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: "#555", marginBottom: 6 }}>
+                    <span>{fmt(entireRoom?.price || 0)} × {nights} đêm</span>
+                    <span>{fmt(totalPrice)}</span>
+                  </div>
+                ) : cartItems.map(({ room: r, quantity }) => (
+                  <div key={r.id} style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: "#555", marginBottom: 4 }}>
+                    <span style={{ flex: 1, marginRight: 8, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.name} × {quantity}</span>
+                    <span style={{ flexShrink: 0 }}>{fmt(r.price * quantity * nights)}</span>
+                  </div>
+                ))}
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: "#555", marginBottom: 6, marginTop: 4 }}>
                   <span>{t("detail_tax")}</span>
                   <span>{fmt(tax)}</span>
                 </div>
@@ -398,15 +632,19 @@ export default function HotelDetailPage({ navigate, params = {}, user, onLogout,
             )}
 
             <button
-              style={{ width: "100%", background: C.primary, color: "#fff", border: "none", borderRadius: 10, padding: "14px", fontSize: 15, fontWeight: 800, cursor: "pointer", marginBottom: 10 }}
+              disabled={isEntire ? !entireRoom?.available : cartItems.length === 0}
+              style={{ width: "100%", background: (isEntire ? entireRoom?.available : cartItems.length > 0) ? C.primary : "#ccc", color: "#fff", border: "none", borderRadius: 10, padding: "14px", fontSize: 15, fontWeight: 800, cursor: (isEntire ? entireRoom?.available : cartItems.length > 0) ? "pointer" : "not-allowed", marginBottom: 10 }}
               onClick={() => {
-                const bp = { hotelId: hotel?.id, hotelName: hotel?.name, room: selectedRoom || rooms[0], checkin, checkout, guests, nights };
+                const bookingRooms = isEntire
+                  ? [{ id: entireRoom.id, name: entireRoom.name, price: entireRoom.price, quantity: 1 }]
+                  : cartItems.map(({ room: r, quantity }) => ({ id: r.id, name: r.name, price: r.price, quantity }));
+                const bp = { hotelId: hotel?.id, hotelName: hotel?.name, rooms: bookingRooms, checkin, checkout, guests, nights };
                 if (user) navigate("booking", bp);
                 else if (requireAuth) requireAuth("booking", bp);
                 else navigate("login");
               }}
             >
-              {t("detail_confirm_btn")}
+              {isEntire ? (t("detail_book_entire") || "Đặt nguyên căn") : t("detail_confirm_btn")}
             </button>
 
             <div style={{ fontSize: 12, color: "#aaa", textAlign: "center", lineHeight: 1.5 }}>
@@ -417,6 +655,19 @@ export default function HotelDetailPage({ navigate, params = {}, user, onLogout,
       </div>
 
       <Footer navigate={navigate} />
+
+
+
+{detailRoom && (
+        <RoomDetailModal
+          room={detailRoom}
+          nights={nights}
+          onClose={() => setDetailRoom(null)}
+          onAdd={() => { addRoom(detailRoom); setDetailRoom(null); }}
+          onRemove={() => removeRoom(detailRoom)}
+          cartQty={roomCart[detailRoom.id]?.quantity || 0}
+        />
+      )}
     </div>
   );
 }

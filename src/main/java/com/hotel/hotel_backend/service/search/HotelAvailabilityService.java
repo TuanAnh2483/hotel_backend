@@ -415,14 +415,23 @@ public class HotelAvailabilityService {
     private HotelAvailableRoomItemResponse toAvailableRoomItemResponse(RoomStayQuote quote) {
         // Các thẻ phòng trống hiển thị trực tiếp hình ảnh phòng cho giao diện người dùng chọn thời gian lưu trú.
 
+        Room room = quote.room();
+        Set<String> amenityNames = room.getAmenities().stream()
+                .map(Enum::name)
+                .collect(Collectors.toSet());
         return new HotelAvailableRoomItemResponse(
-                quote.room().getId(),
-                quote.room().getName(),
-                resolveCoverImageUrl(quote.room().getCoverImageUrl(), quote.room().getImageUrls()),
-                copyImageUrls(quote.room().getImageUrls()),
-                quote.room().getCapacity(),
+                room.getId(),
+                room.getName(),
+                resolveCoverImageUrl(room.getCoverImageUrl(), room.getImageUrls()),
+                copyImageUrls(room.getImageUrls()),
+                room.getCapacity(),
                 quote.availableUnits(),
-                quote.stayPrice()
+                quote.stayPrice(),
+                room.getDescription(),
+                room.getRoomCategory() != null ? room.getRoomCategory().name() : null,
+                room.getBedType() != null ? room.getBedType().name() : null,
+                amenityNames,
+                new HashSet<>(room.getCustomAmenities())
         );
     }
     /// 9 hotel này có roomItems nào sẽ trả ra API detail ?

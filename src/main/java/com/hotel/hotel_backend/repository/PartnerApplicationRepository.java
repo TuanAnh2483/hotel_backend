@@ -19,5 +19,7 @@ public interface PartnerApplicationRepository extends JpaRepository<PartnerAppli
     Optional<PartnerApplication> findTopByUserIdOrderByIdDesc(Long userId);
 
     List<PartnerApplication> findByStatus(PartnerApplicationStatus status);
+
+    List<PartnerApplication> findByTaxCode(String taxCode);   // tim theo ma so thue
 }
 

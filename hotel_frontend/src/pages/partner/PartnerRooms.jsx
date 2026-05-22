@@ -5,7 +5,7 @@ import {
   useUploadRoomImages, useDeleteRoomImage,
 } from "../../hooks/usePartnerQueries";
 import { useQueryClient } from "@tanstack/react-query";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useOutletContext, useLocation } from "react-router-dom";
 import { partnerService } from "../../services/partnerService"; // only used in queryClient.fetchQuery below
 import {
   createExistingImageItems,
@@ -18,9 +18,11 @@ import {
 import { PageHeader, Card, Btn, Modal } from "../../components/admin/AdminLayout";
 import {
   Bed, Users, Home, Edit3, Trash2, Search, Plus,
-  Wind, Coffee, Bath, Layout, Grid, Smartphone, Box, TrendingUp, TrendingDown,
-  MapPin, FileText, Building2, Sparkles, Minus
+  Grid, TrendingUp, TrendingDown,
+  MapPin, FileText, Building2, Sparkles, Minus, Box
 } from "lucide-react";
+import AmenityPicker from "../../components/partner/AmenityPicker";
+import { ROOM_AMENITY_CATEGORIES, ROOM_AMENITIES_FLAT, ROOM_AMENITY_KEYS } from "../../utils/amenityConfig";
 import "../../styles/pages/partner/PartnerRooms.css";
 import { useLang } from "../../contexts/LanguageContext";
 
@@ -36,25 +38,6 @@ const BED_TYPES = [
   { key: "DOUBLE", label: "Giường đôi" },
   { key: "TWIN",   label: "Hai giường" },
 ];
-const ROOM_AMENITIES = [
-  { key: "AIR_CONDITIONER", label: "Điều hòa", Icon: Wind },
-  { key: "TV", label: "TV", Icon: Smartphone },
-  { key: "MINI_BAR", label: "Mini bar", Icon: Coffee },
-  { key: "PRIVATE_BATHROOM", label: "Phòng tắm riêng", Icon: Bath },
-  { key: "BATHTUB", label: "Bồn tắm", Icon: Bath },
-  { key: "HAIR_DRYER", label: "Máy sấy tóc", Icon: Wind },
-  { key: "BALCONY", label: "Ban công", Icon: Layout },
-  { key: "WINDOW", label: "Cửa sổ", Icon: Layout },
-  { key: "DESK", label: "Bàn làm việc", Icon: Layout },
-  { key: "WARDROBE", label: "Tủ quần áo", Icon: Box },
-  { key: "KETTLE", label: "Ấm đun nước", Icon: Coffee },
-  { key: "REFRIGERATOR", label: "Tủ lạnh", Icon: Box },
-  { key: "SAFE_BOX", label: "Két an toàn", Icon: Box },
-  { key: "FREE_WATER", label: "Nước miễn phí", Icon: Coffee },
-  { key: "SEA_VIEW", label: "Hướng biển", Icon: Layout },
-  { key: "BREAKFAST", label: "Bữa sáng", Icon: Coffee },
-];
-const ROOM_AMENITY_KEYS = new Set(ROOM_AMENITIES.map((amenity) => amenity.key));
 
 const HOTEL_TYPE_LABELS = {
   HOTEL: "Khách sạn", RESORT: "Resort", VILLA: "Villa",
@@ -63,7 +46,7 @@ const HOTEL_TYPE_LABELS = {
 
 const EMPTY_FORM = {
   name: "", capacity: 2, quantity: 1, price: 500000,
-  roomCategory: "STANDARD", bedType: "DOUBLE", amenities: [],
+  roomCategory: "STANDARD", bedType: "DOUBLE", amenities: [], customAmenities: [],
   images: [], description: "",
 };
 
@@ -123,7 +106,7 @@ function HotelInfoPanel({ hotel }) {
   );
 }
 
-function RoomForm({ form, setForm, onSubmit, onCancel, saving, title, categories, bedTypes, amenities, hotel, aiSuggestion }) {
+function RoomForm({ form, setForm, onSubmit, onCancel, saving, title, categories, bedTypes, hotel, aiSuggestion, saveError }) {
   const { t } = useLang();
 
   const aiSuggestedPrice = aiSuggestion?.data?.suggestedPrice ?? null;
@@ -141,15 +124,6 @@ function RoomForm({ form, setForm, onSubmit, onCancel, saving, title, categories
     LOW:    { bg: "#F0FDF4", border: "#A7F3D0", accent: "#059669", hint: "AI đề xuất giảm giá · tối ưu công suất lấp phòng" },
   };
   const aiScheme = AI_ROOM_SCHEMES[aiDemand];
-
-  function toggleAmenity(key) {
-    setForm(f => ({
-      ...f,
-      amenities: f.amenities.includes(key)
-        ? f.amenities.filter(a => a !== key)
-        : [...f.amenities, key],
-    }));
-  }
 
   return (
     <Modal title={title} onClose={onCancel} width={680}>
@@ -178,7 +152,7 @@ function RoomForm({ form, setForm, onSubmit, onCancel, saving, title, categories
             <input className="pr-input" type="number" min="1" value={form.capacity} onChange={e => setForm(f => ({ ...f, capacity: Number(e.target.value) }))} />
           </Field>
           <Field label={t("pt_rooms_quantity")}>
-            <input className="pr-input" type="number" min="0" value={form.quantity} onChange={e => setForm(f => ({ ...f, quantity: Number(e.target.value) }))} />
+            <input className="pr-input" type="number" min="1" value={form.quantity} onChange={e => setForm(f => ({ ...f, quantity: Math.max(1, Number(e.target.value)) }))} />
           </Field>
           <Field label={t("pt_rooms_price")}>
             <div className="pr-price-wrap">
@@ -187,6 +161,14 @@ function RoomForm({ form, setForm, onSubmit, onCancel, saving, title, categories
             </div>
           </Field>
         </div>
+
+        {/* AI suggestion error */}
+        {aiSuggestion?.error && (
+          <div style={{ display: "flex", alignItems: "center", gap: 7, padding: "9px 14px", background: "#fff7ed", borderRadius: 12, border: "1px solid #fed7aa", fontSize: 12, color: "#c2410c" }}>
+            <Sparkles size={12} style={{ opacity: 0.5 }} />
+            Không thể tải gợi ý AI lúc này. Bạn có thể nhập giá thủ công.
+          </div>
+        )}
 
         {/* AI suggestion — full width below grid, no blank space issue */}
         {aiSuggestion && (aiSuggestion.loading || aiSuggestion.data) && (
@@ -257,27 +239,12 @@ function RoomForm({ form, setForm, onSubmit, onCancel, saving, title, categories
         )}
 
         <Field label={t("pt_rooms_amenities")}>
-          <div className="pr-amenities-grid">
-            {amenities.map(a => {
-              const selected = form.amenities.includes(a.key);
-              return (
-                <label
-                  key={a.key}
-                  className="pr-amenity-label"
-                  style={{
-                    background:  selected ? "#FFF1F2" : "#fff",
-                    color:       selected ? "#BE1E2E" : "#64748b",
-                    borderColor: selected ? "#BE1E2E" : "#e2e8f0",
-                    fontWeight:  selected ? 700 : 500,
-                  }}
-                >
-                  <input type="checkbox" style={{ display: "none" }} checked={selected} onChange={() => toggleAmenity(a.key)} />
-                  <a.Icon size={16} />
-                  {a.label}
-                </label>
-              );
-            })}
-          </div>
+          <AmenityPicker
+            categories={ROOM_AMENITY_CATEGORIES}
+            selected={form.amenities}
+            customAmenities={form.customAmenities || []}
+            onChange={(amenities, customAmenities) => setForm(f => ({ ...f, amenities, customAmenities }))}
+          />
         </Field>
 
         <Field label={t("pt_rooms_desc")}>
@@ -327,6 +294,11 @@ function RoomForm({ form, setForm, onSubmit, onCancel, saving, title, categories
           <p className="pr-image-hint">{t("pt_rooms_img_hint")}</p>
         </Field>
 
+        {saveError && (
+          <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 10, color: "#b91c1c", fontSize: 13, fontWeight: 600, lineHeight: 1.5, padding: "10px 14px", marginBottom: 8 }}>
+            {saveError}
+          </div>
+        )}
         <div className="pr-form-footer">
           <Btn variant="ghost" onClick={onCancel}>{t("adm_cancel")}</Btn>
           <Btn onClick={onSubmit} disabled={saving || !form.name.trim()}>
@@ -355,38 +327,38 @@ export default function PartnerRooms() {
     { key: "DOUBLE", label: t("pt_bed_double") },
     { key: "TWIN",   label: t("pt_bed_twin") },
   ];
-  const ROOM_AMENITIES = [
-    { key: "AIR_CONDITIONER",  label: t("pt_ram_ac"),        Icon: Wind },
-    { key: "TV",               label: t("pt_ram_tv"),        Icon: Smartphone },
-    { key: "MINI_BAR",         label: t("pt_ram_minibar"),   Icon: Coffee },
-    { key: "PRIVATE_BATHROOM", label: t("pt_ram_bathroom"),  Icon: Bath },
-    { key: "BATHTUB",          label: t("pt_ram_bathtub"),   Icon: Bath },
-    { key: "HAIR_DRYER",       label: t("pt_ram_hairdryer"), Icon: Wind },
-    { key: "BALCONY",          label: t("pt_ram_balcony"),   Icon: Layout },
-    { key: "WINDOW",           label: t("pt_ram_window"),    Icon: Layout },
-    { key: "DESK",             label: t("pt_ram_desk"),      Icon: Layout },
-    { key: "WARDROBE",         label: t("pt_ram_wardrobe"),  Icon: Box },
-    { key: "KETTLE",           label: t("pt_ram_kettle"),    Icon: Coffee },
-    { key: "REFRIGERATOR",     label: t("pt_ram_fridge"),    Icon: Box },
-    { key: "SAFE_BOX",         label: t("pt_ram_safe"),      Icon: Box },
-    { key: "FREE_WATER",       label: t("pt_ram_water"),     Icon: Coffee },
-    { key: "SEA_VIEW",         label: t("pt_ram_seaview"),   Icon: Layout },
-    { key: "BREAKFAST",        label: t("pt_ram_breakfast"), Icon: Coffee },
-  ];
   const [sp] = useSearchParams();
-  const initialHotelId = sp.get("hotelId") || "";
+  const { state: navState } = useLocation();
+  const outletCtx = useOutletContext() || {};
+  const { selectedHotelId: ctxHotelId, setSelectedHotelId: setCtxHotelId } = outletCtx;
 
   const queryClient = useQueryClient();
-  const [selectedHotelId, setSelectedHotelId] = useState(initialHotelId);
+  const [selectedHotelId, setSelectedHotelId] = useState(
+    () => sp.get("hotelId") || (ctxHotelId ? String(ctxHotelId) : "")
+  );
+
+  // Sync from sidebar hotel selection → local state
+  useEffect(() => {
+    if (ctxHotelId && !sp.get("hotelId")) {
+      setSelectedHotelId(String(ctxHotelId));
+    }
+  }, [ctxHotelId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  function selectHotel(id) {
+    setSelectedHotelId(id);
+    setCtxHotelId?.(id ? Number(id) : null);
+  }
   const [modal, setModal]       = useState(null);
   const [selected, setSelected] = useState(null);
   const [form, setForm]         = useState(EMPTY_FORM);
   const [saving, setSaving]     = useState(false);
+  const [saveError, setSaveError] = useState("");
+  const [showNewBanner, setShowNewBanner] = useState(!!navState?.newProperty);
   const [page, setPage]         = useState(1);
   const [error, setError]       = useState("");
   const [searchText, setSearchText]     = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
-  const [roomAiSuggestion, setRoomAiSuggestion] = useState({ loading: false, data: null });
+  const [roomAiSuggestion, setRoomAiSuggestion] = useState({ loading: false, data: null, error: false });
   const pageSize = 8;
 
   const { data: hotelData }   = useMyHotels();
@@ -402,23 +374,31 @@ export default function PartnerRooms() {
   const hotels = Array.isArray(hotelData) ? hotelData : [];
   const rooms  = Array.isArray(roomData)  ? roomData  : [];
 
-  // Auto-select first hotel when list loads
+  // Auto-select newly created hotel from wizard redirect
   useEffect(() => {
-    if (!initialHotelId && hotels.length > 0 && !selectedHotelId) {
-      setSelectedHotelId(String(hotels[0].id));
+    if (navState?.newProperty && navState?.hotelId && hotels.length > 0) {
+      const newId = String(navState.hotelId);
+      if (hotels.find(h => String(h.id) === newId)) {
+        selectHotel(newId);
+      }
     }
-  }, [hotels, initialHotelId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [hotels]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Auto-select first hotel when list loads and nothing is selected
+  useEffect(() => {
+    if (!selectedHotelId && hotels.length > 0) {
+      selectHotel(String(hotels[0].id));
+    }
+  }, [hotels]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const catalog = {
     roomCategories: Array.isArray(catalogData?.roomCategories) && catalogData.roomCategories.length ? catalogData.roomCategories : CATEGORIES.map(c => c.key),
     bedTypes:       Array.isArray(catalogData?.bedTypes)       && catalogData.bedTypes.length       ? catalogData.bedTypes       : BED_TYPES.map(b => b.key),
-    roomAmenities:  Array.isArray(catalogData?.roomAmenities)  && catalogData.roomAmenities.length  ? catalogData.roomAmenities  : ROOM_AMENITIES.map(a => a.key),
+    roomAmenities:  Array.isArray(catalogData?.roomAmenities)  && catalogData.roomAmenities.length  ? catalogData.roomAmenities  : [...ROOM_AMENITY_KEYS],
   };
 
   const categoryOptions = catalog.roomCategories.map((key) => CATEGORIES.find((item) => item.key === key) || { key, label: key });
   const bedTypeOptions = catalog.bedTypes.map((key) => BED_TYPES.find((item) => item.key === key) || { key, label: key });
-  const roomAmenityOptions = catalog.roomAmenities
-    .map((key) => ROOM_AMENITIES.find((item) => item.key === key) || { key, label: key, Icon: Box });
 
   const filteredRooms = rooms.filter(r => {
     const matchCategory = !categoryFilter || r.roomCategory === categoryFilter;
@@ -433,22 +413,25 @@ export default function PartnerRooms() {
   function openAdd() {
     revokePendingImageUrls(form.images);
     setSelected(null);
+    setSaveError("");
     setForm({ ...EMPTY_FORM, images: [] });
-    setRoomAiSuggestion({ loading: false, data: null });
+    setRoomAiSuggestion({ loading: false, data: null, error: false });
     setModal("add");
   }
   async function openEdit(room) {
     revokePendingImageUrls(form.images);
+    setSaveError("");
     setSelected(room);
     setForm({
       name: room.name || "", capacity: room.capacity || 2, quantity: room.quantity || 1, price: room.price || 0,
       roomCategory: room.roomCategory || "STANDARD", bedType: room.bedType || "DOUBLE",
-      amenities: room.amenities ? room.amenities.filter(key => catalog.roomAmenities.includes(key) || ROOM_AMENITY_KEYS.has(key)) : [],
+      amenities: room.amenities ? room.amenities.filter(key => ROOM_AMENITY_KEYS.has(key)) : [],
+      customAmenities: room.customAmenities ? [...room.customAmenities] : [],
       images: createExistingImageItems(getRoomImageUrls(room)),
       description: room.description || "",
     });
     setModal("edit");
-    setRoomAiSuggestion({ loading: true, data: null });
+    setRoomAiSuggestion({ loading: true, data: null, error: false });
     const today = new Date();
     const end = new Date(today.getTime() + 14 * 86400000);
     const from = toIsoDateLocal(today);
@@ -461,11 +444,11 @@ export default function PartnerRooms() {
       const items = (result?.items || []).filter(i => i.suggestedPrice > 0);
       if (items.length > 0) {
         const avg = Math.round(items.reduce((s, i) => s + i.suggestedPrice, 0) / items.length / 1000) * 1000;
-        setRoomAiSuggestion({ loading: false, data: { suggestedPrice: avg, aiGenerated: items.some(i => i.aiGenerated) } });
+        setRoomAiSuggestion({ loading: false, data: { suggestedPrice: avg, aiGenerated: items.some(i => i.aiGenerated) }, error: false });
       } else {
-        setRoomAiSuggestion({ loading: false, data: null });
+        setRoomAiSuggestion({ loading: false, data: null, error: false });
       }
-    }).catch(() => setRoomAiSuggestion({ loading: false, data: null }));
+    }).catch(() => setRoomAiSuggestion({ loading: false, data: null, error: true }));
   }
   function openDelete(room) { setSelected(room); setModal("delete"); }
 
@@ -474,11 +457,19 @@ export default function PartnerRooms() {
     setModal(null);
     setSelected(null);
     setForm({ ...EMPTY_FORM, images: [] });
-    setRoomAiSuggestion({ loading: false, data: null });
+    setRoomAiSuggestion({ loading: false, data: null, error: false });
   }
 
   async function handleSave() {
+    if (!form.name.trim())                         { setSaveError("Vui lòng nhập tên loại phòng"); return; }
+    if (!Number.isFinite(Number(form.price)) || Number(form.price) < 0)
+                                                   { setSaveError("Giá phòng phải là số nguyên ≥ 0"); return; }
+    if (!Number.isInteger(Number(form.capacity)) || Number(form.capacity) < 1)
+                                                   { setSaveError("Sức chứa phải là số nguyên ≥ 1"); return; }
+    if (!Number.isInteger(Number(form.quantity)) || Number(form.quantity) < 1)
+                                                   { setSaveError("Số lượng phòng phải là số nguyên ≥ 1"); return; }
     setSaving(true);
+    setSaveError("");
     try {
       const images = form.images || [];
       const existingImageUrls = existingImageUrlsFromItems(images);
@@ -493,11 +484,13 @@ export default function PartnerRooms() {
           await uploadImages.mutateAsync({ roomId: created.id, hotelId: selectedHotelId, files: pendingFiles });
         }
       } else {
+        // existingImageUrls = ảnh cũ user GIỮ LẠI; payload đã chứa imageUrls đúng
         await updateRoom.mutateAsync({
           roomId: selected.id, hotelId: selectedHotelId,
-          ...payload, imageUrls: getRoomImageUrls(selected),
+          ...payload,
+          // payload.imageUrls = existingImageUrls (đã tính ở trên), KHÔNG override bằng selected
         });
-        // Delete removed images
+        // Xóa trên Cloudinary các ảnh bị remove khỏi form
         const remaining = new Set(existingImageUrls);
         const removed = getRoomImageUrls(selected).filter(url => !remaining.has(url));
         for (const imageUrl of removed) {
@@ -511,7 +504,11 @@ export default function PartnerRooms() {
       setModal(null);
       setSelected(null);
       setForm({ ...EMPTY_FORM, images: [] });
-    } catch (e) { alert(e.message); }
+      setRoomAiSuggestion({ loading: false, data: null, error: false });
+    } catch (e) {
+      const fieldErrors = e.details?.map(d => `${d.field}: ${d.message}`).join("; ");
+      setSaveError(fieldErrors ? `${e.message} (${fieldErrors})` : e.message);
+    }
     finally { setSaving(false); }
   }
 
@@ -536,6 +533,35 @@ export default function PartnerRooms() {
         )}
       />
 
+      {/* New property onboarding banner */}
+      {showNewBanner && (
+        <div style={{
+          display: "flex", alignItems: "center", gap: 14,
+          background: "linear-gradient(135deg, #fff5f5, #fff1f2)",
+          border: "1px solid #fecaca", borderRadius: 14,
+          padding: "16px 20px", marginBottom: 20,
+        }}>
+          <div style={{ width: 40, height: 40, borderRadius: 12, background: "#BE1E2E", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <Sparkles size={20} color="#fff" />
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontWeight: 800, fontSize: 15, color: "#1e293b", marginBottom: 3 }}>
+              Cơ sở đã được tạo thành công!
+            </div>
+            <div style={{ fontSize: 13, color: "#64748b" }}>
+              Hãy bổ sung <strong>ảnh</strong> và <strong>tiện ích</strong> cho từng loại phòng để tăng khả năng được đặt phòng.
+            </div>
+          </div>
+          <button
+            onClick={() => setShowNewBanner(false)}
+            style={{ background: "none", border: "none", cursor: "pointer", color: "#94a3b8", padding: 4, flexShrink: 0 }}
+            title="Đóng"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
       {/* Hotel Selector */}
       <div className="pr-hotel-selector">
         <div className="pr-hotel-selector-label">
@@ -544,7 +570,7 @@ export default function PartnerRooms() {
         <select
           className="pr-hotel-select"
           value={selectedHotelId}
-          onChange={e => setSelectedHotelId(e.target.value)}
+          onChange={e => selectHotel(e.target.value)}
         >
           <option value="">-- {t("pt_rooms_select_hotel")} --</option>
           {hotels.map(h => <option key={h.id} value={h.id}>{h.name}</option>)}
@@ -702,9 +728,9 @@ export default function PartnerRooms() {
           form={form} setForm={setForm} onSubmit={handleSave} onCancel={closeFormModal} saving={saving}
           categories={categoryOptions}
           bedTypes={bedTypeOptions}
-          amenities={roomAmenityOptions}
           hotel={hotels.find(h => String(h.id) === String(selectedHotelId)) || null}
           aiSuggestion={modal === "edit" ? roomAiSuggestion : null}
+          saveError={saveError}
         />
       )}
 

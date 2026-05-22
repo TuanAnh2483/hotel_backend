@@ -95,6 +95,11 @@ function normalizeRoom(r, nights) {
     capacity:       r.capacity,
     imageUrl:       r.coverImageUrl || images[0] || "",
     imageUrls:      images,
+    description:    r.description || "",
+    roomCategory:   r.roomCategory || null,
+    bedType:        r.bedType || null,
+    amenities:      Array.isArray(r.amenities) ? r.amenities : Array.from(r.amenities || []),
+    customAmenities: Array.isArray(r.customAmenities) ? r.customAmenities : Array.from(r.customAmenities || []),
   };
 }
 
@@ -172,6 +177,7 @@ export const hotelService = {
         amenities,
         imageUrl:    data.coverImageUrl || images[0] || "",
         imageUrls:   images,
+        bookingMode: data.bookingMode || "BY_ROOM",
       };
     } catch {
       return null;

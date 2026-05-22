@@ -1,5 +1,7 @@
 package com.hotel.hotel_backend.controller;
 
+import com.hotel.hotel_backend.entity.BedType;
+import com.hotel.hotel_backend.entity.BookingMode;
 import com.hotel.hotel_backend.entity.DailyInventory;
 import com.hotel.hotel_backend.entity.DailyRate;
 import com.hotel.hotel_backend.entity.DailyRateId;
@@ -10,7 +12,6 @@ import com.hotel.hotel_backend.entity.RoomCategory;
 import com.hotel.hotel_backend.entity.User;
 import com.hotel.hotel_backend.entity.UserStatus;
 import com.hotel.hotel_backend.entity.UserType;
-import com.hotel.hotel_backend.entity.BedType;
 import com.hotel.hotel_backend.repository.BookingItemRepository;
 import com.hotel.hotel_backend.repository.BookingRepository;
 import com.hotel.hotel_backend.repository.DailyInventoryRepository;
@@ -1046,6 +1047,209 @@ class BookingIntegrationTest {
                 .andExpect(jsonPath("$.error.code").value("CONFLICT"));
     }
 
+    @Test
+    void entireModeShouldRejectBookingWithTwoRoomTypes() throws Exception {
+        // Contract:
+        // Hotel co bookingMode=ENTIRE chi cho phep dat dung 1 room type duy nhat.
+        // Neu request chua 2 room type khac nhau thi phai bi tu choi voi VALIDATION_ERROR.
+        String customerToken = createToken("customer-entire-multi-type@test.com", UserType.CUSTOMER);
+        User owner = createUser("partner-entire-multi-type@test.com", UserType.PARTNER);
+
+        Hotel hotel = createEntireHotel(owner, "Entire Hotel Multi Type");
+        Room room1 = createRoom(hotel, "Room Type A", 1);
+        Room room2 = createRoom(hotel, "Room Type B", 1);
+        initInventory(room1);
+        initInventory(room2);
+
+        mockMvc.perform(post("/api/bookings")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(customerToken))
+                        .content("""
+                                {
+                                  "checkIn": "%s",
+                                  "checkOut": "%s",
+                                  "room": [
+                                    { "roomId": %d, "quantity": 1 },
+                                    { "roomId": %d, "quantity": 1 }
+                                  ],
+                                  "contact": {
+                                    "fullName": "Test Customer",
+                                    "email": "customer-entire-multi-type@test.com",
+                                    "phone": "0123456789"
+                                  }
+                                }
+                                """.formatted(checkIn, checkOut, room1.getId(), room2.getId())))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"));
+    }
+
+    @Test
+    void entireModeShouldRejectBookingWithQuantityMoreThanOne() throws Exception {
+        // Contract:
+        // Hotel co bookingMode=ENTIRE chi cho phep quantity=1.
+        // Neu quantity > 1 thi phai bi tu choi voi VALIDATION_ERROR.
+        String customerToken = createToken("customer-entire-qty@test.com", UserType.CUSTOMER);
+        User owner = createUser("partner-entire-qty@test.com", UserType.PARTNER);
+
+        Hotel hotel = createEntireHotel(owner, "Entire Hotel Qty");
+        Room room = createRoom(hotel, "Whole Unit", 5);
+        initInventory(room);
+
+        mockMvc.perform(post("/api/bookings")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(customerToken))
+                        .content("""
+                                {
+                                  "checkIn": "%s",
+                                  "checkOut": "%s",
+                                  "room": [
+                                    { "roomId": %d, "quantity": 2 }
+                                  ],
+                                  "contact": {
+                                    "fullName": "Test Customer",
+                                    "email": "customer-entire-qty@test.com",
+                                    "phone": "0123456789"
+                                  }
+                                }
+                                """.formatted(checkIn, checkOut, room.getId())))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"));
+    }
+
+    @Test
+    void byRoomModeShouldAllowMultipleRoomTypesInOneBooking() throws Exception {
+        // Contract:
+        // Hotel co bookingMode=BY_ROOM cho phep dat nhieu room type khac nhau trong 1 booking.
+        // Total price phai bang tong stay price cua tung room type.
+        String customerToken = createToken("customer-byroom-multi@test.com", UserType.CUSTOMER);
+        User owner = createUser("partner-byroom-multi@test.com", UserType.PARTNER);
+
+        Hotel hotel = createHotel(owner, "ByRoom Hotel Multi");
+        Room standardRoom = createRoom(hotel, "Standard Room", 2);
+        initInventory(standardRoom);
+        createDailyRate(standardRoom, checkIn, 500_000L, 1, false);
+        createDailyRate(standardRoom, checkIn.plusDays(1), 500_000L, 1, false);
+
+        Room suiteRoom = createRoom(hotel, "Suite Room", 2);
+        initInventory(suiteRoom);
+        createDailyRate(suiteRoom, checkIn, 800_000L, 1, false);
+        createDailyRate(suiteRoom, checkIn.plusDays(1), 800_000L, 1, false);
+
+        // standardRoom: 500K + 500K = 1_000_000
+        // suiteRoom:    800K + 800K = 1_600_000
+        // total = 2_600_000
+        mockMvc.perform(post("/api/bookings")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(customerToken))
+                        .content("""
+                                {
+                                  "checkIn": "%s",
+                                  "checkOut": "%s",
+                                  "room": [
+                                    { "roomId": %d, "quantity": 1 },
+                                    { "roomId": %d, "quantity": 1 }
+                                  ],
+                                  "contact": {
+                                    "fullName": "MultiRoom Customer",
+                                    "email": "customer-byroom-multi@test.com",
+                                    "phone": "0123456789"
+                                  }
+                                }
+                                """.formatted(checkIn, checkOut, standardRoom.getId(), suiteRoom.getId())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.status").value("PENDING_PAYMENT"))
+                .andExpect(jsonPath("$.data.totalPrice").value(2_600_000.0))
+                .andExpect(jsonPath("$.data.items.length()").value(2));
+    }
+
+    @Test
+    void byRoomModeShouldAllowQuantityGreaterThanOne() throws Exception {
+        // Contract:
+        // Hotel co bookingMode=BY_ROOM cho phep dat quantity > 1 cho cung 1 room type.
+        // Inventory phai bi giam tuong ung voi so luong dat.
+        String customerToken = createToken("customer-byroom-qty@test.com", UserType.CUSTOMER);
+        User owner = createUser("partner-byroom-qty@test.com", UserType.PARTNER);
+
+        Hotel hotel = createHotel(owner, "ByRoom Hotel Qty");
+        Room room = createRoom(hotel, "Standard Room", 5);
+        initInventory(room);
+        createDailyRate(room, checkIn, 600_000L, 1, false);
+        createDailyRate(room, checkIn.plusDays(1), 600_000L, 1, false);
+
+        // 3 phong x (600K + 600K) = 3_600_000
+        mockMvc.perform(post("/api/bookings")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(customerToken))
+                        .content("""
+                                {
+                                  "checkIn": "%s",
+                                  "checkOut": "%s",
+                                  "room": [
+                                    { "roomId": %d, "quantity": 3 }
+                                  ],
+                                  "contact": {
+                                    "fullName": "Qty Customer",
+                                    "email": "customer-byroom-qty@test.com",
+                                    "phone": "0123456789"
+                                  }
+                                }
+                                """.formatted(checkIn, checkOut, room.getId())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.status").value("PENDING_PAYMENT"))
+                .andExpect(jsonPath("$.data.totalPrice").value(3_600_000.0))
+                .andExpect(jsonPath("$.data.items.length()").value(1))
+                .andExpect(jsonPath("$.data.items[0].quantity").value(3));
+
+        // Kiem tra inventory giam dung 3 phong
+        List<DailyInventory> inventories = dailyInventoryRepository.findByIdRoomIdAndIdDateBetween(
+                room.getId(), checkIn, checkOut.minusDays(1)
+        );
+        assertThat(inventories).allMatch(inv -> inv.getBlockedRooms() == 3);
+    }
+
+    @Test
+    void bookingShouldRejectRoomsFromDifferentHotels() throws Exception {
+        // Contract:
+        // Tat ca room trong 1 booking phai thuoc cung 1 hotel.
+        // Neu request mix room tu 2 hotel khac nhau phai bi tu choi voi VALIDATION_ERROR.
+        String customerToken = createToken("customer-cross-hotel@test.com", UserType.CUSTOMER);
+        User owner = createUser("partner-cross-hotel@test.com", UserType.PARTNER);
+
+        Hotel hotelA = createHotel(owner, "Hotel A");
+        Room roomA = createRoom(hotelA, "Room A", 1);
+        initInventory(roomA);
+
+        Hotel hotelB = createHotel(owner, "Hotel B");
+        Room roomB = createRoom(hotelB, "Room B", 1);
+        initInventory(roomB);
+
+        mockMvc.perform(post("/api/bookings")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(customerToken))
+                        .content("""
+                                {
+                                  "checkIn": "%s",
+                                  "checkOut": "%s",
+                                  "room": [
+                                    { "roomId": %d, "quantity": 1 },
+                                    { "roomId": %d, "quantity": 1 }
+                                  ],
+                                  "contact": {
+                                    "fullName": "Cross Hotel Customer",
+                                    "email": "customer-cross-hotel@test.com",
+                                    "phone": "0123456789"
+                                  }
+                                }
+                                """.formatted(checkIn, checkOut, roomA.getId(), roomB.getId())))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"));
+    }
+
     private String createToken(String email, UserType userType) {
         return jwtService.generate(createUser(email, userType));
     }
@@ -1067,6 +1271,18 @@ class BookingIntegrationTest {
         hotel.setProvince("Bangkok");
         hotel.setDistrict("District 1");
         hotel.setHotelType(HotelType.HOTEL);
+        return hotelRepository.save(hotel);
+    }
+
+    private Hotel createEntireHotel(User owner, String name) {
+        Hotel hotel = new Hotel();
+        hotel.setOwner(owner);
+        hotel.setName(name);
+        hotel.setAddress(name + " address");
+        hotel.setProvince("Bangkok");
+        hotel.setDistrict("District 1");
+        hotel.setHotelType(HotelType.VILLA);
+        hotel.setBookingMode(BookingMode.ENTIRE);
         return hotelRepository.save(hotel);
     }
 

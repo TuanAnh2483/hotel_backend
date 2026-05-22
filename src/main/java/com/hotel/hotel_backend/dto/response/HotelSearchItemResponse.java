@@ -1,5 +1,7 @@
 package com.hotel.hotel_backend.dto.response;
 
+import com.hotel.hotel_backend.entity.HotelType;
+
 import java.math.BigDecimal;
 import java.util.List;
 
@@ -15,6 +17,7 @@ public record HotelSearchItemResponse(
         Integer ratingCount,
         Long minPrice,
         Integer availableRoomTypes,
-        Integer availableUnits
+        Integer availableUnits,
+        HotelType hotelType
 ) {
 }

@@ -32,14 +32,20 @@ public class  Hotel {
     @Column(nullable = false)
     private String name;
 
+    @Column(length = 500)
     private String address;
     private String province;
     private String district;
+    @Column(columnDefinition = "TEXT")
     private String description;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private HotelType hotelType = HotelType.HOTEL;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, columnDefinition = "varchar(255) not null default 'BY_ROOM'")
+    private BookingMode bookingMode = BookingMode.BY_ROOM;
 
     @ElementCollection(targetClass = HotelAmenity.class, fetch = FetchType.EAGER)
     @CollectionTable(name = "hotel_amenities", joinColumns = @JoinColumn(name = "hotel_id"))
@@ -47,13 +53,18 @@ public class  Hotel {
     @Enumerated(EnumType.STRING)
     private Set<HotelAmenity> amenities = new HashSet<>();
 
-    // Đối tác quản lý một thư viện hình ảnh công khai đơn giản, có thứ tự, chứa các URL hình ảnh dành cho trang chi tiết/danh sách khách sạn.    @ElementCollection(fetch = FetchType.EAGER)
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "hotel_custom_amenities", joinColumns = @JoinColumn(name = "hotel_id"))
+    @Column(name = "amenity", nullable = false, length = 100)
+    private Set<String> customAmenities = new HashSet<>();
+
+    @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "hotel_images", joinColumns = @JoinColumn(name = "hotel_id"))
     @OrderColumn(name = "sort_order")
-    @Column(name = "image_url", nullable = false)
+    @Column(name = "image_url", nullable = false, length = 1000)
     private List<String> imageUrls = new ArrayList<>();
 
-    @Column(name = "cover_image_url")
+    @Column(name = "cover_image_url", length = 1000)
     private String coverImageUrl;
 
 

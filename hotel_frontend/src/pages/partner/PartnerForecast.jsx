@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useOutletContext } from "react-router-dom";
 import {
   useMyHotels, usePartnerRooms, usePriceSuggestions, useRevenueAnalytics,
   useSubmitPriceFeedback, useUpdateRoomCalendar, useTriggerTraining,
@@ -113,6 +114,7 @@ function LineChart({ items }) {
 // ── Main page ─────────────────────────────────────────────────────────
 export default function PartnerForecast() {
   const { t } = useLang();
+  const { selectedHotelId: ctxHotelId, setSelectedHotelId: setCtxHotelId } = useOutletContext() || {};
   const DEMAND_CFG = {
     HIGH:   { ...DEMAND_STYLE.HIGH,   label: t("pt_fc_demand_high") },
     MEDIUM: { ...DEMAND_STYLE.MEDIUM, label: t("pt_fc_demand_medium") },
@@ -123,7 +125,7 @@ export default function PartnerForecast() {
     MEDIUM: { ...CONF_STYLE.MEDIUM, label: t("pt_fc_conf_medium") },
     LOW:    { ...CONF_STYLE.LOW,    label: t("pt_fc_conf_low") },
   };
-  const [selectedHotelId, setSelectedHotelId] = useState("");
+  const [selectedHotelId, setSelectedHotelId] = useState(ctxHotelId ? String(ctxHotelId) : "");
   const [selectedRoomId, setSelectedRoomId] = useState("");
   const [daysCount, setDaysCount] = useState(14);
   const [applied, setApplied] = useState({});
@@ -167,6 +169,12 @@ export default function PartnerForecast() {
       return String(hotels[0].id);
     });
   }, [hotels]);
+
+  // Sync with sidebar hotel selection
+  useEffect(() => {
+    if (!ctxHotelId) return;
+    setSelectedHotelId(String(ctxHotelId));
+  }, [ctxHotelId]);
 
   // Auto-select first room when hotel/rooms change
   useEffect(() => {
@@ -237,7 +245,7 @@ export default function PartnerForecast() {
         <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center" }}>
           <div style={{ position: "relative" }}>
             <Building2 size={15} color="#94a3b8" style={iconOverlay} />
-            <select value={selectedHotelId} onChange={e => setSelectedHotelId(e.target.value)} style={selectSt}>
+            <select value={selectedHotelId} onChange={e => { setSelectedHotelId(e.target.value); setCtxHotelId?.(e.target.value ? Number(e.target.value) : null); }} style={selectSt}>
               {!hotels.length && <option>{t("pt_fc_no_hotels")}</option>}
               {hotels.map(h => <option key={h.id} value={h.id}>{h.name}</option>)}
             </select>

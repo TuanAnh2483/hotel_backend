@@ -31,6 +31,9 @@ export const vi = {
   adm_users_err_pass_format:   "Mật khẩu phải có ít nhất 1 chữ cái và 1 chữ số",
   adm_users_err_pass_cf:       "Mật khẩu xác nhận không khớp",
   adm_users_err_generic:       "Có lỗi xảy ra",
+  adm_users_detail_title:      "Chi tiết người dùng",
+  adm_users_col_tax_code:      "Mã số thuế",
+  adm_users_view:              "Xem",
 };
 
 export const en = {
@@ -65,4 +68,7 @@ export const en = {
   adm_users_err_pass_format:   "Password must contain at least 1 letter and 1 number",
   adm_users_err_pass_cf:       "Passwords do not match",
   adm_users_err_generic:       "An error occurred",
+  adm_users_detail_title:      "User details",
+  adm_users_col_tax_code:      "Tax code",
+  adm_users_view:              "View",
 };

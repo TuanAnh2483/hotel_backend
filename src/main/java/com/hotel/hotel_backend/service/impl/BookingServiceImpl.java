@@ -10,6 +10,7 @@ import com.hotel.hotel_backend.dto.response.BookingPaymentTransactionResponse;
 import com.hotel.hotel_backend.dto.response.BookingQuoteResponse;
 import com.hotel.hotel_backend.dto.response.BookingResponse;
 import com.hotel.hotel_backend.entity.*;
+import com.hotel.hotel_backend.entity.BookingMode;
 import com.hotel.hotel_backend.exeption.ApiException;
 import com.hotel.hotel_backend.exeption.ErrorCode;
 import com.hotel.hotel_backend.mapper.BookingMapper;
@@ -404,6 +405,20 @@ public class BookingServiceImpl implements BookingService {
 
         if (mixedHotels) {
             throw new ApiException(ErrorCode.VALIDATION_ERROR, "All booked rooms must belong to the same hotel");
+        }
+
+        // ENTIRE hotels: chỉ được đặt 1 room duy nhất với quantity = 1.
+        Hotel hotel = reservations.get(0).room().getHotel();
+        if (hotel.getBookingMode() == BookingMode.ENTIRE) {
+            if (reservations.size() > 1) {
+                throw new ApiException(ErrorCode.VALIDATION_ERROR,
+                        "Cơ sở thuê nguyên căn chỉ cho phép đặt 1 đơn vị");
+            }
+            RoomReservation reservation = reservations.get(0);
+            if (reservation.quantity() != 1) {
+                throw new ApiException(ErrorCode.VALIDATION_ERROR,
+                        "Cơ sở thuê nguyên căn chỉ cho phép đặt số lượng 1");
+            }
         }
     }
 

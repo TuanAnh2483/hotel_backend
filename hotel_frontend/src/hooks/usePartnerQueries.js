@@ -226,6 +226,13 @@ export function useUpdateRoomCalendar(options = {}) {
   });
 }
 
+export function useSetHotelBasePricing(options = {}) {
+  return useMutation({
+    mutationFn: ({ hotelId, ...data }) => partnerService.setHotelBasePricing(hotelId, data),
+    ...options,
+  });
+}
+
 // ── Refunds ───────────────────────────────────────────────────────────
 export function usePartnerRefunds(params, options = {}) {
   return useQuery({

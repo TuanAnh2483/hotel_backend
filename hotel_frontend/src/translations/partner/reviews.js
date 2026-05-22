@@ -31,6 +31,9 @@ export const vi = {
   pt_rv_no_comment_long: "Khách hàng chỉ chấm điểm, không để lại bình luận.",
   pt_rv_reply_ph:       "Nhập phản hồi cho khách hàng...",
   pt_rv_save_reply:     "Lưu phản hồi",
+  pt_rv_reply_now:      "Phản hồi ngay",
+  pt_rv_edit_reply:     "Sửa phản hồi",
+  pt_rv_waiting:        "Khách đang chờ phản hồi",
 };
 
 export const en = {
@@ -65,4 +68,7 @@ export const en = {
   pt_rv_no_comment_long: "Guest only rated, no comment left.",
   pt_rv_reply_ph:       "Enter your reply to the guest...",
   pt_rv_save_reply:     "Save reply",
+  pt_rv_reply_now:      "Reply now",
+  pt_rv_edit_reply:     "Edit reply",
+  pt_rv_waiting:        "Guest is waiting for a reply",
 };

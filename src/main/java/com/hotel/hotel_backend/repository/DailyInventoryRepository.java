@@ -21,5 +21,9 @@ public interface DailyInventoryRepository
             LocalDate start,
             LocalDate end
     );
+
+    void deleteByIdRoomId(Long roomId);
+
+    void deleteByIdRoomIdIn(List<Long> roomIds);
 }
 

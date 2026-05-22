@@ -8,6 +8,7 @@ import com.hotel.hotel_backend.dto.request.PartnerBookingSearchRequest;
 import com.hotel.hotel_backend.dto.request.PartnerReviewReplyRequest;
 import com.hotel.hotel_backend.dto.request.PartnerReviewSearchRequest;
 import com.hotel.hotel_backend.dto.request.PartnerRoomCalendarUpsertRequest;
+import com.hotel.hotel_backend.dto.request.SetBasePricingRequest;
 import com.hotel.hotel_backend.dto.request.SetCoverImageRequest;
 import com.hotel.hotel_backend.dto.request.UpdateHotelRequest;
 import com.hotel.hotel_backend.dto.response.ApiResponse;
@@ -178,6 +179,21 @@ public class PartnerController {
     @PreAuthorize("hasRole('PARTNER')")
     public ApiResponse<Void> deleteHotel(@PathVariable Long id) {
         hotelService.delete(id);
+        return ApiResponse.ok(null);
+    }
+
+    /**
+     * Sets a base price (and optional minStay) across all rooms of a hotel
+     * for a 1-year window from today. Designed for use by the AddPropertyWizard
+     * final step so partners don't need to call upsertCalendar per room.
+     */
+    @PutMapping("/hotels/{id}/base-pricing")
+    @PreAuthorize("hasRole('PARTNER')")
+    public ApiResponse<Void> setHotelBasePricing(
+            @PathVariable Long id,
+            @Valid @RequestBody SetBasePricingRequest request
+    ) {
+        partnerRoomCalendarService.setHotelBasePricing(id, request.basePrice(), request.minStay());
         return ApiResponse.ok(null);
     }
 

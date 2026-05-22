@@ -10,6 +10,7 @@ public record AdminUserResponse(
         String email,
         UserType userType,
         UserStatus status,
-        OffsetDateTime createdAt
+        OffsetDateTime createdAt,
+        String taxCode
 ) {
 }

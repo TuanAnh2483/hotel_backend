@@ -4,6 +4,7 @@ import com.hotel.hotel_backend.dto.request.AdminCreateUserRequest;
 import com.hotel.hotel_backend.dto.request.AdminUpdateHotelRequest;
 import com.hotel.hotel_backend.dto.response.AdminBookingResponse;
 import com.hotel.hotel_backend.dto.response.AdminHotelResponse;
+import com.hotel.hotel_backend.dto.response.AdminRoomResponse;
 import com.hotel.hotel_backend.dto.response.AdminReviewResponse;
 import com.hotel.hotel_backend.dto.response.AdminStatsResponse;
 import com.hotel.hotel_backend.dto.response.AdminSystemDataResponse;
@@ -11,6 +12,7 @@ import com.hotel.hotel_backend.dto.response.AdminSystemFlaggedBookingResponse;
 import com.hotel.hotel_backend.dto.response.AdminSystemRecentErrorResponse;
 import com.hotel.hotel_backend.dto.response.AdminUserResponse;
 import com.hotel.hotel_backend.entity.Booking;
+import com.hotel.hotel_backend.entity.BookingMode;
 import com.hotel.hotel_backend.entity.BookingStatus;
 import com.hotel.hotel_backend.entity.Hotel;
 import com.hotel.hotel_backend.entity.HotelReview;
@@ -24,6 +26,7 @@ import com.hotel.hotel_backend.exeption.ErrorCode;
 import com.hotel.hotel_backend.repository.BookingRepository;
 import com.hotel.hotel_backend.repository.HotelRepository;
 import com.hotel.hotel_backend.repository.HotelReviewRepository;
+import com.hotel.hotel_backend.repository.PartnerApplicationRepository;
 import com.hotel.hotel_backend.repository.PaymentTransactionRepository;
 import com.hotel.hotel_backend.repository.RefundRequestRepository;
 import com.hotel.hotel_backend.repository.RoomRepository;
@@ -35,6 +38,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -49,6 +53,7 @@ public class AdminOperationsService {
     private final RoomRepository roomRepository;
     private final BookingRepository bookingRepository;
     private final HotelReviewRepository hotelReviewRepository;
+    private final PartnerApplicationRepository partnerApplicationRepository;
     private final PaymentTransactionRepository paymentTransactionRepository;
     private final RefundRequestRepository refundRequestRepository;
     private final PasswordEncoder passwordEncoder;
@@ -67,14 +72,22 @@ public class AdminOperationsService {
 
     @Transactional(readOnly = true)
     public List<AdminUserResponse> getUsers() {
+        // Build userId -> taxCode map from latest partner application per user
+        Map<Long, String> taxCodeByUserId = partnerApplicationRepository.findAll().stream()
+                .collect(Collectors.toMap(
+                        a -> a.getUser().getId(),
+                        a -> a.getTaxCode() != null ? a.getTaxCode() : "",
+                        (existing, replacement) -> replacement  // keep latest (list ordered by id desc not guaranteed, so last write wins)
+                ));
+
         return userRepository.findAllByOrderByCreatedAtDesc().stream()
                 .map(user -> new AdminUserResponse(
                         user.getId(),
                         user.getEmail(),
                         user.getUserType(),
                         user.getStatus(),
-                        user.getCreatedAt()
-
+                        user.getCreatedAt(),
+                        taxCodeByUserId.getOrDefault(user.getId(), null)
                 ))
                 .toList();
     }
@@ -103,7 +116,8 @@ public class AdminOperationsService {
                 savedUser.getEmail(),
                 savedUser.getUserType(),
                 savedUser.getStatus(),
-                savedUser.getCreatedAt()
+                savedUser.getCreatedAt(),
+                null
         );
     }
 
@@ -123,7 +137,10 @@ public class AdminOperationsService {
                 savedUser.getEmail(),
                 savedUser.getUserType(),
                 savedUser.getStatus(),
-                savedUser.getCreatedAt()
+                savedUser.getCreatedAt(),
+                partnerApplicationRepository.findTopByUserIdOrderByIdDesc(savedUser.getId())
+                        .map(a -> a.getTaxCode())
+                        .orElse(null)
         );
     }
 
@@ -227,6 +244,26 @@ public class AdminOperationsService {
         return new AdminSystemDataResponse(flaggedBookings, recentErrors);
     }
 
+    @Transactional(readOnly = true)
+    public List<AdminRoomResponse> getHotelRooms(Long hotelId) {
+        Hotel hotel = hotelRepository.findById(hotelId)
+                .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND, "Hotel not found"));
+        return roomRepository.findByHotelId(hotel.getId()).stream()
+                .map(room -> new AdminRoomResponse(
+                        room.getId(),
+                        room.getName(),
+                        room.getPrice(),
+                        room.getCapacity(),
+                        room.getQuantity(),
+                        room.getRoomCategory(),
+                        room.getBedType(),
+                        room.getStatus(),
+                        room.getAmenities() == null ? new java.util.HashSet<>() : new java.util.HashSet<>(room.getAmenities()),
+                        room.getCustomAmenities() == null ? new java.util.HashSet<>() : new java.util.HashSet<>(room.getCustomAmenities())
+                ))
+                .toList();
+    }
+
     private AdminHotelResponse toHotelResponse(Hotel hotel) {
         return new AdminHotelResponse(
                 hotel.getId(),
@@ -237,10 +274,13 @@ public class AdminOperationsService {
                 hotel.getProvince(),
                 hotel.getDescription(),
                 hotel.getHotelType(),
+                hotel.getBookingMode() != null ? hotel.getBookingMode() : com.hotel.hotel_backend.entity.BookingMode.BY_ROOM,
                 hotel.getStatus(),
                 hotel.getRatingAvg(),
                 hotel.getRatingCount(),
-                hotel.getCreatedAt()
+                hotel.getCreatedAt(),
+                hotel.getAmenities() == null ? new java.util.HashSet<>() : new java.util.HashSet<>(hotel.getAmenities()),
+                hotel.getCustomAmenities() == null ? new java.util.HashSet<>() : new java.util.HashSet<>(hotel.getCustomAmenities())
         );
     }
 

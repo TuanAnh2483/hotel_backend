@@ -27,6 +27,7 @@ apiClient.interceptors.response.use(
       body?.error?.message || body?.message || `HTTP ${status ?? "unknown"}`;
     const err = new Error(message);
     err.status = status;
+    err.details = body?.error?.details || [];
     throw err;
   }
 );

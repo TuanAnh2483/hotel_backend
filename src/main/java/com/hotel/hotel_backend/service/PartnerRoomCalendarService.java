@@ -143,6 +143,29 @@ public class PartnerRoomCalendarService {
         return buildCalendarResponse(room, from, to, ratesByDate, inventoriesByDate);
     }
 
+    /**
+     * Sets base pricing (price + optional minStay) for every room of a hotel
+     * over a 1-year window starting from today.
+     * Used by AddPropertyWizard on final submit to avoid N individual room calls.
+     */
+    public void setHotelBasePricing(Long hotelId, long basePrice, Integer minStay) {
+        long ownerId = securityService.getCurrentPrincipal().userId();
+        List<Room> rooms = roomRepository.findByHotelIdAndHotelOwnerId(hotelId, ownerId);
+        if (rooms.isEmpty()) {
+            throw new ApiException(ErrorCode.NOT_FOUND, "No rooms found for hotel");
+        }
+
+        LocalDate from = LocalDate.now();
+        LocalDate to   = from.plusYears(1);
+
+        for (Room room : rooms) {
+            PartnerRoomCalendarUpsertRequest req = new PartnerRoomCalendarUpsertRequest(
+                    from, to, basePrice, minStay, null, null
+            );
+            upsertCalendar(room.getId(), req);
+        }
+    }
+
     private PartnerRoomCalendarResponse buildCalendarResponse(
             Room room,
             LocalDate from,

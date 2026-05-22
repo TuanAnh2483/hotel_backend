@@ -1,5 +1,6 @@
 package com.hotel.hotel_backend.dto.response;
 
+import com.hotel.hotel_backend.entity.BookingMode;
 import com.hotel.hotel_backend.entity.HotelAmenity;
 import com.hotel.hotel_backend.entity.HotelType;
 
@@ -15,7 +16,9 @@ public record HotelResponse(
         String province,
         String description,
         HotelType hotelType,
+        BookingMode bookingMode,
         Set<HotelAmenity> amenities,
+        Set<String> customAmenities,
         BigDecimal ratingAvg,
         Integer ratingCount,
         String coverImageUrl,

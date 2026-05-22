@@ -32,12 +32,14 @@ public class PartnerOnboardingController {
                 currentUser,
                 request.businessName(),
                 request.email(),
-                request.phone()
+                request.phone(),
+                request.taxCode(),
+                request.propertyType()
         );
         return ApiResponse.ok(new PartnerApplicationResponse(
                 application.getId(),
                 application.getStatus().name(),
-                application.getBussinessName()
+                application.getBusinessName()
         ));
     }
 
@@ -53,7 +55,7 @@ public class PartnerOnboardingController {
         return ApiResponse.ok(new PartnerApplicationResponse(
                 application.getId(),
                 application.getStatus().name(),
-                application.getBussinessName()
+                application.getBusinessName()
         ));
     }
 }

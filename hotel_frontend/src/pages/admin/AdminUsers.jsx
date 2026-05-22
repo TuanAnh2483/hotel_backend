@@ -30,6 +30,7 @@ export default function AdminUsers({ navigate, user, onLogout }) {
   }
   const [search, setSearch]     = useState("");
   const [modal, setModal]       = useState(false);
+  const [detailModal, setDetailModal] = useState(null);
   const [form, setForm]         = useState(EMPTY_FORM);
   const [error, setError]       = useState("");
   const [fieldErrors, setFieldErrors] = useState({});
@@ -141,16 +142,17 @@ export default function AdminUsers({ navigate, user, onLogout }) {
               <Badge status={u.userType} />,
               <Badge status={u.status} />,
               <span className="admin-users-cell-date">{u.createdAt || "—"}</span>,
-              <Btn
-                small
-                variant="action"
-                disabled={toggleStatus.isPending && toggleStatus.variables === u.id || u.userType === "ADMIN"}
-                onClick={() => handleToggle(u.id)}
-              >
-                <div style={{ display: "flex", alignItems: "center", gap: 6, justifyContent: "center" }}>
+              <div style={{ display: "flex", gap: 6 }}>
+                <Btn small variant="action" onClick={() => setDetailModal(u)}>{t("adm_users_view")}</Btn>
+                <Btn
+                  small
+                  variant="action"
+                  disabled={toggleStatus.isPending && toggleStatus.variables === u.id || u.userType === "ADMIN"}
+                  onClick={() => handleToggle(u.id)}
+                >
                   {toggleStatus.isPending && toggleStatus.variables === u.id ? "..." : u.status === "ACTIVE" ? t("adm_users_lock") : t("adm_users_unlock")}
-                </div>
-              </Btn>,
+                </Btn>
+              </div>,
             ])}
               empty={t("adm_users_empty")}
             />
@@ -172,6 +174,28 @@ export default function AdminUsers({ navigate, user, onLogout }) {
           </>
         )}
       </Card>
+
+      {/* Detail modal */}
+      {detailModal && (
+        <Modal title={t("adm_users_detail_title")} onClose={() => setDetailModal(null)}>
+          {[
+            ["ID", `#${detailModal.id}`],
+            [t("adm_email"), detailModal.email || "—"],
+            [t("adm_users_col_type"), <Badge status={detailModal.userType} />],
+            [t("adm_status"), <Badge status={detailModal.status} />],
+            [t("adm_created_at"), detailModal.createdAt || "—"],
+            ...(detailModal.userType === "PARTNER" ? [[t("adm_users_col_tax_code"), detailModal.taxCode || "—"]] : []),
+          ].map(([k, v]) => (
+            <div key={k} className="admin-modal-row">
+              <span className="admin-modal-row-key">{k}</span>
+              <span className="admin-modal-row-val">{v}</span>
+            </div>
+          ))}
+          <div className="admin-modal-actions-right" style={{ marginTop: 16 }}>
+            <Btn variant="ghost" onClick={() => setDetailModal(null)}>{t("adm_close")}</Btn>
+          </div>
+        </Modal>
+      )}
 
       {/* Add user modal */}
       {modal && (

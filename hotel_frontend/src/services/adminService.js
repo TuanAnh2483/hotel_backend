@@ -59,6 +59,12 @@ export const adminService = {
   deleteHotel(hotelId) {
     return apiClient.delete(`/api/admin/hotels/${hotelId}`);
   },
+  async getHotelRooms(hotelId) {
+    try {
+      const data = await apiClient.get(`/api/admin/hotels/${hotelId}/rooms`);
+      return Array.isArray(data) ? data : [];
+    } catch { return []; }
+  },
 
   // Bookings
   async getBookings(status = "") {

@@ -2,14 +2,15 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { adminService } from "../services/adminService";
 
 export const adminKeys = {
-  stats:        ()       => ["admin", "stats"],
-  applications: (status) => ["admin", "partner-applications", status],
-  users:        (search) => ["admin", "users", search],
-  hotels:       ()       => ["admin", "hotels"],
-  bookings:     (status) => ["admin", "bookings", status],
-  refunds:      (status) => ["admin", "refunds", status],
-  reviews:      ()       => ["admin", "reviews"],
-  system:       ()       => ["admin", "system"],
+  stats:        ()         => ["admin", "stats"],
+  applications: (status)   => ["admin", "partner-applications", status],
+  users:        (search)   => ["admin", "users", search],
+  hotels:       ()         => ["admin", "hotels"],
+  hotelRooms:   (hotelId)  => ["admin", "hotels", hotelId, "rooms"],
+  bookings:     (status)   => ["admin", "bookings", status],
+  refunds:      (status)   => ["admin", "refunds", status],
+  reviews:      ()         => ["admin", "reviews"],
+  system:       ()         => ["admin", "system"],
 };
 
 export function useAdminStats(options = {}) {
@@ -84,6 +85,16 @@ export function useAdminHotels(options = {}) {
     queryFn:  () => adminService.getHotels(),
     staleTime: 60 * 1000,
     gcTime:    5 * 60 * 1000,
+    ...options,
+  });
+}
+
+export function useAdminHotelRooms(hotelId, options = {}) {
+  return useQuery({
+    queryKey: adminKeys.hotelRooms(hotelId),
+    queryFn:  () => adminService.getHotelRooms(hotelId),
+    enabled:  !!hotelId,
+    staleTime: 60 * 1000,
     ...options,
   });
 }

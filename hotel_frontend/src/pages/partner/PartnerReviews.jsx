@@ -1,8 +1,15 @@
-import { useMemo, useState } from "react";
-import { MessageSquareReply, Star } from "lucide-react";
+import { useMemo, useState, useEffect } from "react";
+import { useOutletContext } from "react-router-dom";
+import { AlertCircle, MessageSquareReply, Star } from "lucide-react";
 import { useMyHotels, usePartnerReviews, useReplyReview } from "../../hooks/usePartnerQueries";
 import { PageHeader, Card, Btn, Modal, Table } from "../../components/admin/AdminLayout";
 import { useLang } from "../../contexts/LanguageContext";
+
+const REPLY_TABS = [
+  { label: "pt_rv_reply_all", value: "" },
+  { label: "pt_rv_reply_no",  value: "false" },
+  { label: "pt_rv_reply_yes", value: "true" },
+];
 
 const RATING_OPTIONS = ["", "5", "4", "3", "2", "1"];
 
@@ -30,15 +37,20 @@ function Stars({ value }) {
 
 export default function PartnerReviews() {
   const { t } = useLang();
+  const { selectedHotelId: ctxHotelId, setSelectedHotelId: setCtxHotelId } = useOutletContext() || {};
   const REPLY_OPTIONS = [
     { value: "", label: t("pt_rv_reply_all") },
     { value: "false", label: t("pt_rv_reply_no") },
     { value: "true", label: t("pt_rv_reply_yes") },
   ];
-  const [filters, setFilters] = useState({ hotelId: "", rating: "", hasReply: "" });
+  const [filters, setFilters] = useState({ hotelId: ctxHotelId ? String(ctxHotelId) : "", rating: "", hasReply: "" });
   const [error, setError] = useState("");
   const [selectedReview, setSelectedReview] = useState(null);
   const [reply, setReply] = useState("");
+
+  useEffect(() => {
+    setFilters(f => ({ ...f, hotelId: ctxHotelId ? String(ctxHotelId) : "" }));
+  }, [ctxHotelId]);
 
   const { data: hotels = [] } = useMyHotels();
   const { data: reviewsData, isLoading: loading, error: loadError } = usePartnerReviews({
@@ -77,13 +89,47 @@ export default function PartnerReviews() {
         subtitle={t("pt_rv_subtitle")}
       />
 
+      {/* Reply Status Tabs */}
+      <div style={{ display: "flex", gap: 8, marginBottom: 20, flexWrap: "wrap" }}>
+        {REPLY_TABS.map(tab => {
+          const count = tab.value === "false"
+            ? reviews.filter(r => !r.partnerReply).length
+            : tab.value === "true"
+              ? reviews.filter(r => r.partnerReply).length
+              : reviews.length;
+          return (
+            <button
+              key={tab.value}
+              onClick={() => setFilters(c => ({ ...c, hasReply: tab.value }))}
+              style={{
+                padding: "8px 18px", borderRadius: 20, border: "none", cursor: "pointer",
+                fontWeight: 700, fontSize: 13, transition: "all 0.15s", display: "flex", alignItems: "center", gap: 6,
+                background: filters.hasReply === tab.value ? "#BE1E2E" : "#f1f5f9",
+                color: filters.hasReply === tab.value ? "#fff" : "#475569",
+              }}
+            >
+              {t(tab.label)}
+              {tab.value === "false" && count > 0 && (
+                <span style={{ background: filters.hasReply === "false" ? "rgba(255,255,255,0.3)" : "#BE1E2E", color: "#fff", borderRadius: 10, padding: "1px 7px", fontSize: 11 }}>
+                  {count}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
       <Card style={{ marginBottom: 20 }}>
-        <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr auto", gap: 12, alignItems: "end" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr auto", gap: 12, alignItems: "end" }}>
           <div>
             <div style={{ color: "#64748b", fontSize: 12, fontWeight: 800, marginBottom: 6 }}>{t("pt_rv_hotel_label")}</div>
             <select
               value={filters.hotelId}
-              onChange={(event) => setFilters((current) => ({ ...current, hotelId: event.target.value }))}
+              onChange={(event) => {
+                const val = event.target.value;
+                setFilters((current) => ({ ...current, hotelId: val }));
+                setCtxHotelId?.(val ? Number(val) : null);
+              }}
               style={selectStyle}
             >
               <option value="">{t("pt_rv_all_hotels")}</option>
@@ -101,18 +147,6 @@ export default function PartnerReviews() {
             >
               {RATING_OPTIONS.map((rating) => (
                 <option key={rating || "all"} value={rating}>{rating ? t("pt_rv_score_x").replace("{n}", rating) : t("pt_rv_all_scores")}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <div style={{ color: "#64748b", fontSize: 12, fontWeight: 800, marginBottom: 6 }}>{t("pt_rv_reply_label")}</div>
-            <select
-              value={filters.hasReply}
-              onChange={(event) => setFilters((current) => ({ ...current, hasReply: event.target.value }))}
-              style={selectStyle}
-            >
-              {REPLY_OPTIONS.map((option) => (
-                <option key={option.value || "all"} value={option.value}>{option.label}</option>
               ))}
             </select>
           </div>
@@ -138,22 +172,45 @@ export default function PartnerReviews() {
             headers={[t("pt_rv_col_hotel"), t("pt_rv_col_customer"), t("pt_rv_col_score"), t("pt_rv_col_comment"), t("pt_rv_col_date"), t("pt_rv_col_reply"), t("pt_rv_col_actions")]}
             rows={reviews.map((review) => {
               const hotel = hotelsById.get(Number(review.hotelId));
+              const needsReply = !review.partnerReply;
               return [
                 <span style={{ color: "#0f172a", fontWeight: 800 }}>{hotel?.name || `#${review.hotelId}`}</span>,
                 <span style={{ color: "#334155", fontWeight: 700 }}>{review.reviewerName || "Khách hàng"}</span>,
                 <Stars value={review.rating} />,
-                <span style={{ color: review.comment ? "#475569" : "#94a3b8", display: "block", fontSize: 13, maxWidth: 280, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                  {review.comment || t("pt_rv_no_comment")}
-                </span>,
-                <span style={{ color: "#64748b", fontSize: 12 }}>{fmtDate(review.createdAt)}</span>,
-                <span style={{ color: review.partnerReply ? "#10b981" : "#f59e0b", fontSize: 12, fontWeight: 800 }}>
-                  {review.partnerReply ? t("pt_rv_replied") : t("pt_rv_not_replied")}
-                </span>,
-                <Btn small variant="action" onClick={() => openReplyModal(review)}>
-                  <span style={{ alignItems: "center", display: "flex", gap: 5 }}>
-                    <MessageSquareReply size={13} /> {t("pt_rv_reply_btn")}
+                <div style={{ maxWidth: 280 }}>
+                  <span style={{ color: review.comment ? "#475569" : "#94a3b8", display: "block", fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {review.comment || t("pt_rv_no_comment")}
                   </span>
-                </Btn>,
+                  {needsReply && (
+                    <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 4, color: "#ef4444", fontSize: 11, fontWeight: 700 }}>
+                      <AlertCircle size={11} /> {t("pt_rv_waiting")}
+                    </div>
+                  )}
+                </div>,
+                <span style={{ color: "#64748b", fontSize: 12 }}>{fmtDate(review.createdAt)}</span>,
+                <span style={{
+                  color: needsReply ? "#ef4444" : "#10b981",
+                  fontSize: 12, fontWeight: 800,
+                  padding: "4px 10px", borderRadius: 8,
+                  background: needsReply ? "#fef2f2" : "#ecfdf5",
+                  border: `1px solid ${needsReply ? "#fecaca" : "#bbf7d0"}`,
+                }}>
+                  {needsReply ? t("pt_rv_not_replied") : t("pt_rv_replied")}
+                </span>,
+                needsReply ? (
+                  <button
+                    onClick={() => openReplyModal(review)}
+                    style={{ padding: "8px 14px", borderRadius: 10, background: "#BE1E2E", color: "#fff", border: "none", fontSize: 12, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 5, boxShadow: "0 2px 8px rgba(190,30,46,0.25)" }}
+                  >
+                    <MessageSquareReply size={13} /> {t("pt_rv_reply_now")}
+                  </button>
+                ) : (
+                  <Btn small variant="ghost" onClick={() => openReplyModal(review)}>
+                    <span style={{ alignItems: "center", display: "flex", gap: 5 }}>
+                      <MessageSquareReply size={13} /> {t("pt_rv_edit_reply")}
+                    </span>
+                  </Btn>
+                ),
               ];
             })}
             empty={t("pt_rv_empty")}

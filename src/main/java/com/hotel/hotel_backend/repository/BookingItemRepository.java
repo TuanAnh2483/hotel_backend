@@ -12,6 +12,10 @@ public interface BookingItemRepository extends JpaRepository<BookingItem, Long> 
 
     List<BookingItem> findByBookingId(Long bookingId);
 
+    boolean existsByRoomId(Long roomId);
+
+    boolean existsByRoomHotelId(Long hotelId);
+
     @Query("""
             SELECT bi FROM BookingItem bi
             JOIN FETCH bi.booking b

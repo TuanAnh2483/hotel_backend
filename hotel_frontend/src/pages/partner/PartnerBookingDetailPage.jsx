@@ -21,7 +21,7 @@ function fmtDate(d) {
   });
 }
 
-function canCompleteBooking(booking) {
+function canCheckoutBooking(booking) {
   if (booking?.status !== "CONFIRMED" || !booking.checkOut) return false;
   const checkOut = new Date(`${booking.checkOut}T00:00:00`);
   const today = new Date();
@@ -128,15 +128,6 @@ export default function PartnerBookingDetailPage() {
           <Card style={{ background: "#FFF1F2", border: "1px solid #FFE4E6" }}>
             <div style={{ fontSize: 12, color: "#BE1E2E", fontWeight: 700, marginBottom: 16 }}>{t("pt_bk_section_cost")}</div>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: "#1e293b" }}>
-                <span>{t("pt_bk_room_fee")}</span>
-                <span style={{ fontWeight: 600 }}>{fmtPrice(booking.totalPrice)}</span>
-              </div>
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: "#1e293b" }}>
-                <span>{t("pt_bk_tax_fee")}</span>
-                <span style={{ fontWeight: 600 }}>0 ₫</span>
-              </div>
-              <div style={{ height: 1, background: "#FFE4E6", margin: "4px 0" }} />
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <span style={{ fontSize: 14, fontWeight: 700, color: "#1e293b" }}>{t("pt_bk_total_label")}</span>
                 <span style={{ fontSize: 20, fontWeight: 800, color: "#BE1E2E" }}>{fmtPrice(booking.totalPrice)}</span>
@@ -152,7 +143,7 @@ export default function PartnerBookingDetailPage() {
                 {actionMessage}
               </div>
             )}
-            {canCompleteBooking(booking) && (
+            {canCheckoutBooking(booking) && (
               <button
                 onClick={handleComplete}
                 disabled={completing}

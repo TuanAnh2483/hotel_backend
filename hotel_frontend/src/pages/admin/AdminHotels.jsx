@@ -3,8 +3,12 @@ import AdminLayout, {
   AP, PageHeader, Card, Badge, Btn, SearchInput,
   Table, Modal, FormField, Input, Select,
 } from "../../components/admin/AdminLayout";
-import { useAdminHotels, useUpdateAdminHotel, useDeleteAdminHotel } from "../../hooks/useAdminQueries";
+import { useAdminHotels, useUpdateAdminHotel, useDeleteAdminHotel, useAdminHotelRooms } from "../../hooks/useAdminQueries";
 import { useLang } from "../../contexts/LanguageContext";
+import { HOTEL_AMENITIES_FLAT, ROOM_AMENITIES_FLAT } from "../../utils/amenityConfig";
+
+const HOTEL_AMENITY_LABEL = Object.fromEntries(HOTEL_AMENITIES_FLAT.map(a => [a.key, a.label]));
+const ROOM_AMENITY_LABEL  = Object.fromEntries(ROOM_AMENITIES_FLAT.map(a => [a.key, a.label]));
 
 const HOTEL_TYPES = ["HOTEL", "RESORT", "VILLA", "APARTMENT", "HOMESTAY", "HOSTEL", "GUEST_HOUSE"];
 const EMPTY_FORM = { name: "", province: "", district: "", address: "", hotelType: "HOTEL", description: "" };
@@ -25,6 +29,7 @@ export default function AdminHotels({ navigate, user, onLogout }) {
   const pageSize = 10;
 
   const { data: hotels = [], isLoading: loading } = useAdminHotels();
+  const { data: selectedRooms = [], isLoading: roomsLoading } = useAdminHotelRooms((modal === "edit" || modal === "detail") ? selected?.id : null);
   const updateHotel = useUpdateAdminHotel();
   const deleteHotel = useDeleteAdminHotel();
   const acting = updateHotel.isPending || deleteHotel.isPending;
@@ -37,6 +42,7 @@ export default function AdminHotels({ navigate, user, onLogout }) {
   });
 
   const upd = k => e => setForm(f => ({ ...f, [k]: e.target.value }));
+  const openDetail = h => { setSelected(h); setModal("detail"); };
   const openEdit = h => {
     setError("");
     setSelected(h);
@@ -129,6 +135,13 @@ export default function AdminHotels({ navigate, user, onLogout }) {
               <div>
                 <div style={{ fontWeight: 700, color: "#1a1a1a" }}>{h.name}</div>
                 {h.description && <div style={{ fontSize: 11, color: "#aaa", marginTop: 2 }}>{h.description.slice(0, 50)}{h.description.length > 50 ? "…" : ""}</div>}
+                {h.customAmenities?.length > 0 && (
+                  <div style={{ marginTop: 4, display: "flex", alignItems: "center", gap: 4 }}>
+                    <span style={{ fontSize: 10, fontWeight: 700, background: "#fef3c7", color: "#92400e", border: "1px solid #fde68a", borderRadius: 6, padding: "1px 6px" }}>
+                      {h.customAmenities.length} tiện ích tùy chỉnh
+                    </span>
+                  </div>
+                )}
               </div>,
               <span style={{ fontSize: 12, color: "#666" }}>
                 {[h.district, h.province].filter(Boolean).join(", ") || "—"}
@@ -143,6 +156,7 @@ export default function AdminHotels({ navigate, user, onLogout }) {
               </span>,
               <Badge status={h.status || "ACTIVE"} />,
               <div style={{ display: "flex", gap: 6 }}>
+                <Btn small variant="ghost" onClick={() => openDetail(h)}>Chi tiết</Btn>
                 <Btn small variant="action" onClick={() => openEdit(h)}>{t("adm_edit")}</Btn>
                 <Btn small variant="danger" onClick={() => openDel(h)}>{t("adm_delete")}</Btn>
               </div>,
@@ -220,11 +234,146 @@ export default function AdminHotels({ navigate, user, onLogout }) {
               </FormField>
             </div>
           </div>
-          <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 4 }}>
+          <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 16 }}>
             <Btn variant="ghost" onClick={() => setModal(null)}>{t("adm_cancel")}</Btn>
             <Btn disabled={acting || !form.name.trim() || !form.province.trim() || !form.district.trim() || !form.address.trim()} onClick={handleSave}>
               {acting ? t("adm_saving") : t("adm_hotels_save")}
             </Btn>
+          </div>
+        </Modal>
+      )}
+
+      {/* Detail modal */}
+      {modal === "detail" && selected && (
+        <Modal title={`Chi tiết: ${selected.name}`} onClose={() => setModal(null)} width={620}>
+          {/* Basic info */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px 20px", marginBottom: 18, fontSize: 13 }}>
+            {[
+              ["ID",         `#${selected.id}`],
+              ["Chủ sở hữu", selected.ownerEmail],
+              ["Loại hình",  HOTEL_TYPE_LABEL[selected.hotelType] || selected.hotelType],
+              ["Trạng thái", selected.status],
+              ["Đánh giá",   selected.ratingAvg > 0 ? `⭐ ${Number(selected.ratingAvg).toFixed(1)} (${selected.ratingCount})` : "Chưa có"],
+              ["Tỉnh/Thành", selected.province],
+              ["Quận/Huyện", selected.district],
+              ["Địa chỉ",    selected.address],
+            ].map(([k, v]) => (
+              <div key={k} style={{ display: "flex", gap: 6 }}>
+                <span style={{ color: "#999", minWidth: 90, fontWeight: 600 }}>{k}:</span>
+                <span style={{ color: "#333", fontWeight: 500, wordBreak: "break-all" }}>{v || "—"}</span>
+              </div>
+            ))}
+            {selected.description && (
+              <div style={{ gridColumn: "1/-1", display: "flex", gap: 6 }}>
+                <span style={{ color: "#999", minWidth: 90, fontWeight: 600 }}>Mô tả:</span>
+                <span style={{ color: "#555", fontStyle: "italic" }}>{selected.description}</span>
+              </div>
+            )}
+          </div>
+
+          {/* Standard amenities */}
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: "#666", marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>
+              Tiện ích tiêu chuẩn ({selected.amenities?.length || 0})
+            </div>
+            {selected.amenities?.length > 0 ? (
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                {[...selected.amenities].map(a => (
+                  <span key={a} style={{
+                    fontSize: 12, padding: "3px 10px", borderRadius: 20,
+                    background: "#f0f4ff", color: "#4361ee", fontWeight: 600, border: "1px solid #d0daff",
+                  }}>
+                    {HOTEL_AMENITY_LABEL[a] || a}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <span style={{ fontSize: 12, color: "#bbb" }}>Chưa có tiện ích tiêu chuẩn</span>
+            )}
+          </div>
+
+          {/* Custom amenities — always visible so admin can see what partner added */}
+          <div style={{ marginBottom: 16, background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 10, padding: "12px 14px" }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: "#92400e", marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>
+              Tiện ích tùy chỉnh của partner ({selected.customAmenities?.length || 0})
+            </div>
+            {selected.customAmenities?.length > 0 ? (
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                {[...selected.customAmenities].map(a => (
+                  <span key={a} style={{
+                    fontSize: 12, padding: "3px 10px", borderRadius: 20,
+                    background: "#fef3c7", color: "#92400e", fontWeight: 700, border: "1px solid #fde68a",
+                  }}>
+                    {a}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <span style={{ fontSize: 12, color: "#b45309" }}>Partner chưa thêm tiện ích tùy chỉnh</span>
+            )}
+          </div>
+
+          {/* Rooms */}
+          <div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: "#666", marginBottom: 10, textTransform: "uppercase", letterSpacing: 0.5 }}>
+              Danh sách phòng ({roomsLoading ? "…" : selectedRooms.length})
+            </div>
+            {roomsLoading ? (
+              <div style={{ color: "#bbb", fontSize: 13, padding: "10px 0" }}>Đang tải phòng…</div>
+            ) : selectedRooms.length === 0 ? (
+              <div style={{ color: "#bbb", fontSize: 13, padding: "10px 0" }}>Chưa có phòng nào</div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {selectedRooms.map(room => (
+                  <div key={room.id} style={{
+                    border: "1px solid #f0f0f0", borderRadius: 10, padding: "10px 14px",
+                    background: "#fafafa",
+                  }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                      <div style={{ fontWeight: 700, fontSize: 13, color: "#1a1a1a" }}>
+                        {room.name}
+                        <span style={{ fontWeight: 400, fontSize: 11, color: "#999", marginLeft: 8 }}>#{room.id}</span>
+                      </div>
+                      <div style={{ fontSize: 12, color: "#666", display: "flex", gap: 10 }}>
+                        <span>{room.price?.toLocaleString("vi-VN")} ₫/đêm</span>
+                        <span>·</span>
+                        <span>{room.capacity} khách</span>
+                        <span>·</span>
+                        <Badge status={room.status || "ACTIVE"} />
+                      </div>
+                    </div>
+                    {room.amenities?.length > 0 && (
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: room.customAmenities?.length > 0 ? 6 : 0 }}>
+                        {[...room.amenities].map(a => (
+                          <span key={a} style={{
+                            fontSize: 11, padding: "2px 8px", borderRadius: 20,
+                            background: "#f0f4ff", color: "#4361ee", fontWeight: 600, border: "1px solid #d0daff",
+                          }}>
+                            {ROOM_AMENITY_LABEL[a] || a}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    {room.customAmenities?.length > 0 && (
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 4 }}>
+                        {[...room.customAmenities].map(a => (
+                          <span key={a} style={{
+                            fontSize: 11, padding: "2px 8px", borderRadius: 20,
+                            background: "#fef3c7", color: "#92400e", fontWeight: 700, border: "1px solid #fde68a",
+                          }}>
+                            ✨ {a}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 20 }}>
+            <Btn variant="ghost" onClick={() => setModal(null)}>Đóng</Btn>
           </div>
         </Modal>
       )}

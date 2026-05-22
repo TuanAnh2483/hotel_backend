@@ -62,7 +62,7 @@ function Field({ label, required, children, hint }) {
 export default function BecomePartnerPage({ navigate, user, onLogout }) {
   const { t } = useLang();
   const [step, setStep]   = useState(0);
-  const [form, setForm]   = useState({ businessName: "", email: user?.email || "", phone: "" });
+  const [form, setForm]   = useState({ businessName: "", email: user?.email || "", phone: "", taxCode: "", propertyType: "" });
   const [error, setError] = useState("");
   const [appId, setAppId] = useState(null);
 
@@ -88,7 +88,7 @@ export default function BecomePartnerPage({ navigate, user, onLogout }) {
 
   function handleStartAndSubmit() {
     setError("");
-    if (!form.businessName.trim() || !form.email.trim() || !form.phone.trim()) {
+    if (!form.businessName.trim() || !form.email.trim() || !form.phone.trim() || !form.taxCode.trim() || !form.propertyType) {
       setError(t("bp_err_required"));
       return;
     }
@@ -96,8 +96,12 @@ export default function BecomePartnerPage({ navigate, user, onLogout }) {
       setError(t("bp_err_phone"));
       return;
     }
+    if (!/^\d{10}$/.test(form.taxCode)) {
+      setError(t("bp_err_tax_code"));
+      return;
+    }
     startOnboarding.mutate(
-      { businessName: form.businessName, email: form.email, phone: form.phone },
+      { businessName: form.businessName, email: form.email, phone: form.phone, taxCode: form.taxCode, propertyType: form.propertyType },
       {
         onSuccess: (app) => {
           const id = app.applicationId || app.id;
@@ -150,6 +154,19 @@ export default function BecomePartnerPage({ navigate, user, onLogout }) {
               <input className="bp-input" value={form.phone} onChange={upd("phone")} placeholder={t("bp_phone_ph")} maxLength={10} />
             </Field>
 
+            <Field label={t("bp_tax_code")} required hint={t("bp_tax_code_hint")}>
+              <input className="bp-input" value={form.taxCode} onChange={upd("taxCode")} placeholder={t("bp_tax_code_ph")} maxLength={10} />
+            </Field>
+
+            <Field label={t("bp_property_type")} required hint={t("bp_property_type_hint")}>
+              <select className="bp-input" value={form.propertyType} onChange={upd("propertyType")}>
+                <option value="">{t("bp_property_type_ph")}</option>
+                {["HOTEL","APARTMENT","RESORT","VILLA","HOMESTAY","HOSTEL","GUEST_HOUSE"].map(pt => (
+                  <option key={pt} value={pt}>{t(`bp_pt_${pt}`)}</option>
+                ))}
+              </select>
+            </Field>
+
             {error && <div className="bp-error-alert">{error}</div>}
 
             <div className="bp-form-actions">
@@ -157,8 +174,16 @@ export default function BecomePartnerPage({ navigate, user, onLogout }) {
               <button
                 className="bp-next-btn"
                 onClick={() => {
-                  if (!form.businessName.trim() || !form.email.trim() || !form.phone.trim()) {
+                  if (!form.businessName.trim() || !form.email.trim() || !form.phone.trim() || !form.taxCode.trim() || !form.propertyType) {
                     setError(t("bp_err_required"));
+                    return;
+                  }
+                  if (form.phone.length < 8 || form.phone.length > 10) {
+                    setError(t("bp_err_phone"));
+                    return;
+                  }
+                  if (!/^\d{10}$/.test(form.taxCode)) {
+                    setError(t("bp_err_tax_code"));
                     return;
                   }
                   setError("");
@@ -178,9 +203,11 @@ export default function BecomePartnerPage({ navigate, user, onLogout }) {
             <p className="bp-card-subtitle">{t("bp_confirm_sub")}</p>
 
             {[
-              { label: t("bp_field_biz_name"), value: form.businessName },
-              { label: t("bp_field_email"),    value: form.email },
-              { label: t("bp_field_phone"),    value: form.phone },
+              { label: t("bp_field_biz_name"),       value: form.businessName },
+              { label: t("bp_field_email"),           value: form.email },
+              { label: t("bp_field_phone"),           value: form.phone },
+              { label: t("bp_field_tax_code"),        value: form.taxCode },
+              { label: t("bp_field_property_type"),   value: t(`bp_pt_${form.propertyType}`) },
             ].map(({ label, value }) => (
               <div key={label} className="bp-review-row">
                 <span className="bp-review-key">{label}</span>

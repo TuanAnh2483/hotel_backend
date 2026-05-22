@@ -2,6 +2,7 @@ package com.hotel.hotel_backend.service.search;
 
 import com.hotel.hotel_backend.dto.response.HotelAvailableRoomItemResponse;
 import com.hotel.hotel_backend.dto.response.HotelDetailResponse;
+import com.hotel.hotel_backend.entity.BookingMode;
 import com.hotel.hotel_backend.entity.Hotel;
 import com.hotel.hotel_backend.exeption.ApiException;
 import com.hotel.hotel_backend.exeption.ErrorCode;
@@ -10,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashSet;
 import java.util.List;
 
 
@@ -49,7 +51,9 @@ public class HotelDetailService {
                 hotel.getDistrict(),
                 hotel.getDescription(),
                 hotel.getHotelType(),
+                hotel.getBookingMode() != null ? hotel.getBookingMode() : BookingMode.BY_ROOM,
                 hotel.getAmenities(),
+                hotel.getCustomAmenities() == null ? new HashSet<>() : new HashSet<>(hotel.getCustomAmenities()),
                 resolveCoverImageUrl(hotel.getCoverImageUrl(), hotel.getImageUrls()),
                 copyImageUrls(hotel.getImageUrls()),
                 hotel.getRatingAvg(),

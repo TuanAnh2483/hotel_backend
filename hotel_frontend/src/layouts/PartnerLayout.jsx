@@ -1,35 +1,39 @@
+import { useState, useEffect } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { useAppNavigate } from "../hooks/useAppNavigate";
-import MainNavbar from "../components/MainNavbar";
-import Footer from "../components/Footer";
+import PartnerSidebar from "../components/partner/PartnerSidebar";
 import "./partner/PartnerLayout.css";
 
-const PATH_TO_PAGE = {
-  "/partner":          "partner-dashboard",
-  "/partner/hotels":   "partner-hotels",
-  "/partner/rooms":    "partner-rooms",
-  "/partner/calendar": "partner-calendar",
-  "/partner/bookings": "partner-bookings",
-  "/partner/reviews":  "partner-reviews",
-  "/partner/revenue":  "partner-revenue",
-  "/partner/forecast": "partner-forecast",
-  "/partner/refunds":  "partner-refunds",
-};
+const SELECTED_HOTEL_KEY = "partner_selected_hotel_id";
 
 export default function PartnerLayout() {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const navigate = useAppNavigate();
   const { pathname } = useLocation();
-  const active = PATH_TO_PAGE[pathname] || "partner-dashboard";
+
+  const [selectedHotelId, setSelectedHotelId] = useState(() => {
+    const saved = localStorage.getItem(SELECTED_HOTEL_KEY);
+    return saved ? Number(saved) : null;
+  });
+
+  useEffect(() => {
+    if (selectedHotelId != null) {
+      localStorage.setItem(SELECTED_HOTEL_KEY, selectedHotelId);
+    }
+  }, [selectedHotelId]);
 
   return (
     <div className="partner-root">
-      <MainNavbar active={active} navigate={navigate} user={user} onLogout={logout} />
-      <div className="partner-content">
-        <Outlet />
+      <PartnerSidebar
+        selectedHotelId={selectedHotelId}
+        onSelectHotel={setSelectedHotelId}
+      />
+      <div className="partner-main">
+        <div className="partner-content">
+          <Outlet context={{ selectedHotelId, setSelectedHotelId }} />
+        </div>
       </div>
-      <Footer navigate={navigate} />
     </div>
   );
 }
