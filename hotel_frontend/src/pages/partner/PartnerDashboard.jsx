@@ -1,11 +1,11 @@
-import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { useMyHotels, usePartnerBookings, useAnalyticsSummary } from "../../hooks/usePartnerQueries";
 import { useQueries } from "@tanstack/react-query";
 import { useLang } from "../../contexts/LanguageContext";
-import { 
-  AlertCircle, Building2, ClipboardList, CircleDollarSign, BarChart3,
+import { SkeletonRow } from "../../components/ui/Skeleton";
+import {
+  Building2, ClipboardList, CircleDollarSign, BarChart3,
   Bed, Calendar, ArrowRight, User
 } from "lucide-react";
 import "../../styles/pages/PartnerDashboard.css";
@@ -86,7 +86,6 @@ export default function PartnerDashboard() {
   const bookingTotal = Number(bookingData?.totalItems ?? analyticsData?.totalBookings ?? bookings.length ?? 0);
   const analytics   = analyticsData || null;
   const loading     = hotelsLoading || bookingsLoading || analyticsLoading;
-  const [error]     = useState("");
 
   const totalRoomTypes = rooms.length;
   const totalPhysicalRooms = rooms.reduce((sum, room) => sum + Number(room.quantity || 0), 0);
@@ -134,18 +133,12 @@ export default function PartnerDashboard() {
           </div>
         </div>
         {/* Background Decorative Circles */}
-        <div style={{ position: "absolute", right: -50, top: -50, width: 200, height: 200, borderRadius: "50%", background: "rgba(59, 130, 246, 0.1)" }} />
-        <div style={{ position: "absolute", right: 80, bottom: -80, width: 160, height: 160, borderRadius: "50%", background: "rgba(139, 92, 246, 0.1)" }} />
+        <div aria-hidden="true" style={{ position: "absolute", right: -50, top: -50, width: 200, height: 200, borderRadius: "50%", background: "rgba(59, 130, 246, 0.1)" }} />
+        <div aria-hidden="true" style={{ position: "absolute", right: 80, bottom: -80, width: 160, height: 160, borderRadius: "50%", background: "rgba(139, 92, 246, 0.1)" }} />
       </div>
 
-      {error && (
-        <div style={{ marginBottom: 20, padding: "12px 14px", borderRadius: 12, background: "#fef2f2", color: "#b91c1c", border: "1px solid #fecaca", display: "flex", alignItems: "center", gap: 8, fontSize: 13, fontWeight: 700 }}>
-          <AlertCircle size={16} /> {error}
-        </div>
-      )}
-
       {/* Stat Cards */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 20, marginBottom: 32 }}>
+      <div className="partner-dashboard-stats-grid">
         {stats.map(card => (
           <button
             key={card.label}
@@ -166,7 +159,7 @@ export default function PartnerDashboard() {
         ))}
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 24 }}>
+      <div className="partner-dashboard-main-grid">
         {/* Recent Bookings */}
         <div style={{ background: "#fff", borderRadius: 16, padding: "24px", border: "1px solid #f1f5f9", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
@@ -189,17 +182,13 @@ export default function PartnerDashboard() {
                   </tr>
               </thead>
               <tbody>
+                {loading && <SkeletonRow cols={5} />}
+                {loading && <SkeletonRow cols={5} />}
+                {loading && <SkeletonRow cols={5} />}
                 {!loading && bookings.length === 0 && (
                   <tr>
                     <td colSpan={5} style={{ padding: "36px 16px", textAlign: "center", color: "#94a3b8", fontWeight: 700 }}>
                       {t("pt_dash_no_bookings")}
-                    </td>
-                  </tr>
-                )}
-                {loading && (
-                  <tr>
-                    <td colSpan={5} style={{ padding: "36px 16px", textAlign: "center", color: "#94a3b8", fontWeight: 700 }}>
-                      {t("pt_dash_loading_bk")}
                     </td>
                   </tr>
                 )}

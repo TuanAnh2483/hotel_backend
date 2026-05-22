@@ -1,5 +1,37 @@
 /* ── Partner Dashboard ────────────────────────────────────────────────── */
 
+/* Responsive grid layouts */
+.partner-dashboard-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  margin-bottom: 32px;
+}
+
+@media (max-width: 1024px) {
+  .partner-dashboard-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .partner-dashboard-stats-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.partner-dashboard-main-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 24px;
+}
+
+@media (max-width: 900px) {
+  .partner-dashboard-main-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 .partner-dashboard-stat-card {
   background: #fff;
   border-radius: 16px;
