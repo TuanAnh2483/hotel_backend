@@ -2,6 +2,7 @@ import { createElement, useEffect, useState } from "react";
 import { useAuth } from "../../contexts/AuthContext";
 import MainNavbar from "../../components/MainNavbar";
 import Footer from "../../components/Footer";
+import PartnerSidebar from "../../components/partner/PartnerSidebar";
 import {
   useProfile,
   useBilling,
@@ -98,6 +99,10 @@ export default function ProfilePage({ navigate, onLogout }) {
   const [error, setError]       = useState("");
   const [message, setMessage]   = useState("");
   const [form, setForm]         = useState(() => ({ ...EMPTY_FORM, email: user?.email || "" }));
+  const [selectedHotelId, setSelectedHotelId] = useState(() => {
+    const saved = localStorage.getItem("partner_selected_hotel_id");
+    return saved ? Number(saved) : null;
+  });
 
   // ── Queries ───────────────────────────────────────────────────────
   const { data: profile, isLoading: pageLoading } = useProfile();
@@ -233,17 +238,8 @@ export default function ProfilePage({ navigate, onLogout }) {
   const partnerStatus = profile?.partnerApplicationStatus || profile?.status || "—";
   const passwordChangedAt = formatDateTime(profile?.passwordChangedAt);
 
-  return (
-    <div style={{ 
-      minHeight: "100vh", 
-      background: "linear-gradient(135deg, #ffffff 0%, #fdf4f5 45%, #f7ebeb 100%)", 
-      display: "flex", 
-      flexDirection: "column",
-      "--accent-color": accentColor
-    }}>
-      <MainNavbar active="profile" navigate={navigate} user={user} onLogout={onLogout} />
-      
-      <div style={{ flex: 1, paddingBottom: 80 }}>
+  const profileContent = (
+    <div style={{ flex: 1, paddingBottom: 80 }}>
         {/* Cover Photo */}
         <div style={{ height: 260, width: "100%", background: `linear-gradient(135deg, ${accentColor} 0%, #1e293b 100%)`, position: "relative" }}>
           <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, transparent, rgba(0,0,0,0.5))" }} />
@@ -329,13 +325,17 @@ export default function ProfilePage({ navigate, onLogout }) {
                     <t.icon size={18} /> {t.label}
                   </button>
                 ))}
-                <div className="profile-tabs-divider" />
-                <button 
-                  onClick={() => onLogout && onLogout()}
-                  className="profile-logout-btn"
-                >
-                  <LogOut size={18} /> Thoát tài khoản
-                </button>
+                {!isPartner && (
+                  <>
+                    <div className="profile-tabs-divider" />
+                    <button
+                      onClick={() => onLogout && onLogout()}
+                      className="profile-logout-btn"
+                    >
+                      <LogOut size={18} /> Thoát tài khoản
+                    </button>
+                  </>
+                )}
               </div>
             </div>
 
@@ -600,7 +600,35 @@ export default function ProfilePage({ navigate, onLogout }) {
           </div>
         </div>
       </div>
+  );
 
+  if (isPartner) {
+    return (
+      <div style={{ display: "flex", minHeight: "100vh", background: "#f1f5f9", "--accent-color": accentColor }}>
+        <PartnerSidebar
+          selectedHotelId={selectedHotelId}
+          onSelectHotel={(id) => {
+            setSelectedHotelId(id);
+            localStorage.setItem("partner_selected_hotel_id", id);
+          }}
+        />
+        <div style={{ flex: 1, minWidth: 0, overflowY: "auto" }}>
+          {profileContent}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{
+      minHeight: "100vh",
+      background: "linear-gradient(135deg, #ffffff 0%, #fdf4f5 45%, #f7ebeb 100%)",
+      display: "flex",
+      flexDirection: "column",
+      "--accent-color": accentColor
+    }}>
+      <MainNavbar active="profile" navigate={navigate} user={user} onLogout={onLogout} />
+      {profileContent}
       <Footer navigate={navigate} />
     </div>
   );

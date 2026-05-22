@@ -6,6 +6,7 @@ import { useLang } from "../../contexts/LanguageContext";
 import {
   Building2, ClipboardList, CircleDollarSign, BarChart3,
   Bed, Calendar, ArrowRight, User, TrendingUp, BedDouble,
+  CalendarDays,
 } from "lucide-react";
 import { getPropertyGroup, getGroupColor, getTypeLabel } from "../../utils/propertyGroupUtils";
 import { calcADR, calcOccupancyRate, calcRevPAR, sumBookingNights, periodDays, fmtMetric } from "../../utils/metricsCalculator";
@@ -124,43 +125,40 @@ export default function PartnerDashboard() {
   const { user } = useAuth();
   const { t, lang } = useLang();
   const rrNavigate = useNavigate();
-  const outletCtx      = useOutletContext() || {};
-  const { selectedHotelId } = outletCtx;
+  const { selectedHotelId } = useOutletContext() || {};
 
-  const analyticsParams = {
-    checkInFrom: startOfCurrentMonth(),
-    checkInTo:   endOfCurrentMonth(),
-    ...(selectedHotelId ? { hotelId: selectedHotelId } : {}),
-  };
-  const bookingsParams = {
-    size: 10, page: 1,
-    ...(selectedHotelId ? { hotelId: selectedHotelId } : {}),
-  };
+  const today    = toIsoDate(new Date());
+  const monthLabel = new Date().toLocaleDateString("vi-VN", { month: "long", year: "numeric" });
+
+  const sharedParam    = selectedHotelId ? { hotelId: selectedHotelId } : {};
+  const analyticsParams = { checkInFrom: startOfCurrentMonth(), checkInTo: endOfCurrentMonth(), ...sharedParam };
+  const todayParams     = { checkInFrom: today, checkInTo: today, ...sharedParam };
+  const bookingsParams  = { size: 10, page: 1, ...sharedParam };
 
   const { data: hotelData,     isLoading: hotelsLoading    } = useMyHotels();
   const { data: bookingData,   isLoading: bookingsLoading  } = usePartnerBookings(bookingsParams);
   const { data: analyticsData, isLoading: analyticsLoading } = useAnalyticsSummary(analyticsParams);
+  const { data: todayData,     isLoading: todayLoading     } = useAnalyticsSummary(todayParams);
 
-  const hotelList = Array.isArray(hotelData) ? hotelData : [];
-
-  // Determine selected hotel info
+  const hotelList     = Array.isArray(hotelData) ? hotelData : [];
   const selectedHotel = hotelList.find(h => h.id === selectedHotelId) || hotelList[0] || null;
   const hotelType     = selectedHotel?.hotelType || "HOTEL";
-  const group         = getPropertyGroup(hotelType);
   const isHotelLike   = HOTEL_LIKE.includes(hotelType);
+  const groupColor    = getGroupColor(hotelType);
 
-  // Rooms for selected hotel (needed for Occupancy)
   const { data: roomsData = [], isLoading: roomsLoading } = usePartnerRooms(selectedHotel?.id || null);
   const rooms = Array.isArray(roomsData) ? roomsData : [];
 
-  const hotels   = hotelList;
-  const bookings = Array.isArray(bookingData?.items) ? bookingData.items : [];
-  const bookingTotal = Number(bookingData?.totalItems ?? analyticsData?.totalBookings ?? bookings.length ?? 0);
-  const analytics    = analyticsData || null;
-  const loading      = hotelsLoading || bookingsLoading || analyticsLoading;
+  const bookings       = Array.isArray(bookingData?.items) ? bookingData.items : [];
+  const bookingTotal   = Number(bookingData?.totalItems ?? analyticsData?.totalBookings ?? 0);
+  const monthlyRevenue = Number(analyticsData?.netRevenue ?? analyticsData?.grossRevenue ?? 0);
 
   const totalPhysicalRooms = rooms.reduce((sum, r) => sum + Number(r.quantity || 0), 0);
-  const monthlyRevenue     = Number(analytics?.netRevenue ?? analytics?.grossRevenue ?? 0);
+  const checkInToday       = Number(todayData?.totalBookings ?? 0);
+  const availableToday     = Math.max(0, totalPhysicalRooms - checkInToday);
+
+  const loading     = hotelsLoading || bookingsLoading || analyticsLoading;
+  const opLoading   = loading || todayLoading;
 
   function statusConfig(status) {
     const MAP = {
@@ -172,104 +170,109 @@ export default function PartnerDashboard() {
     return MAP[status] || { label: status || t("pt_status_unknown"), color: "#475569", bg: "#f8fafc" };
   }
 
-  const groupColor = getGroupColor(hotelType);
-
-  // Main stat cards (adapt to selected hotel)
-  const stats = [
+  // ── Operational KPIs (primary) ───────────────────────────────────────────
+  const opKpis = [
     {
-      label: selectedHotelId ? "Cơ sở đã chọn" : t("pt_dash_hotels"),
-      value: selectedHotelId ? (selectedHotel?.name || "—") : hotels.length,
-      hint:  selectedHotelId ? getTypeLabel(hotelType, lang) : t("pt_dash_hotels_hint"),
-      Icon:  Building2, color: groupColor, path: "/partner/hotels",
+      label: "Phòng trống",
+      value: availableToday,
+      hint:  "Phòng chưa có khách check-in hôm nay",
+      Icon:  BedDouble, color: "#059669", path: isHotelLike ? "/partner/rooms" : "/partner/calendar",
     },
     {
-      label: t("pt_dash_bookings"),
+      label: "Check-in hôm nay",
+      value: checkInToday,
+      hint:  `Lượt nhận phòng ${today}`,
+      Icon:  CalendarDays, color: "#0EA5E9", path: "/partner/bookings",
+    },
+    {
+      label: "Booking tháng này",
       value: bookingTotal,
-      hint:  t("pt_dash_bookings_hint"),
-      Icon:  ClipboardList, color: "#0EA5E9", path: "/partner/bookings",
+      hint:  `Tổng đặt phòng ${monthLabel}`,
+      Icon:  ClipboardList, color: "#7C3AED", path: "/partner/bookings",
     },
     {
-      label: t("pt_dash_revenue"),
-      value: fmtPrice(monthlyRevenue),
-      hint:  t("pt_dash_revenue_hint"),
-      Icon:  CircleDollarSign, color: "#7C3AED", path: "/partner/revenue",
-    },
-    {
-      label: t("pt_dash_rooms"),
+      label: "Tổng phòng",
       value: totalPhysicalRooms,
-      hint:  t("pt_dash_rooms_hint").replace("{n}", rooms.length),
-      Icon:  Bed, color: "#059669", path: isHotelLike ? "/partner/rooms" : "/partner/calendar",
+      hint:  `${rooms.length} loại phòng`,
+      Icon:  Bed, color: "#f59e0b", path: isHotelLike ? "/partner/rooms" : "/partner/calendar",
     },
   ];
 
   return (
     <div style={{ paddingBottom: 40 }}>
-      {/* Hero Header */}
-      <div style={{
-        background: `linear-gradient(135deg, #1e293b 0%, #334155 100%)`,
-        borderRadius: 16, padding: "32px 40px", marginBottom: 32,
-        position: "relative", overflow: "hidden",
-        boxShadow: "0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1)",
-      }}>
-        {/* Coloured accent bar by property group */}
-        <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, background: groupColor, borderRadius: "16px 16px 0 0" }} />
-
-        <div style={{ position: "relative", zIndex: 1 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 8 }}>
-            <div style={{ width: 44, height: 44, borderRadius: "50%", background: "rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <User size={24} color="#fff" />
+      {/* Compact page header */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 24 }}>
+        <div>
+          <h1 style={{ fontSize: 20, fontWeight: 800, color: "#1e293b", margin: "0 0 6px" }}>
+            {t("pt_dash_greeting").replace("{name}", formatDisplayName(user))}
+          </h1>
+          {selectedHotel ? (
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ color: "#64748b", fontSize: 13, fontWeight: 500 }}>{selectedHotel.name}</span>
+              <PropertyBadge hotelType={hotelType} lang={lang} />
             </div>
-            <div>
-              <h1 style={{ fontSize: 22, fontWeight: 800, color: "#fff", margin: 0 }}>
-                {t("pt_dash_greeting").replace("{name}", formatDisplayName(user))}
-              </h1>
-              {selectedHotel && (
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4 }}>
-                  <span style={{ color: "rgba(255,255,255,0.6)", fontSize: 13 }}>{selectedHotel.name}</span>
-                  <PropertyBadge hotelType={hotelType} lang={lang} />
-                </div>
-              )}
-            </div>
-          </div>
-          <p style={{ fontSize: 14, color: "rgba(255,255,255,0.7)", maxWidth: 600, lineHeight: 1.6, marginTop: 12 }}>
-            {t("pt_dash_subtitle")}
-          </p>
-          <div style={{ display: "flex", gap: 12, marginTop: 20 }}>
-            <button
-              onClick={() => rrNavigate("/partner/calendar")}
-              style={{ padding: "10px 20px", borderRadius: 8, background: "#BE1E2E", color: "#fff", border: "none", fontWeight: 700, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 8 }}
-            >
-              {t("pt_dash_manage_price")} <ArrowRight size={16} />
-            </button>
-            <button
-              onClick={() => rrNavigate("/partner/revenue")}
-              style={{ padding: "10px 20px", borderRadius: 8, background: "rgba(255,255,255,0.1)", color: "#fff", border: "none", fontWeight: 700, fontSize: 13, cursor: "pointer" }}
-            >
-              {t("pt_dash_finance")}
-            </button>
-          </div>
+          ) : (
+            <div style={{ color: "#94a3b8", fontSize: 13 }}>{t("pt_dash_subtitle")}</div>
+          )}
         </div>
-
-        <div aria-hidden="true" style={{ position: "absolute", right: -50, top: -50, width: 200, height: 200, borderRadius: "50%", background: "rgba(59, 130, 246, 0.1)" }} />
-        <div aria-hidden="true" style={{ position: "absolute", right: 80, bottom: -80, width: 160, height: 160, borderRadius: "50%", background: "rgba(139, 92, 246, 0.1)" }} />
+        <div style={{ display: "flex", gap: 10, flexShrink: 0 }}>
+          <button
+            onClick={() => rrNavigate("/partner/calendar")}
+            style={{ padding: "8px 16px", borderRadius: 8, background: "#BE1E2E", color: "#fff", border: "none", fontWeight: 700, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}
+          >
+            {t("pt_dash_manage_price")} <ArrowRight size={14} />
+          </button>
+          <button
+            onClick={() => rrNavigate("/partner/revenue")}
+            style={{ padding: "8px 16px", borderRadius: 8, background: "#fff", color: "#475569", border: "1px solid #e2e8f0", fontWeight: 700, fontSize: 13, cursor: "pointer" }}
+          >
+            {t("pt_dash_finance")}
+          </button>
+        </div>
       </div>
 
-      {/* Main stat cards */}
+      {/* Operational KPI cards */}
       <div className="partner-dashboard-stats-grid">
-        {stats.map(card => (
-          <KpiCard key={card.label} {...card} navigate={rrNavigate} loading={loading} />
+        {opKpis.map(card => (
+          <KpiCard key={card.label} {...card} navigate={rrNavigate} loading={opLoading} />
         ))}
       </div>
 
-      {/* Hotel-like extended KPIs (ADR / Occupancy / RevPAR) */}
-      {isHotelLike && (
-        <HotelKpiRow
-          bookings={bookings}
-          rooms={rooms}
-          loading={loading || roomsLoading}
-          navigate={rrNavigate}
-        />
-      )}
+      {/* Secondary financial section */}
+      <div style={{ marginBottom: 24 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+          <h2 style={{ fontSize: 14, fontWeight: 800, color: "#475569", textTransform: "uppercase", letterSpacing: 0.8, margin: 0 }}>
+            Tài chính — {monthLabel}
+          </h2>
+          <button
+            onClick={() => rrNavigate("/partner/revenue")}
+            style={{ fontSize: 12, color: "#BE1E2E", background: "none", border: "none", cursor: "pointer", fontWeight: 700, display: "flex", alignItems: "center", gap: 4 }}
+          >
+            Chi tiết <ArrowRight size={12} />
+          </button>
+        </div>
+
+        {/* Monthly revenue summary card */}
+        <div style={{ background: "#fff", borderRadius: 14, padding: "18px 22px", border: "1px solid #f1f5f9", boxShadow: "0 1px 3px rgba(0,0,0,0.05)", marginBottom: 16, display: "flex", alignItems: "center", gap: 16 }}>
+          <div style={{ width: 44, height: 44, borderRadius: 12, background: "#7C3AED10", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <CircleDollarSign size={22} color="#7C3AED" />
+          </div>
+          <div>
+            <div style={{ fontSize: 22, fontWeight: 800, color: "#1e293b" }}>{loading ? "..." : fmtPrice(monthlyRevenue)}</div>
+            <div style={{ fontSize: 13, color: "#64748b", marginTop: 2, fontWeight: 500 }}>Doanh thu {monthLabel}</div>
+          </div>
+        </div>
+
+        {/* ADR / Occupancy / RevPAR */}
+        {isHotelLike && (
+          <HotelKpiRow
+            bookings={bookings}
+            rooms={rooms}
+            loading={loading || roomsLoading}
+            navigate={rrNavigate}
+          />
+        )}
+      </div>
 
       <div className="partner-dashboard-main-grid">
         {/* Recent Bookings */}
