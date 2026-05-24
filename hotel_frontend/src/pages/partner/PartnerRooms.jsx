@@ -5,7 +5,7 @@ import {
   useUploadRoomImages, useDeleteRoomImage,
 } from "../../hooks/usePartnerQueries";
 import { useQueryClient } from "@tanstack/react-query";
-import { useSearchParams, useOutletContext, useLocation } from "react-router-dom";
+import { useSearchParams, useOutletContext, useLocation, useNavigate } from "react-router-dom";
 import { partnerService } from "../../services/partnerService"; // only used in queryClient.fetchQuery below
 import {
   createExistingImageItems,
@@ -19,10 +19,10 @@ import { PageHeader, Card, Btn, Modal } from "../../components/admin/AdminLayout
 import {
   Bed, Users, Home, Edit3, Trash2, Search, Plus,
   Grid, TrendingUp, TrendingDown,
-  MapPin, FileText, Building2, Sparkles, Minus, Box
+  MapPin, Building2, Sparkles, Minus, Box, AlertTriangle,
+  Copy, CalendarDays, Power, Wrench, ChevronRight, DoorOpen,
 } from "lucide-react";
-import AmenityPicker from "../../components/partner/AmenityPicker";
-import { ROOM_AMENITY_CATEGORIES, ROOM_AMENITIES_FLAT, ROOM_AMENITY_KEYS } from "../../utils/amenityConfig";
+import { ROOM_AMENITY_KEYS } from "../../utils/amenityConfig";
 import "../../styles/pages/partner/PartnerRooms.css";
 import { useLang } from "../../contexts/LanguageContext";
 
@@ -41,7 +41,7 @@ const BED_TYPES = [
 
 const HOTEL_TYPE_LABELS = {
   HOTEL: "Khách sạn", RESORT: "Resort", VILLA: "Villa",
-  APARTMENT: "Căn hộ", HOMESTAY: "Homestay", MOTEL: "Nhà nghỉ",
+  APARTMENT: "Căn hộ", HOMESTAY: "Homestay", HOSTEL: "Hostel", GUEST_HOUSE: "Nhà khách",
 };
 
 const EMPTY_FORM = {
@@ -76,7 +76,7 @@ function HotelInfoPanel({ hotel }) {
   const { t } = useLang();
   const HOTEL_TYPE_LABELS = {
     HOTEL: t("pt_type_hotel"), RESORT: t("pt_type_resort"), VILLA: t("pt_type_villa"),
-    APARTMENT: t("pt_type_apartment"), HOMESTAY: t("pt_type_homestay"), MOTEL: t("pt_type_guest_house"),
+    APARTMENT: t("pt_type_apartment"), HOMESTAY: t("pt_type_homestay"), HOSTEL: t("pt_type_hostel"), GUEST_HOUSE: t("pt_type_guest_house"),
   };
   if (!hotel) return null;
   return (
@@ -106,9 +106,10 @@ function HotelInfoPanel({ hotel }) {
   );
 }
 
-function RoomForm({ form, setForm, onSubmit, onCancel, saving, title, categories, bedTypes, hotel, aiSuggestion, saveError }) {
+function RoomForm({ form, setForm, onSubmit, onCancel, saving, title, categories, bedTypes, hotel, aiSuggestion, isAdd, saveError, onGoToServices, originalQuantity }) {
   const { t } = useLang();
 
+  const isEntire = hotel?.bookingMode === "ENTIRE";
   const aiSuggestedPrice = aiSuggestion?.data?.suggestedPrice ?? null;
   const aiDelta = (aiSuggestedPrice !== null && form.price > 0) ? aiSuggestedPrice - form.price : null;
   const aiDeltaPct = (aiDelta !== null && form.price > 0) ? (aiDelta / form.price) * 100 : null;
@@ -152,7 +153,20 @@ function RoomForm({ form, setForm, onSubmit, onCancel, saving, title, categories
             <input className="pr-input" type="number" min="1" value={form.capacity} onChange={e => setForm(f => ({ ...f, capacity: Number(e.target.value) }))} />
           </Field>
           <Field label={t("pt_rooms_quantity")}>
-            <input className="pr-input" type="number" min="1" value={form.quantity} onChange={e => setForm(f => ({ ...f, quantity: Math.max(1, Number(e.target.value)) }))} />
+            <input
+              className="pr-input"
+              type="number"
+              min="1"
+              max={isEntire ? 1 : undefined}
+              value={isEntire ? 1 : form.quantity}
+              disabled={isEntire}
+              onChange={e => setForm(f => ({ ...f, quantity: Math.max(1, Number(e.target.value)) }))}
+            />
+            {isEntire && (
+              <div style={{ fontSize: 11.5, color: "#92400e", marginTop: 4 }}>
+                Cơ sở thuê nguyên căn chỉ cho phép 1 phòng mỗi loại
+              </div>
+            )}
           </Field>
           <Field label={t("pt_rooms_price")}>
             <div className="pr-price-wrap">
@@ -161,6 +175,14 @@ function RoomForm({ form, setForm, onSubmit, onCancel, saving, title, categories
             </div>
           </Field>
         </div>
+
+        {/* Quantity reduction warning */}
+        {!isAdd && originalQuantity != null && form.quantity < originalQuantity && (
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 8, padding: "9px 14px", background: "#fffbeb", borderRadius: 10, border: "1px solid #fde68a", fontSize: 12.5, color: "#92400e", fontWeight: 600 }}>
+            <AlertTriangle size={14} color="#d97706" style={{ flexShrink: 0, marginTop: 1 }} />
+            Giảm số lượng phòng có thể xóa các phòng vật lý chưa sử dụng (AVAILABLE / đang dọn).
+          </div>
+        )}
 
         {/* AI suggestion error */}
         {aiSuggestion?.error && (
@@ -194,7 +216,10 @@ function RoomForm({ form, setForm, onSubmit, onCancel, saving, title, categories
                   <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
                     <Sparkles size={11} color={aiScheme.accent} />
                     <span style={{ fontSize: 10, fontWeight: 900, color: aiScheme.accent, letterSpacing: 0.4, textTransform: "uppercase" }}>
-                      {aiSuggestion.data.aiGenerated ? "Gemini AI" : "Thống kê"} · 14 ngày
+                      {aiSuggestion.data.isAddSuggestion
+                        ? "Tham khảo · cùng loại phòng"
+                        : aiSuggestion.data.aiGenerated ? "Gemini AI" : "Thống kê"
+                      }{!aiSuggestion.data.isAddSuggestion ? " · 14 ngày" : ""}
                     </span>
                   </div>
                   <span style={{ color: aiScheme.border, fontSize: 16, lineHeight: 1 }}>·</span>
@@ -231,21 +256,32 @@ function RoomForm({ form, setForm, onSubmit, onCancel, saving, title, categories
                 </div>
                 {/* Hint text */}
                 <div style={{ fontSize: 11, color: aiScheme.accent, opacity: 0.75, marginTop: 5, fontWeight: 600 }}>
-                  {aiScheme.hint}
+                  {aiSuggestion.data.isAddSuggestion
+                    ? "Mức giá trung bình của các phòng cùng loại trong cơ sở này"
+                    : aiScheme.hint
+                  }
                 </div>
               </div>
             )}
           </div>
         )}
 
-        <Field label={t("pt_rooms_amenities")}>
-          <AmenityPicker
-            categories={ROOM_AMENITY_CATEGORIES}
-            selected={form.amenities}
-            customAmenities={form.customAmenities || []}
-            onChange={(amenities, customAmenities) => setForm(f => ({ ...f, amenities, customAmenities }))}
-          />
-        </Field>
+        <div className="pr-services-link-section">
+          <div className="pr-services-link-info">
+            <Wrench size={14} color="#475569" />
+            <span>
+              Tiện ích:{" "}
+              <strong>{(form.amenities?.length || 0) + (form.customAmenities?.length || 0)}</strong> mục đã cấu hình
+            </span>
+          </div>
+          <button
+            type="button"
+            className="pr-services-link-btn"
+            onClick={() => { onCancel(); onGoToServices?.(); }}
+          >
+            Quản lý tiện ích <ChevronRight size={13} />
+          </button>
+        </div>
 
         <Field label={t("pt_rooms_desc")}>
           <textarea
@@ -315,6 +351,7 @@ function fmtPrice(n) {
 }
 
 export default function PartnerRooms() {
+  const navigate = useNavigate();
   const { t } = useLang();
   const CATEGORIES = [
     { key: "STANDARD", label: t("pt_cat_standard") },
@@ -347,6 +384,9 @@ export default function PartnerRooms() {
   function selectHotel(id) {
     setSelectedHotelId(id);
     setCtxHotelId?.(id ? Number(id) : null);
+    // FIX BUG-008: Reset pagination when switching hotels so the user never lands
+    // on a page that doesn't exist for the newly selected hotel's room count.
+    setPage(1);
   }
   const [modal, setModal]       = useState(null);
   const [selected, setSelected] = useState(null);
@@ -418,6 +458,18 @@ export default function PartnerRooms() {
     setRoomAiSuggestion({ loading: false, data: null, error: false });
     setModal("add");
   }
+
+  // Cập nhật gợi ý giá tham khảo theo category khi ở modal Add
+  useEffect(() => {
+    if (modal !== "add") return;
+    const sameCategory = rooms.filter(r => r.roomCategory === form.roomCategory && r.price > 0);
+    if (sameCategory.length > 0) {
+      const avg = Math.round(sameCategory.reduce((s, r) => s + r.price, 0) / sameCategory.length / 10000) * 10000;
+      setRoomAiSuggestion({ loading: false, data: { suggestedPrice: avg, aiGenerated: false, isAddSuggestion: true }, error: false });
+    } else {
+      setRoomAiSuggestion({ loading: false, data: null, error: false });
+    }
+  }, [form.roomCategory, modal]); // eslint-disable-line react-hooks/exhaustive-deps
   async function openEdit(room) {
     revokePendingImageUrls(form.images);
     setSaveError("");
@@ -452,6 +504,39 @@ export default function PartnerRooms() {
   }
   function openDelete(room) { setSelected(room); setModal("delete"); }
 
+  function openDuplicate(room) {
+    revokePendingImageUrls(form.images);
+    setSelected(null);
+    setSaveError("");
+    setForm({
+      name: `${room.name} (bản sao)`,
+      capacity: room.capacity || 2,
+      quantity: room.quantity > 0 ? room.quantity : 1,
+      price: room.price || 0,
+      roomCategory: room.roomCategory || "STANDARD",
+      bedType: room.bedType || "DOUBLE",
+      amenities: room.amenities ? room.amenities.filter(k => ROOM_AMENITY_KEYS.has(k)) : [],
+      customAmenities: room.customAmenities ? [...room.customAmenities] : [],
+      images: [],
+      description: room.description || "",
+    });
+    setRoomAiSuggestion({ loading: false, data: null, error: false });
+    setModal("add");
+  }
+
+  async function handleDeactivate(room) {
+    try {
+      await updateRoom.mutateAsync({
+        roomId: room.id, hotelId: selectedHotelId,
+        name: room.name, capacity: room.capacity, quantity: 0,
+        price: room.price, roomCategory: room.roomCategory, bedType: room.bedType,
+        amenities: room.amenities || [], customAmenities: room.customAmenities || [],
+        imageUrls: getRoomImageUrls(room),
+        description: room.description || null,
+      });
+    } catch (e) { alert(e.message); }
+  }
+
   function closeFormModal() {
     revokePendingImageUrls(form.images);
     setModal(null);
@@ -468,6 +553,9 @@ export default function PartnerRooms() {
                                                    { setSaveError("Sức chứa phải là số nguyên ≥ 1"); return; }
     if (!Number.isInteger(Number(form.quantity)) || Number(form.quantity) < 1)
                                                    { setSaveError("Số lượng phòng phải là số nguyên ≥ 1"); return; }
+    const currentHotel = hotels.find(h => String(h.id) === String(selectedHotelId));
+    if (currentHotel?.bookingMode === "ENTIRE" && Number(form.quantity) > 1)
+                                                   { setSaveError("Cơ sở thuê nguyên căn chỉ cho phép tối đa 1 phòng mỗi loại"); return; }
     setSaving(true);
     setSaveError("");
     try {
@@ -562,20 +650,42 @@ export default function PartnerRooms() {
         </div>
       )}
 
-      {/* Hotel Selector */}
-      <div className="pr-hotel-selector">
-        <div className="pr-hotel-selector-label">
-          <Home size={20} color="#BE1E2E" /> {t("pt_rooms_select_hotel").toUpperCase()}:
+      {/* Hotel Selector — chip cards */}
+      {hotels.length > 0 && (
+        <div className="pr-hotel-chips-wrap">
+          <div className="pr-hotel-chips-label">
+            <Home size={16} color="#BE1E2E" /> Chọn cơ sở:
+          </div>
+          <div className="pr-hotel-chips-row">
+            {hotels.map(h => {
+              const thumb = h.coverImageUrl || (Array.isArray(h.imageUrls) ? h.imageUrls[0] : "");
+              const active = String(h.id) === String(selectedHotelId);
+              return (
+                <button
+                  key={h.id}
+                  className={`pr-hotel-chip${active ? " pr-hotel-chip--active" : ""}`}
+                  onClick={() => selectHotel(String(h.id))}
+                >
+                  <div className="pr-hotel-chip-thumb">
+                    {thumb
+                      ? <img src={thumb} alt={h.name} />
+                      : <Building2 size={18} color="#94a3b8" />
+                    }
+                  </div>
+                  <div className="pr-hotel-chip-info">
+                    <div className="pr-hotel-chip-name">{h.name}</div>
+                    {(h.district || h.province) && (
+                      <div className="pr-hotel-chip-loc">
+                        <MapPin size={10} /> {[h.district, h.province].filter(Boolean).join(", ")}
+                      </div>
+                    )}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
         </div>
-        <select
-          className="pr-hotel-select"
-          value={selectedHotelId}
-          onChange={e => selectHotel(e.target.value)}
-        >
-          <option value="">-- {t("pt_rooms_select_hotel")} --</option>
-          {hotels.map(h => <option key={h.id} value={h.id}>{h.name}</option>)}
-        </select>
-      </div>
+      )}
 
       {error && (
         <div style={{ marginBottom: 18, padding: "12px 14px", borderRadius: 12, background: "#fef2f2", border: "1px solid #fecaca", color: "#b91c1c", fontSize: 13, fontWeight: 700 }}>
@@ -659,6 +769,11 @@ export default function PartnerRooms() {
                 <div className="pr-room-price-wrap">
                   <span className="pr-room-price-badge">{fmtPrice(r.price)}</span>
                 </div>
+                {r.quantity === 0 && (
+                  <div className="pr-room-status-badge">
+                    <Power size={11} /> Tạm ngừng
+                  </div>
+                )}
               </div>
 
               <div className="pr-room-body">
@@ -677,21 +792,93 @@ export default function PartnerRooms() {
                   </div>
                   <div className="pr-room-meta-item">
                     <div className="pr-room-meta-icon"><Grid size={14} color="#64748b" /></div>
-                    {r.quantity} phòng tổng
+                    {r.quantity} phòng
                   </div>
                   <div className="pr-room-meta-item">
-                    <div className="pr-room-meta-icon"><Box size={14} color="#64748b" /></div>
-                    Mã #{r.id}
+                    <div className="pr-room-meta-icon"><Wrench size={14} color="#64748b" /></div>
+                    {(r.amenities?.length || 0) + (r.customAmenities?.length || 0)} tiện ích
                   </div>
                 </div>
 
+                {/* Unit availability badge */}
+                {r.unitSummary && r.unitSummary.totalUnits > 0 && (
+                  <div className="pr-unit-availability">
+                    <span className="pr-unit-avail-dot" />
+                    <span className="pr-unit-avail-text">
+                      <strong>{r.unitSummary.availableUnits}</strong>/{r.unitSummary.totalUnits} phòng sẵn sàng
+                    </span>
+                    {r.unitSummary.maintenanceUnits > 0 && (
+                      <span className="pr-unit-maint-badge">
+                        ⚠ {r.unitSummary.maintenanceUnits} bảo trì
+                      </span>
+                    )}
+                    {r.unitSummary.cleaningUnits > 0 && (
+                      <span className="pr-unit-cleaning-badge">
+                        🧹 {r.unitSummary.cleaningUnits} dọn phòng
+                      </span>
+                    )}
+                  </div>
+                )}
+                {r.unitSummary && r.unitSummary.totalUnits === 0 && (
+                  <div className="pr-unit-availability pr-unit-availability--none">
+                    <DoorOpen size={13} color="#94a3b8" />
+                    <span className="pr-unit-avail-text" style={{ color: "#94a3b8" }}>
+                      Chưa tạo phòng cụ thể
+                    </span>
+                  </div>
+                )}
+
                 <div className="pr-room-actions">
                   <button className="pr-edit-btn" onClick={() => openEdit(r)}>
-                    <Edit3 size={16} /> {t("adm_edit")}
+                    <Edit3 size={15} /> {t("adm_edit")}
                   </button>
-                  <button className="pr-delete-btn" onClick={() => openDelete(r)}>
-                    <Trash2 size={16} /> {t("adm_delete")}
+                  {/* Nút quản lý phòng vật lý */}
+                  <button
+                    className="pr-units-btn"
+                    onClick={() => navigate(`/partner/room-units?roomId=${r.id}&hotelId=${selectedHotelId}`)}
+                    title="Quản lý phòng vật lý"
+                  >
+                    <DoorOpen size={15} />
+                    {r.unitSummary?.totalUnits > 0
+                      ? `${r.unitSummary.totalUnits} phòng`
+                      : "Quản lý phòng"}
                   </button>
+                  <div className="pr-room-quick-actions">
+                    <button
+                      className="pr-quick-btn"
+                      title="Nhân bản phòng"
+                      aria-label="Nhân bản phòng"
+                      onClick={() => openDuplicate(r)}
+                    >
+                      <Copy size={14} aria-hidden="true" />
+                    </button>
+                    <button
+                      className="pr-quick-btn"
+                      title="Lịch & giá phòng"
+                      aria-label="Xem lịch và giá phòng"
+                      onClick={() => navigate(`/partner/calendar?roomId=${r.id}`)}
+                    >
+                      <CalendarDays size={14} aria-hidden="true" />
+                    </button>
+                    {r.quantity > 0 && (
+                      <button
+                        className="pr-quick-btn pr-quick-btn--deactivate"
+                        title="Tạm dừng kinh doanh"
+                        aria-label="Tạm dừng kinh doanh phòng này"
+                        onClick={() => handleDeactivate(r)}
+                      >
+                        <Power size={14} aria-hidden="true" />
+                      </button>
+                    )}
+                    <button
+                      className="pr-quick-btn pr-quick-btn--delete"
+                      title="Xóa phòng"
+                      aria-label="Xóa phòng này"
+                      onClick={() => openDelete(r)}
+                    >
+                      <Trash2 size={14} aria-hidden="true" />
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -729,21 +916,41 @@ export default function PartnerRooms() {
           categories={categoryOptions}
           bedTypes={bedTypeOptions}
           hotel={hotels.find(h => String(h.id) === String(selectedHotelId)) || null}
-          aiSuggestion={modal === "edit" ? roomAiSuggestion : null}
+          aiSuggestion={roomAiSuggestion}
+          isAdd={modal === "add"}
           saveError={saveError}
+          onGoToServices={() => navigate("/partner/services")}
+          originalQuantity={modal === "edit" ? selected?.quantity : null}
         />
       )}
 
       {modal === "delete" && (
-        <Modal title={t("pt_rooms_del_title")} onClose={() => setModal(null)} width={440}>
+        <Modal title={t("pt_rooms_del_title")} onClose={() => setModal(null)} width={460}>
           <div className="pr-delete-modal-content">
             <div className="pr-delete-modal-icon">
               <Trash2 size={32} color="#ef4444" />
             </div>
             <h3 className="pr-delete-modal-title">{t("adm_confirm")}</h3>
-            <p className="pr-delete-modal-desc"
-              dangerouslySetInnerHTML={{ __html: t("pt_rooms_del_desc").replace("{name}", `<strong>"${selected?.name}"</strong>`) }}
-            />
+            {/* FIX BUG-006: Replaced dangerouslySetInnerHTML with safe React element composition.
+                Room names are partner-controlled input and must never be injected as raw HTML. */}
+            <p className="pr-delete-modal-desc">
+              {(() => {
+                const template = t("pt_rooms_del_desc");
+                const parts = template.split("{name}");
+                return parts.length === 2
+                  ? <>{parts[0]}<strong>&ldquo;{selected?.name}&rdquo;</strong>{parts[1]}</>
+                  : template;
+              })()}
+            </p>
+            <div className="pr-delete-cascade-warn">
+              <AlertTriangle size={15} color="#d97706" style={{ flexShrink: 0, marginTop: 1 }} />
+              <div>
+                <div style={{ fontWeight: 700, color: "#92400e", marginBottom: 4 }}>Hành động này không thể hoàn tác</div>
+                <div style={{ color: "#78350f", lineHeight: 1.5 }}>
+                  Toàn bộ <strong>lịch giá</strong>, <strong>tồn kho</strong> và <strong>dữ liệu đặt phòng</strong> của loại phòng này sẽ bị xóa vĩnh viễn.
+                </div>
+              </div>
+            </div>
             <div className="pr-delete-modal-actions">
               <button className="pr-delete-modal-cancel" onClick={() => setModal(null)}>{t("adm_cancel")}</button>
               <button className="pr-delete-modal-confirm" onClick={handleDelete} disabled={saving}>
@@ -753,6 +960,7 @@ export default function PartnerRooms() {
           </div>
         </Modal>
       )}
+
     </div>
   );
 }

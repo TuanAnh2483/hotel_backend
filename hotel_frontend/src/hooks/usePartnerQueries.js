@@ -2,17 +2,19 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { partnerService } from "../services/partnerService";
 
 export const partnerKeys = {
-  catalog:     ()                => ["partner", "catalog"],
-  hotels:      ()                => ["partner", "hotels"],
-  rooms:       (hotelId)         => ["partner", "rooms", hotelId],
-  bookings:    (params)          => ["partner", "bookings", params],
-  booking:     (id)              => ["partner", "booking", id],
-  analytics:   (params)          => ["partner", "analytics", params],
-  calendar:    (roomId, params)  => ["partner", "calendar", roomId, params],
-  refunds:     (params)          => ["partner", "refunds", params],
-  priceSugs:   (roomId, from, to) => ["partner", "price-suggestions", roomId, from, to],
-  revenue:     (roomId)          => ["partner", "revenue", roomId],
-  reviews:     (params)          => ["partner", "reviews", params],
+  catalog:        ()                => ["partner", "catalog"],
+  hotels:         ()                => ["partner", "hotels"],
+  rooms:          (hotelId)         => ["partner", "rooms", hotelId],
+  roomUnits:      (roomId)          => ["partner", "room-units", roomId],
+  hotelRoomUnits: (hotelId)         => ["partner", "hotel-room-units", hotelId],
+  bookings:       (params)          => ["partner", "bookings", params],
+  booking:        (id)              => ["partner", "booking", id],
+  analytics:      (params)          => ["partner", "analytics", params],
+  calendar:       (roomId, params)  => ["partner", "calendar", roomId, params],
+  refunds:        (params)          => ["partner", "refunds", params],
+  priceSugs:      (roomId, from, to) => ["partner", "price-suggestions", roomId, from, to],
+  revenue:        (roomId)          => ["partner", "revenue", roomId],
+  reviews:        (params)          => ["partner", "reviews", params],
 };
 
 // ── Catalog ──────────────────────────────────────────────────────────
@@ -107,8 +109,11 @@ export function useCreateRoom(options = {}) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ hotelId, ...data }) => partnerService.createRoom(hotelId, data),
-    onSuccess: (_data, { hotelId }) =>
-      queryClient.invalidateQueries({ queryKey: partnerKeys.rooms(hotelId) }),
+    onSuccess: (_data, { hotelId }) => {
+      queryClient.invalidateQueries({ queryKey: partnerKeys.rooms(hotelId) });
+      // FIX TASK-4: creating a room may trigger auto-generated units — keep hotel unit list in sync
+      if (hotelId) queryClient.invalidateQueries({ queryKey: partnerKeys.hotelRoomUnits(hotelId) });
+    },
     ...options,
   });
 }
@@ -127,8 +132,11 @@ export function useDeleteRoom(options = {}) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ roomId, hotelId }) => partnerService.deleteRoom(roomId),
-    onSuccess: (_data, { hotelId }) =>
-      queryClient.invalidateQueries({ queryKey: partnerKeys.rooms(hotelId) }),
+    onSuccess: (_data, { hotelId }) => {
+      queryClient.invalidateQueries({ queryKey: partnerKeys.rooms(hotelId) });
+      // FIX TASK-4: deleting a room cascades to all its units — keep hotel unit list in sync
+      if (hotelId) queryClient.invalidateQueries({ queryKey: partnerKeys.hotelRoomUnits(hotelId) });
+    },
     ...options,
   });
 }
@@ -161,6 +169,82 @@ export function useSetRoomCoverImage(options = {}) {
       partnerService.setRoomCoverImage(roomId, imageUrl),
     onSuccess: (_data, { hotelId }) =>
       queryClient.invalidateQueries({ queryKey: partnerKeys.rooms(hotelId) }),
+    ...options,
+  });
+}
+
+// ── Room Units ────────────────────────────────────────────────────────
+export function useRoomUnits(roomId, options = {}) {
+  return useQuery({
+    queryKey: partnerKeys.roomUnits(roomId),
+    queryFn:  () => partnerService.getRoomUnits(roomId),
+    enabled:  Boolean(roomId),
+    staleTime: 30 * 1000,
+    ...options,
+  });
+}
+
+export function useHotelRoomUnits(hotelId, options = {}) {
+  return useQuery({
+    queryKey: partnerKeys.hotelRoomUnits(hotelId),
+    queryFn:  () => partnerService.getHotelRoomUnits(hotelId),
+    enabled:  Boolean(hotelId),
+    staleTime: 30 * 1000,
+    ...options,
+  });
+}
+
+export function useCreateRoomUnit(options = {}) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    // hotelId chỉ dùng cho invalidate — không được gửi vào request body
+    mutationFn: ({ roomId, hotelId: _hid, ...data }) => partnerService.createRoomUnit(roomId, data),
+    onSuccess: (_data, { roomId, hotelId }) => {
+      queryClient.invalidateQueries({ queryKey: partnerKeys.roomUnits(roomId) });
+      queryClient.invalidateQueries({ queryKey: partnerKeys.rooms(hotelId) });
+      if (hotelId) queryClient.invalidateQueries({ queryKey: partnerKeys.hotelRoomUnits(hotelId) });
+    },
+    ...options,
+  });
+}
+
+export function useUpdateRoomUnit(options = {}) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    // hotelId chỉ dùng cho invalidate — không được gửi vào request body
+    mutationFn: ({ roomId, unitId, hotelId: _hid, ...data }) =>
+      partnerService.updateRoomUnit(roomId, unitId, data),
+    onSuccess: (_data, { roomId, hotelId }) => {
+      queryClient.invalidateQueries({ queryKey: partnerKeys.roomUnits(roomId) });
+      queryClient.invalidateQueries({ queryKey: partnerKeys.rooms(hotelId) });
+      if (hotelId) queryClient.invalidateQueries({ queryKey: partnerKeys.hotelRoomUnits(hotelId) });
+    },
+    ...options,
+  });
+}
+
+export function useDeleteRoomUnit(options = {}) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ roomId, unitId }) => partnerService.deleteRoomUnit(roomId, unitId),
+    onSuccess: (_data, { roomId, hotelId }) => {
+      queryClient.invalidateQueries({ queryKey: partnerKeys.roomUnits(roomId) });
+      queryClient.invalidateQueries({ queryKey: partnerKeys.rooms(hotelId) });
+      if (hotelId) queryClient.invalidateQueries({ queryKey: partnerKeys.hotelRoomUnits(hotelId) });
+    },
+    ...options,
+  });
+}
+
+export function useUploadRoomUnitImage(options = {}) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ roomId, unitId, file }) =>
+      partnerService.uploadRoomUnitImage(roomId, unitId, file),
+    onSuccess: (_data, { roomId, hotelId }) => {
+      queryClient.invalidateQueries({ queryKey: partnerKeys.roomUnits(roomId) });
+      if (hotelId) queryClient.invalidateQueries({ queryKey: partnerKeys.hotelRoomUnits(hotelId) });
+    },
     ...options,
   });
 }
@@ -221,7 +305,11 @@ export function useUpdateRoomCalendar(options = {}) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ roomId, ...data }) => partnerService.updateRoomCalendar(roomId, data),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["partner", "calendar"] }),
+    // FIX ISSUE-012: Invalidate only the calendar for the specific room that changed.
+    // The previous ["partner", "calendar"] prefix wiped every room's calendar cache on
+    // any single update, causing unnecessary refetches across all open calendar views.
+    onSuccess: (_data, { roomId }) =>
+      queryClient.invalidateQueries({ queryKey: ["partner", "calendar", roomId] }),
     ...options,
   });
 }
