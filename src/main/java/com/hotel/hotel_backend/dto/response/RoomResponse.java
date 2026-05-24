@@ -20,5 +20,6 @@ public record RoomResponse(
         Set<String> customAmenities,
         String coverImageUrl,
         List<String> imageUrls,
-        String description
+        String description,
+        RoomUnitSummaryResponse unitSummary
 ) {}
