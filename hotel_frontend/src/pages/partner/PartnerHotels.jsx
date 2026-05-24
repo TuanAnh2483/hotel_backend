@@ -4,7 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import {
   useMyHotels, useCatalogOptions, partnerKeys,
   useUpdateHotel, useDeleteHotel,
-  useUploadHotelImages, useDeleteHotelImage,
+  useUploadHotelImages, useDeleteHotelImage, useSetHotelCoverImage,
 } from "../../hooks/usePartnerQueries";
 import {
   createExistingImageItems,
@@ -17,7 +17,8 @@ import {
 import { PageHeader, Card, Btn, Modal } from "../../components/admin/AdminLayout";
 import {
   Building2, MapPin, Star, Edit2, Trash2,
-  Search, Plus, LayoutDashboard
+  Search, Plus, LayoutDashboard, DoorOpen,
+  CheckCircle2, Clock, Ban, AlertTriangle
 } from "lucide-react";
 import AmenityPicker from "../../components/partner/AmenityPicker";
 import { HOTEL_AMENITY_CATEGORIES, HOTEL_AMENITIES_FLAT, HOTEL_AMENITY_KEYS } from "../../utils/amenityConfig";
@@ -27,16 +28,38 @@ import { getGroupColor, getTypeLabel } from "../../utils/propertyGroupUtils";
 
 // --- Configuration & Helpers ---
 const HOTEL_TYPES = ["HOTEL", "APARTMENT", "RESORT", "VILLA", "HOMESTAY", "HOSTEL", "GUEST_HOUSE"];
+
+const HOTEL_STATUS_CONFIG = {
+  ACTIVE:   { label: "Đang hoạt động", color: "#16a34a", bg: "#f0fdf4", border: "#bbf7d0", Icon: CheckCircle2 },
+  INACTIVE: { label: "Tạm ngừng",      color: "#d97706", bg: "#fffbeb", border: "#fde68a", Icon: Clock         },
+  BLOCKED:  { label: "Bị chặn",        color: "#dc2626", bg: "#fef2f2", border: "#fecaca", Icon: Ban           },
+};
 const HOTEL_TYPE_LABELS = {
   HOTEL: "Khách sạn", APARTMENT: "Căn hộ", RESORT: "Resort",
   VILLA: "Villa", HOMESTAY: "Homestay", HOSTEL: "Hostel", GUEST_HOUSE: "Nhà khách",
 };
 
+const BOOKING_MODE_OPTIONS = [
+  { value: "BY_ROOM",  label: "Đặt theo phòng (Khách sạn tiêu chuẩn)" },
+  { value: "ENTIRE",   label: "Đặt nguyên căn (Villa, Căn hộ)" },
+];
+
 const EMPTY_FORM = {
   name: "", province: "", district: "", address: "",
-  hotelType: "HOTEL", description: "", amenities: [], customAmenities: [],
-  images: [],
+  hotelType: "HOTEL", bookingMode: "BY_ROOM", description: "",
+  amenities: [], customAmenities: [],
+  images: [], coverImageUrl: "",
 };
+
+function HotelStatusBadge(status) {
+  const cfg = HOTEL_STATUS_CONFIG[status] || HOTEL_STATUS_CONFIG.ACTIVE;
+  return (
+    <span className="partner-hotel-card-status-badge" style={{ background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.border}` }}>
+      <cfg.Icon size={11} />
+      {cfg.label}
+    </span>
+  );
+}
 
 function getHotelImageUrl(hotel) {
   const imageUrls = getHotelImageUrls(hotel);
@@ -77,23 +100,30 @@ function HotelForm({ form, setForm, onSubmit, onCancel, saving, title, hotelType
         </Field>
 
         <div className="partner-hotel-form-grid">
-          <Field label={t("pt_hotels_province")}>
+          <Field label={t("pt_hotels_province")} required>
             <input className="partner-hotel-form-input" value={form.province} onChange={e => setForm(f => ({ ...f, province: e.target.value }))} placeholder={t("pt_hotels_province_ph")} />
           </Field>
-          <Field label={t("pt_hotels_district")}>
+          <Field label={t("pt_hotels_district")} required>
             <input className="partner-hotel-form-input" value={form.district} onChange={e => setForm(f => ({ ...f, district: e.target.value }))} placeholder={t("pt_hotels_district_ph")} />
           </Field>
         </div>
 
-        <Field label={t("pt_hotels_address")}>
+        <Field label={t("pt_hotels_address")} required>
           <input className="partner-hotel-form-input" value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))} placeholder={t("pt_hotels_address_ph")} />
         </Field>
 
-        <Field label={t("pt_hotels_type")}>
-          <select className="partner-hotel-form-input" value={form.hotelType} onChange={e => setForm(f => ({ ...f, hotelType: e.target.value }))}>
-            {hotelTypes.map(ht => <option key={ht} value={ht}>{HOTEL_TYPE_LABELS[ht] || ht}</option>)}
-          </select>
-        </Field>
+        <div className="partner-hotel-form-grid">
+          <Field label={t("pt_hotels_type")}>
+            <select className="partner-hotel-form-input" value={form.hotelType} onChange={e => setForm(f => ({ ...f, hotelType: e.target.value }))}>
+              {hotelTypes.map(ht => <option key={ht} value={ht}>{HOTEL_TYPE_LABELS[ht] || ht}</option>)}
+            </select>
+          </Field>
+          <Field label="Chế độ đặt phòng">
+            <select className="partner-hotel-form-input" value={form.bookingMode || "BY_ROOM"} onChange={e => setForm(f => ({ ...f, bookingMode: e.target.value }))}>
+              {BOOKING_MODE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+          </Field>
+        </div>
 
         <Field label={t("pt_hotels_desc")}>
           <textarea className="partner-hotel-form-input" style={{ height: 120, resize: "vertical" }} value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder={t("pt_hotels_desc_ph")} />
@@ -109,19 +139,36 @@ function HotelForm({ form, setForm, onSubmit, onCancel, saving, title, hotelType
         </Field>
 
         <Field label={t("pt_hotels_images")}>
+          <p className="partner-hotel-img-cover-hint">Nhấn vào ảnh đã lưu để đặt làm <strong>ảnh bìa</strong> (hiển thị đầu tiên cho khách)</p>
           <div className="partner-hotel-img-grid">
             {form.images?.map((img, idx) => {
               const url = imageItemUrl(img);
+              const isCover = form.coverImageUrl ? url === form.coverImageUrl : idx === 0;
               return (
-              <div key={img?.id || url || idx} className="partner-hotel-img-thumb">
+              <div
+                key={img?.id || url || idx}
+                className={`partner-hotel-img-thumb${isCover ? " partner-hotel-img-thumb--cover" : ""}`}
+                onClick={() => !img?.file && setForm(f => ({ ...f, coverImageUrl: url }))}
+                title={!img?.file ? (isCover ? "Ảnh bìa hiện tại" : "Nhấn để đặt làm ảnh bìa") : ""}
+                style={{ cursor: !img?.file ? "pointer" : "default" }}
+              >
                 <img src={url} alt="" />
+                {isCover && (
+                  <span className="partner-hotel-img-cover-badge">
+                    <Star size={10} fill="#fff" color="#fff" /> Bìa
+                  </span>
+                )}
                 <button
-                  onClick={() => setForm(f => {
-                    const images = [...(f.images || [])];
-                    const [removed] = images.splice(idx, 1);
-                    revokePendingImageUrls([removed]);
-                    return { ...f, images };
-                  })}
+                  onClick={e => {
+                    e.stopPropagation();
+                    setForm(f => {
+                      const images = [...(f.images || [])];
+                      const [removed] = images.splice(idx, 1);
+                      revokePendingImageUrls([removed]);
+                      const newCover = f.coverImageUrl === url ? "" : f.coverImageUrl;
+                      return { ...f, images, coverImageUrl: newCover };
+                    });
+                  }}
                   className="partner-hotel-img-remove"
                 >
                   <Trash2 size={12} />
@@ -187,6 +234,7 @@ export default function PartnerHotels() {
   const deleteHotelMut   = useDeleteHotel();
   const uploadImages     = useUploadHotelImages();
   const deleteImageMut   = useDeleteHotelImage();
+  const setCoverImageMut = useSetHotelCoverImage();
 
   const hotels  = Array.isArray(hotelData) ? hotelData : [];
   const catalog = {
@@ -215,10 +263,12 @@ export default function PartnerHotels() {
     setForm({
       name: hotel.name || "", province: hotel.province || "", district: hotel.district || "",
       address: hotel.address || "", hotelType: hotel.hotelType || "HOTEL",
+      bookingMode: hotel.bookingMode || "BY_ROOM",
       description: hotel.description || "",
       amenities: hotel.amenities ? [...hotel.amenities] : [],
       customAmenities: hotel.customAmenities ? [...hotel.customAmenities] : [],
       images: createExistingImageItems(getHotelImageUrls(hotel)),
+      coverImageUrl: hotel.coverImageUrl || "",
     });
     setModal("edit");
   }
@@ -244,6 +294,7 @@ export default function PartnerHotels() {
       const pendingFiles = pendingImageFilesFromItems(images);
       const payload = { ...form, imageUrls: existingImageUrls };
       delete payload.images;
+      delete payload.coverImageUrl;
 
       await updateHotel.mutateAsync({ id: selected.id, ...payload });
       // Xóa trên Cloudinary các ảnh bị remove khỏi form
@@ -254,6 +305,11 @@ export default function PartnerHotels() {
       }
       if (pendingFiles.length > 0) {
         await uploadImages.mutateAsync({ id: selected.id, files: pendingFiles });
+      }
+      // Cập nhật ảnh bìa nếu user thay đổi
+      const desiredCover = form.coverImageUrl || existingImageUrls[0] || "";
+      if (desiredCover && desiredCover !== selected.coverImageUrl) {
+        try { await setCoverImageMut.mutateAsync({ id: selected.id, imageUrl: desiredCover }); } catch {}
       }
       revokePendingImageUrls(images);
       setModal(null);
@@ -339,9 +395,8 @@ export default function PartnerHotels() {
                 <span className="partner-hotel-card-type-badge" style={{ background: getGroupColor(h.hotelType) }}>
                   {(getTypeLabel(h.hotelType, "vi") || "").toUpperCase()}
                 </span>
-                <button onClick={() => openEdit(h)} className="partner-hotel-card-edit-btn">
-                  <Edit2 size={18} color="#475569" />
-                </button>
+                {/* Status badge */}
+                {HotelStatusBadge(h.status)}
               </div>
 
               {/* Card Content */}
@@ -349,8 +404,10 @@ export default function PartnerHotels() {
                 <div className="partner-hotel-card-header">
                   <h3 className="partner-hotel-card-name">{h.name}</h3>
                   <div className="partner-hotel-card-rating">
-                    <Star size={16} fill="#f59e0b" />
-                    <span className="partner-hotel-card-rating-val">4.9</span>
+                    <Star size={16} fill="#f59e0b" color="#f59e0b" />
+                    <span className="partner-hotel-card-rating-val">
+                      {h.ratingAvg && Number(h.ratingAvg) > 0 ? Number(h.ratingAvg).toFixed(1) : "—"}
+                    </span>
                   </div>
                 </div>
 
@@ -377,23 +434,28 @@ export default function PartnerHotels() {
                   <button
                     onClick={() => { setSelectedHotelId?.(h.id); rrNavigate("/partner"); }}
                     className="partner-hotel-card-btn partner-hotel-card-btn-manage"
-                    style={{ flex: 1 }}
                   >
-                    <LayoutDashboard size={16} /> {t("pt_hotels_view_dashboard") || "Xem Dashboard"}
+                    <LayoutDashboard size={16} /> {t("pt_hotels_view_dashboard") || "Dashboard"}
+                  </button>
+                  <button
+                    onClick={() => rrNavigate(`/partner/rooms?hotelId=${h.id}`)}
+                    className="partner-hotel-card-btn partner-hotel-card-btn-rooms"
+                  >
+                    <DoorOpen size={16} /> Phòng
                   </button>
                   <button
                     onClick={() => openEdit(h)}
-                    className="partner-hotel-card-btn"
-                    style={{ background: "#f1f5f9", color: "#475569", padding: "8px 12px" }}
+                    className="partner-hotel-card-btn partner-hotel-card-btn-icon"
+                    aria-label={`Chỉnh sửa ${h.name}`}
                   >
-                    <Edit2 size={16} />
+                    <Edit2 size={16} aria-hidden="true" />
                   </button>
                   <button
                     onClick={() => openDelete(h)}
-                    className="partner-hotel-card-btn partner-hotel-card-btn-delete"
-                    style={{ padding: "8px 12px" }}
+                    className="partner-hotel-card-btn partner-hotel-card-btn-delete partner-hotel-card-btn-icon"
+                    aria-label={`Xóa ${h.name}`}
                   >
-                    <Trash2 size={16} />
+                    <Trash2 size={16} aria-hidden="true" />
                   </button>
                 </div>
               </div>
@@ -414,7 +476,7 @@ export default function PartnerHotels() {
             <div style={{ width: 48, height: 48, borderRadius: "50%", background: "#f1f5f9", display: "flex", alignItems: "center", justifyContent: "center" }}>
               <Plus size={24} />
             </div>
-            <span style={{ fontSize: 14, fontWeight: 700 }}>{t("pt_hotels_add_btn") || "+ Thêm cơ sở mới"}</span>
+            <span style={{ fontSize: 14, fontWeight: 700 }}>{t("pt_hotels_add_btn") || "Thêm cơ sở mới"}</span>
           </button>
         </div>
       )}
@@ -445,7 +507,7 @@ export default function PartnerHotels() {
       )}
 
       {modal === "delete" && (
-        <Modal title={t("pt_hotels_del_title")} onClose={() => setModal(null)} width={440}>
+        <Modal title={t("pt_hotels_del_title")} onClose={() => setModal(null)} width={460}>
           <div>
             <div className="partner-hotel-delete-icon-wrap">
               <Trash2 size={32} color="#ef4444" />
@@ -454,6 +516,15 @@ export default function PartnerHotels() {
             <p className="partner-hotel-delete-desc"
               dangerouslySetInnerHTML={{ __html: t("pt_hotels_del_desc").replace("{name}", `<strong>"${selected?.name}"</strong>`) }}
             />
+            <div className="partner-hotel-delete-cascade-warn">
+              <AlertTriangle size={15} color="#d97706" style={{ flexShrink: 0, marginTop: 1 }} />
+              <div>
+                <div style={{ fontWeight: 700, color: "#92400e", marginBottom: 4 }}>Hành động này không thể hoàn tác</div>
+                <div style={{ color: "#78350f", lineHeight: 1.5 }}>
+                  Tất cả <strong>phòng</strong>, <strong>lịch giá</strong> và <strong>dữ liệu đặt phòng</strong> liên quan đến cơ sở này sẽ bị xóa vĩnh viễn.
+                </div>
+              </div>
+            </div>
             <div className="partner-hotel-delete-actions">
               <button onClick={() => setModal(null)} className="partner-hotel-delete-cancel-btn">{t("adm_cancel")}</button>
               <button onClick={handleDelete} disabled={saving} className="partner-hotel-delete-confirm-btn">

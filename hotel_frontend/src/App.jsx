@@ -49,12 +49,14 @@ import PartnerDashboard from "./pages/partner/PartnerDashboard";
 import AddPropertyWizard from "./pages/partner/AddPropertyWizard";
 import PartnerHotels    from "./pages/partner/PartnerHotels";
 import PartnerRooms     from "./pages/partner/PartnerRooms";
+import PartnerRoomUnits from "./pages/partner/PartnerRoomUnits";
 import PartnerCalendar  from "./pages/partner/PartnerCalendar";
 import PartnerBookings  from "./pages/partner/PartnerBookings";
 import PartnerRevenue   from "./pages/partner/PartnerRevenue";
 import PartnerForecast  from "./pages/partner/PartnerForecast";
 import PartnerReviews   from "./pages/partner/PartnerReviews";
 import PartnerBookingDetailPage from "./pages/partner/PartnerBookingDetailPage";
+import PartnerServices          from "./pages/partner/PartnerServices";
 
 import PartnerManagePage   from "./pages/PartnerManagePage";
 import UnauthorizedPage    from "./pages/UnauthorizedPage";
@@ -309,13 +311,15 @@ function AppRoutes() {
       }>
         <Route index            element={<PartnerDashboard />} />
         <Route path="hotels"    element={<PartnerHotels />} />
-        <Route path="rooms"     element={<PartnerRooms />} />
-        <Route path="calendar"  element={<PartnerCalendar />} />
+        <Route path="rooms"       element={<PartnerRooms />} />
+        <Route path="room-units"  element={<PartnerRoomUnits />} />
+        <Route path="calendar"    element={<PartnerCalendar />} />
         <Route path="bookings"  element={<PartnerBookings />} />
         <Route path="bookings/:bookingId" element={<PartnerBookingDetailPage />} />
         <Route path="reviews"   element={<PartnerReviews />} />
         <Route path="revenue"   element={<PartnerRevenue />} />
         <Route path="forecast"  element={<PartnerForecast />} />
+        <Route path="services"  element={<PartnerServices />} />
         <Route path="add-property" element={<AddPropertyWizard />} />
       </Route>
 

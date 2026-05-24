@@ -50,6 +50,8 @@
   align-items: center;
   gap: 8px;
   flex: 1;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .partner-topbar-parent {
@@ -69,6 +71,10 @@
   color: #1e293b;
   user-select: none;
   cursor: default;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
 }
 
 .partner-topbar-bell {

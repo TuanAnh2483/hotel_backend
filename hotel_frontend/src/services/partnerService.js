@@ -45,6 +45,28 @@ export const partnerService = {
   setRoomCoverImage: (roomId, imageUrl) =>
     apiClient.put(`/api/partner/rooms/${roomId}/cover-image`, { imageUrl }),
 
+  // ── Room Units (phòng cụ thể) ────────────────────────────────────────
+  getHotelRoomUnits: (hotelId) =>
+    apiClient.get(`/api/partner/hotels/${hotelId}/room-units`),
+
+  getRoomUnits: (roomId) =>
+    apiClient.get(`/api/partner/rooms/${roomId}/units`),
+
+  createRoomUnit: (roomId, data) =>
+    apiClient.post(`/api/partner/rooms/${roomId}/units`, data),
+
+  updateRoomUnit: (roomId, unitId, data) =>
+    apiClient.put(`/api/partner/rooms/${roomId}/units/${unitId}`, data),
+
+  deleteRoomUnit: (roomId, unitId) =>
+    apiClient.delete(`/api/partner/rooms/${roomId}/units/${unitId}`),
+
+  uploadRoomUnitImage: (roomId, unitId, file) => {
+    const fd = new FormData();
+    fd.append("file", file);
+    return apiClient.post(`/api/partner/rooms/${roomId}/units/${unitId}/image`, fd);
+  },
+
   // ── Bookings ─────────────────────────────────────────────────────────
   getBookings: (params = {}) => {
     const p = {};
