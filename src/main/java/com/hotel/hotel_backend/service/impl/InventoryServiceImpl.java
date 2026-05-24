@@ -6,6 +6,7 @@ import com.hotel.hotel_backend.entity.Room;
 import com.hotel.hotel_backend.exeption.ApiException;
 import com.hotel.hotel_backend.exeption.ErrorCode;
 import com.hotel.hotel_backend.repository.DailyInventoryRepository;
+import com.hotel.hotel_backend.repository.DailyRateRepository;
 import com.hotel.hotel_backend.service.InventoryService;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -16,9 +17,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -27,13 +28,12 @@ public class InventoryServiceImpl implements InventoryService {
     private static final int DEFAULT_INVENTORY_DAYS = 365;
 
     private final DailyInventoryRepository dailyInventoryRepository;
+    // FIX BUG-004: Needed to enforce DailyRate.isClosed during reservation/availability checks.
+    private final DailyRateRepository dailyRateRepository;
 
     @PersistenceContext
     private EntityManager entityManager;
 
-    /**
-     * Khởi tạo tồn kho cho 1 room trong 365 ngày tới (bắt đầu từ hôm nay)
-     */
     @Override
     @Transactional
     public void generateInventory(Room room) {
@@ -41,34 +41,52 @@ public class InventoryServiceImpl implements InventoryService {
         initInventory(room.getId(), today, today.plusDays(DEFAULT_INVENTORY_DAYS), room.getQuantity());
     }
 
+    /**
+     * FIX BUG-002: initInventory now performs a CREATE-OR-CAP operation.
+     *
+     * Previous behaviour: skip existing rows unconditionally — caused inventory drift
+     * when Room.quantity was reduced (existing rows kept stale availableRooms).
+     *
+     * New behaviour:
+     *   • Missing dates  → create with availableRooms = totalRooms (unchanged)
+     *   • Existing dates where availableRooms > totalRooms
+     *       → cap to max(blockedRooms, totalRooms)
+     *         blockedRooms floor prevents violating invariant C (blocked <= available)
+     *   • Existing dates where availableRooms <= totalRooms → leave untouched
+     *     (partner may have deliberately set a lower ceiling; don't widen it)
+     */
     @Override
     @Transactional
     public void initInventory(Long roomId,
                               LocalDate startDate,
                               LocalDate endDate,
                               int totalRooms) {
-        // Không tạo nếu range không hợp lệ.
         if (startDate == null || endDate == null || !endDate.isAfter(startDate)) {
             return;
         }
 
         List<DailyInventory> existing = dailyInventoryRepository.findByIdRoomIdAndIdDateBetween(
-                roomId,
-                startDate,
-                endDate.minusDays(1)
-        );
+                roomId, startDate, endDate.minusDays(1));
 
-        Set<LocalDate> existingDates = new HashSet<>();
-        for (DailyInventory inventory : existing) {
-            existingDates.add(inventory.getId().getDate());
+        Map<LocalDate, DailyInventory> existingMap = new HashMap<>();
+        for (DailyInventory inv : existing) {
+            existingMap.put(inv.getId().getDate(), inv);
         }
 
         Room roomRef = entityManager.getReference(Room.class, roomId);
         List<DailyInventory> toCreate = new ArrayList<>();
+        List<DailyInventory> toUpdate = new ArrayList<>();
 
-        // Chỉ tạo các ngày còn thiếu trong khoảng [startDate, endDate).
         for (LocalDate date = startDate; date.isBefore(endDate); date = date.plusDays(1)) {
-            if (existingDates.contains(date)) {
+            if (existingMap.containsKey(date)) {
+                DailyInventory inv = existingMap.get(date);
+                if (inv.getAvailableRooms() > totalRooms) {
+                    // Cap availableRooms down; never go below existing blockedRooms.
+                    int safeAvailable = Math.max(inv.getBlockedRooms(), totalRooms);
+                    inv.setAvailableRooms(safeAvailable);
+                    toUpdate.add(inv);
+                }
+                // availableRooms <= totalRooms: leave as-is (partner-set ceiling respected)
                 continue;
             }
 
@@ -80,29 +98,38 @@ public class InventoryServiceImpl implements InventoryService {
             toCreate.add(inventory);
         }
 
-        if (!toCreate.isEmpty()) {
-            dailyInventoryRepository.saveAll(toCreate);
-        }
+        if (!toCreate.isEmpty()) dailyInventoryRepository.saveAll(toCreate);
+        if (!toUpdate.isEmpty()) dailyInventoryRepository.saveAll(toUpdate);
     }
 
+    /**
+     * FIX BUG-004: checkAvailability now also returns false when any date in the
+     * range has DailyRate.isClosed = true.
+     */
     @Override
+    @Transactional(readOnly = true)
     public boolean checkAvailability(Long roomId,
                                      LocalDate checkIn,
                                      LocalDate checkOut,
                                      int quantity) {
         long nights = nightsBetween(checkIn, checkOut);
-        if (nights <= 0) {
+        if (nights <= 0) return false;
+
+        // Reject if any date in range is explicitly closed by the partner.
+        if (dailyRateRepository.existsClosedDateInRange(roomId, checkIn, checkOut.minusDays(1))) {
             return false;
         }
 
         List<DailyInventory> inventories = loadInventories(roomId, checkIn, checkOut);
-        if (!isCompleteRange(nights, inventories)) {
-            return false;
-        }
+        if (!isCompleteRange(nights, inventories)) return false;
 
         return hasEnoughRooms(inventories, quantity);
     }
 
+    /**
+     * FIX BUG-004: reserveInventory now throws CONFLICT when any date in the
+     * range is closed, preventing guests from booking partner-blocked dates.
+     */
     @Override
     @Transactional
     public void reserveInventory(Long roomId,
@@ -111,6 +138,12 @@ public class InventoryServiceImpl implements InventoryService {
                                  int quantity) {
         long nights = requireValidRangeForReserve(checkIn, checkOut);
 
+        // Enforce isClosed before touching inventory.
+        if (dailyRateRepository.existsClosedDateInRange(roomId, checkIn, checkOut.minusDays(1))) {
+            throw new ApiException(ErrorCode.CONFLICT,
+                    "Room is closed for one or more dates in the requested range");
+        }
+
         List<DailyInventory> inventories = loadInventories(roomId, checkIn, checkOut);
         ensureCompleteRangeForReserve(nights, inventories);
 
@@ -118,11 +151,9 @@ public class InventoryServiceImpl implements InventoryService {
             throw new ApiException(ErrorCode.CONFLICT, "Not enough rooms available");
         }
 
-        // Đánh dấu phòng đã bị giữ.
         for (DailyInventory inventory : inventories) {
             inventory.setBlockedRooms(inventory.getBlockedRooms() + quantity);
         }
-
         dailyInventoryRepository.saveAll(inventories);
     }
 
@@ -137,7 +168,6 @@ public class InventoryServiceImpl implements InventoryService {
         List<DailyInventory> inventories = loadInventories(roomId, checkIn, checkOut);
         ensureCompleteRangeForRelease(nights, inventories);
 
-        // Trả lại số phòng đã giữ, không cho phép âm.
         for (DailyInventory inventory : inventories) {
             int nextBlocked = inventory.getBlockedRooms() - quantity;
             if (nextBlocked < 0) {
@@ -145,16 +175,14 @@ public class InventoryServiceImpl implements InventoryService {
             }
             inventory.setBlockedRooms(nextBlocked);
         }
-
         dailyInventoryRepository.saveAll(inventories);
     }
 
+    // ── Helpers ──────────────────────────────────────────────────────────────
+
     private List<DailyInventory> loadInventories(Long roomId, LocalDate checkIn, LocalDate checkOut) {
         return dailyInventoryRepository.findByIdRoomIdAndIdDateBetween(
-                roomId,
-                checkIn,
-                checkOut.minusDays(1)
-        );
+                roomId, checkIn, checkOut.minusDays(1));
     }
 
     private long nightsBetween(LocalDate checkIn, LocalDate checkOut) {
@@ -167,35 +195,28 @@ public class InventoryServiceImpl implements InventoryService {
 
     private boolean hasEnoughRooms(List<DailyInventory> inventories, int quantity) {
         return inventories.stream().allMatch(inv ->
-                inv.getAvailableRooms() - inv.getBlockedRooms() >= quantity
-        );
+                inv.getAvailableRooms() - inv.getBlockedRooms() >= quantity);
     }
 
     private long requireValidRangeForReserve(LocalDate checkIn, LocalDate checkOut) {
         long nights = nightsBetween(checkIn, checkOut);
-        if (nights <= 0) {
-            throw new IllegalArgumentException("Invalid date range");
-        }
+        if (nights <= 0) throw new IllegalArgumentException("Invalid date range");
         return nights;
     }
 
     private long requireValidRangeForRelease(LocalDate checkIn, LocalDate checkOut) {
         long nights = nightsBetween(checkIn, checkOut);
-        if (nights <= 0) {
-            throw new ApiException(ErrorCode.VALIDATION_ERROR, "Invalid date range");
-        }
+        if (nights <= 0) throw new ApiException(ErrorCode.VALIDATION_ERROR, "Invalid date range");
         return nights;
     }
 
     private void ensureCompleteRangeForReserve(long nights, List<DailyInventory> inventories) {
-        if (!isCompleteRange(nights, inventories)) {
+        if (!isCompleteRange(nights, inventories))
             throw new IllegalStateException("Inventory data incomplete for given range");
-        }
     }
 
     private void ensureCompleteRangeForRelease(long nights, List<DailyInventory> inventories) {
-        if (!isCompleteRange(nights, inventories)) {
+        if (!isCompleteRange(nights, inventories))
             throw new ApiException(ErrorCode.CONFLICT, "Inventory data incomplete for given range");
-        }
     }
 }

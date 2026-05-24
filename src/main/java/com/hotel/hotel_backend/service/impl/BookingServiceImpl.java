@@ -24,6 +24,9 @@ import com.hotel.hotel_backend.service.InventoryService;
 import com.hotel.hotel_backend.service.search.HotelAvailabilityService;
 import com.hotel.hotel_backend.service.search.HotelStayCriteria;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -40,6 +43,8 @@ import java.util.UUID;
 public class BookingServiceImpl implements BookingService {
 
     private static final long PAYMENT_TTL_MINUTES = 15;
+    // FIX TASK-2: max attempts for server-side optimistic-lock retry
+    private static final int MAX_BOOKING_ATTEMPTS = 3;
 
     private final BookingRepository bookingRepository;
     private final BookingItemRepository bookingItemRepository;
@@ -49,6 +54,11 @@ public class BookingServiceImpl implements BookingService {
     private final BookingMapper bookingMapper;
     private final HotelAvailabilityService hotelAvailabilityService;
     private final BookingExpirationService bookingExpirationService;
+
+    // FIX TASK-2: Self-proxy injected lazily so @Transactional on createBookingOnce() is honoured.
+    // Non-final → Lombok @RequiredArgsConstructor skips it; Spring injects the CGLIB proxy at first use.
+    @Autowired @Lazy
+    private BookingServiceImpl self;
 
     /**
      * Quote booking: check room có book được không và tính total price, chưa giữ chỗ.
@@ -67,11 +77,40 @@ public class BookingServiceImpl implements BookingService {
     }
 
     /**
-     * Confirm booking v1: giữ inventory, tạo booking PENDING_PAYMENT và persist contact/items.
+     * FIX TASK-2: Retry wrapper — not transactional itself; each attempt is a fresh transaction
+     * via self-proxy. On optimistic-lock conflict, backs off briefly and retries up to
+     * MAX_BOOKING_ATTEMPTS times. After exhausting retries, maps to CONFLICT (HTTP 409).
+     * GlobalExceptionHandler also catches any escaping ObjectOptimisticLockingFailureException
+     * as a second safety net.
      */
     @Override
-    @Transactional
     public BookingResponse createBooking(Long userId, CreateBookingRequest bookingRequest) {
+        for (int attempt = 1; attempt <= MAX_BOOKING_ATTEMPTS; attempt++) {
+            try {
+                return self.createBookingOnce(userId, bookingRequest);
+            } catch (ObjectOptimisticLockingFailureException ex) {
+                if (attempt == MAX_BOOKING_ATTEMPTS) {
+                    throw new ApiException(ErrorCode.CONFLICT,
+                            "Phòng vừa được người khác đặt, vui lòng thử lại");
+                }
+                try {
+                    Thread.sleep(50L * attempt);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    throw new ApiException(ErrorCode.CONFLICT,
+                            "Phòng vừa được người khác đặt, vui lòng thử lại");
+                }
+            }
+        }
+        throw new ApiException(ErrorCode.CONFLICT, "Phòng vừa được người khác đặt, vui lòng thử lại");
+    }
+
+    /**
+     * Single transactional attempt: reserve inventory, create booking entity, persist contact/items.
+     * Called exclusively via self-proxy so @Transactional is enforced through the Spring AOP chain.
+     */
+    @Transactional
+    public BookingResponse createBookingOnce(Long userId, CreateBookingRequest bookingRequest) {
         validateUserId(userId);
 
         List<BookingRoomRequest> roomRequests = requireRoomRequests(bookingRequest.getRoom());
