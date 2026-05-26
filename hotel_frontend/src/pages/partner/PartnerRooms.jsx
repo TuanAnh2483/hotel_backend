@@ -29,23 +29,6 @@ import "../../styles/pages/partner/PartnerRooms.css";
 import { useLang } from "../../contexts/LanguageContext";
 import { useToast } from "../../contexts/ToastContext";
 
-// --- Configuration ---
-const CATEGORIES = [
-  { key: "STANDARD", label: "Tiêu chuẩn" },
-  { key: "DELUXE",   label: "Sang trọng" },
-  { key: "SUITE",    label: "Suite" },
-  { key: "FAMILY",   label: "Gia đình" },
-];
-const BED_TYPES = [
-  { key: "SINGLE", label: "Giường đơn" },
-  { key: "DOUBLE", label: "Giường đôi" },
-  { key: "TWIN",   label: "Hai giường" },
-];
-
-const HOTEL_TYPE_LABELS = {
-  HOTEL: "Khách sạn", RESORT: "Resort", VILLA: "Villa",
-  APARTMENT: "Căn hộ", HOMESTAY: "Homestay", HOSTEL: "Hostel", GUEST_HOUSE: "Nhà khách",
-};
 
 const UNIT_STATUS_CONFIG = {
   AVAILABLE:   { label: "Phòng trống",    color: "#10b981", bg: "#d1fae5" },
