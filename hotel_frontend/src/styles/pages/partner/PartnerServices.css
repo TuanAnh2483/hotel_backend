@@ -562,3 +562,26 @@
 .psv-link-btn:hover {
   color: #a31825;
 }
+
+/* ── Back to rooms button ─────────────────────────────────────────────── */
+
+.psv-back-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 20px;
+  border-radius: 12px;
+  border: 1.5px solid #BE1E2E;
+  background: #fff;
+  color: #BE1E2E;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s;
+}
+
+.psv-back-btn:hover {
+  background: #BE1E2E;
+  color: #fff;
+}

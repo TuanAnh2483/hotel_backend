@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useOutletContext, useNavigate } from "react-router-dom";
+import { useOutletContext, useNavigate, useLocation } from "react-router-dom";
 import {
   useMyHotels, usePartnerRooms, useUpdateHotel, useUpdateRoom,
 } from "../../hooks/usePartnerQueries";
@@ -149,6 +149,7 @@ function CustomAmenities({ values, onRemove, input, onInputChange, onAdd }) {
 
 export default function PartnerServices() {
   const navigate = useNavigate();
+  const { state: navState } = useLocation();
   const outletCtx = useOutletContext() || {};
   const { selectedHotelId: ctxHotelId, setSelectedHotelId: setCtxHotelId } = outletCtx;
   const toast = useToast();
@@ -307,6 +308,16 @@ export default function PartnerServices() {
       <PageHeader
         title="Dịch vụ & tiện ích"
         subtitle="Cấu hình tiện ích hiển thị với khách hàng cho từng khách sạn và loại phòng"
+        action={navState?.returnToRooms ? (
+          <button
+            className="psv-back-btn"
+            onClick={() => navigate("/partner/rooms", {
+              state: { returnedFromServices: true },
+            })}
+          >
+            ← Trở về chỉnh sửa phòng
+          </button>
+        ) : null}
       />
 
       <HotelChips hotels={hotels} selectedId={selectedHotelId} onSelect={selectHotel} />
