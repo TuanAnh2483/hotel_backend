@@ -7,6 +7,11 @@ spring:
     username: ${SPRING_DATASOURCE_USERNAME}
     password: ${SPRING_DATASOURCE_PASSWORD}
     driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 5
+      minimum-idle: 1
+      connection-timeout: 30000
+      idle-timeout: 600000
 
   mail:
     from: ${MAIL_FROM:no-reply@hotel.local}
@@ -28,6 +33,9 @@ spring:
     properties:
       hibernate:
         format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        boot:
+          allow_jdbc_metadata_access: false
 
   servlet:
     multipart:
@@ -76,6 +84,9 @@ app:
     enabled: ${MAIL_ENABLED:true}
     from: ${MAIL_FROM:no-reply@hotel.local}
     expose-debug-tokens: ${MAIL_EXPOSE_DEBUG_TOKENS:false}
+
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,https://hotel-backend.pages.dev,https://*.hotel-backend.pages.dev}
 
   google:
     client-id: ${GOOGLE_CLIENT_ID:}

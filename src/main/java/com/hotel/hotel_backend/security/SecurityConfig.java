@@ -1,5 +1,6 @@
 package com.hotel.hotel_backend.security;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.security.autoconfigure.web.servlet.PathRequest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -33,6 +34,9 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 @EnableMethodSecurity // để @PreAuthorize hoạt động
 public class SecurityConfig {
 
+    @Value("${app.cors.allowed-origins}")
+    private List<String> allowedOrigins;
+
 
     /**
      * PasswordEncoder: dùng để hash password lúc register và check lúc login.
@@ -53,11 +57,7 @@ public class SecurityConfig {
     UrlBasedCorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
 
-        config.setAllowedOriginPatterns(List.of(
-                "http://localhost:5173",
-                "https://hotel-backend.pages.dev",
-                "https://*.hotel-backend.pages.dev"
-        ));
+        config.setAllowedOriginPatterns(allowedOrigins);
 
         config.setAllowedMethods(List.of(
                 "GET",

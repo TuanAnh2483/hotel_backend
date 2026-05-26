@@ -255,7 +255,7 @@ public class AuthService {
         String email = normalizeEmail(req.email());
 
         if (!Objects.equals(req.password(), req.confirmPassword())) {
-            throw new BadRequestException("Not confirm password", ErrorCode.VALIDATION_ERROR);
+            throw new BadRequestException("Mật khẩu xác nhận không khớp", ErrorCode.VALIDATION_ERROR);
         }
 
         User existingUser = userRepo.findByEmail(email).orElse(null);
