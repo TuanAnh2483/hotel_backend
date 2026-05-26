@@ -16,10 +16,20 @@ spring:
   flyway:
     enabled: false
 
+  mail:
+    host: smtp.example.com
+    port: 587
+    username: test@example.com
+    password: test-password
+
 app:
   jwt:
     secret: "test-secret-key-for-concurrency-tests-1234567890"
     exp-seconds: 86400
+  admin-seed:
+    enabled: false
+    email: admin@example.com
+    password: test-admin-password
   mail:
     enabled: false
     expose-debug-tokens: true
@@ -38,3 +48,10 @@ app:
       bank-name: "MB Bank"
     sepay:
       webhook-api-key: hhb_sepay_webhook_2026
+  ai:
+    gemini-api-key: "test-gemini-key"
+    model: "gemini-2.0-flash"
+  google:
+    client-id: ""
+  resend:
+    api-key: ""
