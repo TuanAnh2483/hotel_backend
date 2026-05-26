@@ -1,8 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   useMyHotels, useCatalogOptions, usePartnerRooms, partnerKeys,
   useCreateRoom, useUpdateRoom, useDeleteRoom,
   useUploadRoomImages, useDeleteRoomImage,
+  useHotelRoomUnits, useUpdateRoomUnit,
 } from "../../hooks/usePartnerQueries";
 import { useQueryClient } from "@tanstack/react-query";
 import { useSearchParams, useOutletContext, useLocation, useNavigate } from "react-router-dom";
@@ -21,10 +22,12 @@ import {
   Grid, TrendingUp, TrendingDown,
   MapPin, Building2, Sparkles, Minus, Box, AlertTriangle,
   Copy, CalendarDays, Power, Wrench, ChevronRight, DoorOpen,
+  ChevronDown, ChevronUp, X, Hash, Layers, MoreHorizontal,
 } from "lucide-react";
-import { ROOM_AMENITY_KEYS } from "../../utils/amenityConfig";
+import { ROOM_AMENITY_KEYS, ROOM_AMENITY_CATEGORIES } from "../../utils/amenityConfig";
 import "../../styles/pages/partner/PartnerRooms.css";
 import { useLang } from "../../contexts/LanguageContext";
+import { useToast } from "../../contexts/ToastContext";
 
 // --- Configuration ---
 const CATEGORIES = [
@@ -43,6 +46,26 @@ const HOTEL_TYPE_LABELS = {
   HOTEL: "Khách sạn", RESORT: "Resort", VILLA: "Villa",
   APARTMENT: "Căn hộ", HOMESTAY: "Homestay", HOSTEL: "Hostel", GUEST_HOUSE: "Nhà khách",
 };
+
+const UNIT_STATUS_CONFIG = {
+  AVAILABLE:   { label: "Phòng trống",    color: "#10b981", bg: "#d1fae5" },
+  RESERVED:    { label: "Có người đặt",  color: "#8b5cf6", bg: "#ede9fe" },
+  OCCUPIED:    { label: "Có khách",       color: "#3b82f6", bg: "#dbeafe" },
+  CLEANING:    { label: "Dọn phòng",     color: "#f59e0b", bg: "#fef3c7" },
+  MAINTENANCE: { label: "Bảo trì",       color: "#ef4444", bg: "#fee2e2" },
+};
+
+
+function getUnitCounts(units) {
+  const total    = units.length;
+  const avail    = units.filter(u => u.status === "AVAILABLE").length;
+  const reserved = units.filter(u => u.status === "RESERVED").length;
+  const occ      = units.filter(u => u.status === "OCCUPIED").length;
+  const maint    = units.filter(u => u.status === "MAINTENANCE").length;
+  const clean    = units.filter(u => u.status === "CLEANING").length;
+  const pct      = (n) => total ? Math.round((n / total) * 100) : 0;
+  return { total, avail, reserved, occ, maint, clean, pct };
+}
 
 const EMPTY_FORM = {
   name: "", capacity: 2, quantity: 1, price: 500000,
@@ -101,6 +124,62 @@ function HotelInfoPanel({ hotel }) {
         <p className="pr-hotel-info-desc">{hotel.description}</p>
       ) : (
         <p className="pr-hotel-info-desc pr-hotel-info-desc--empty">{t("pt_rooms_hotel_no_desc")}</p>
+      )}
+    </div>
+  );
+}
+
+function AmenityPicker({ form, setForm, onGoToServices }) {
+  const [open, setOpen] = useState(false);
+  const total = (form.amenities?.length || 0) + (form.customAmenities?.length || 0);
+
+  function toggle(key) {
+    setForm(f => {
+      const list = Array.isArray(f.amenities) ? f.amenities : [];
+      return list.includes(key)
+        ? { ...f, amenities: list.filter(k => k !== key) }
+        : { ...f, amenities: [...list, key] };
+    });
+  }
+
+  return (
+    <div className="pr-amenity-picker">
+      <div className="pr-amenity-picker-bar">
+        <div className="pr-amenity-picker-info">
+          <Wrench size={14} color="#475569" />
+          <span>Tiện ích: <strong>{total}</strong> mục đã chọn</span>
+        </div>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button type="button" className="pr-amenity-toggle-btn" onClick={() => setOpen(o => !o)}>
+            {open ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+            {open ? "Thu gọn" : "Chọn nhanh"}
+          </button>
+          <button type="button" className="pr-services-link-btn" onClick={onGoToServices}>
+            Tiện ích nâng cao <ChevronRight size={13} />
+          </button>
+        </div>
+      </div>
+
+      {open && (
+        <div className="pr-amenity-grid">
+          {ROOM_AMENITY_CATEGORIES.map(cat => (
+            <div key={cat.label} className="pr-amenity-cat">
+              <div className="pr-amenity-cat-label">{cat.label}</div>
+              <div className="pr-amenity-items">
+                {cat.items.map(item => {
+                  const checked = Array.isArray(form.amenities) && form.amenities.includes(item.key);
+                  return (
+                    <label key={item.key} className={`pr-amenity-item${checked ? " pr-amenity-item--on" : ""}`}>
+                      <input type="checkbox" checked={checked} onChange={() => toggle(item.key)} style={{ display: "none" }} />
+                      {item.Icon && <item.Icon size={12} />}
+                      <span>{item.label}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );
@@ -178,9 +257,17 @@ function RoomForm({ form, setForm, onSubmit, onCancel, saving, title, categories
 
         {/* Quantity reduction warning */}
         {!isAdd && originalQuantity != null && form.quantity < originalQuantity && (
-          <div style={{ display: "flex", alignItems: "flex-start", gap: 8, padding: "9px 14px", background: "#fffbeb", borderRadius: 10, border: "1px solid #fde68a", fontSize: 12.5, color: "#92400e", fontWeight: 600 }}>
-            <AlertTriangle size={14} color="#d97706" style={{ flexShrink: 0, marginTop: 1 }} />
-            Giảm số lượng phòng có thể xóa các phòng vật lý chưa sử dụng (AVAILABLE / đang dọn).
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 8, padding: "11px 14px", background: "#fffbeb", borderRadius: 10, border: "1px solid #fde68a", fontSize: 12.5, color: "#92400e" }}>
+            <AlertTriangle size={14} color="#d97706" style={{ flexShrink: 0, marginTop: 2 }} />
+            <div style={{ lineHeight: 1.6 }}>
+              <span style={{ fontWeight: 700 }}>
+                Sẽ xóa {originalQuantity - form.quantity} phòng vật lý.
+              </span>
+              {" "}Hệ thống ưu tiên xóa phòng tự động sinh chưa đặt số trước, sau đó đến
+              phòng sẵn sàng hoặc đang dọn (theo thứ tự tạo).
+              Phòng đang có khách hoặc bảo trì sẽ <strong>không</strong> bị xóa —
+              nếu không đủ phòng để xóa thao tác sẽ bị từ chối.
+            </div>
           </div>
         )}
 
@@ -266,22 +353,8 @@ function RoomForm({ form, setForm, onSubmit, onCancel, saving, title, categories
           </div>
         )}
 
-        <div className="pr-services-link-section">
-          <div className="pr-services-link-info">
-            <Wrench size={14} color="#475569" />
-            <span>
-              Tiện ích:{" "}
-              <strong>{(form.amenities?.length || 0) + (form.customAmenities?.length || 0)}</strong> mục đã cấu hình
-            </span>
-          </div>
-          <button
-            type="button"
-            className="pr-services-link-btn"
-            onClick={() => { onCancel(); onGoToServices?.(); }}
-          >
-            Quản lý tiện ích <ChevronRight size={13} />
-          </button>
-        </div>
+        {/* Inline amenity picker */}
+        <AmenityPicker form={form} setForm={setForm} onGoToServices={() => { onCancel(); onGoToServices?.(); }} />
 
         <Field label={t("pt_rooms_desc")}>
           <textarea
@@ -350,9 +423,245 @@ function fmtPrice(n) {
   return new Intl.NumberFormat("vi-VN").format(n) + " ₫";
 }
 
+function SummaryStrip({ counts }) {
+  const items = [
+    { label: "Tổng phòng",   value: counts.total,       color: "#475569", bg: "#f1f5f9" },
+    { label: "Phòng trống",  value: counts.available,   color: "#10b981", bg: "#d1fae5" },
+    { label: "Có người đặt", value: counts.reserved,    color: "#8b5cf6", bg: "#ede9fe" },
+    { label: "Có khách",     value: counts.occupied,    color: "#3b82f6", bg: "#dbeafe" },
+    { label: "Dọn phòng",   value: counts.cleaning,    color: "#f59e0b", bg: "#fef3c7" },
+    { label: "Bảo trì",     value: counts.maintenance, color: "#ef4444", bg: "#fee2e2" },
+  ].filter(i => i.value > 0 || i.label === "Tổng phòng");
+
+  return (
+    <div className="pr-summary-strip">
+      {items.map(item => (
+        <div key={item.label} className="pr-summary-item" style={{ background: item.bg }}>
+          <span className="pr-summary-value" style={{ color: item.color }}>{item.value}</span>
+          <span className="pr-summary-label" style={{ color: item.color }}>{item.label}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function UnnumberedBanner({ count, hotelId, navigate, onDismiss }) {
+  return (
+    <div className="pr-unnumbered-banner">
+      <AlertTriangle size={15} color="#d97706" style={{ flexShrink: 0 }} />
+      <span className="pr-unnumbered-text">
+        <strong>{count} phòng</strong> chưa được đặt số phòng — nên cập nhật để dễ quản lý.
+      </span>
+      <button
+        className="pr-unnumbered-link"
+        onClick={() => navigate(`/partner/room-units?hotelId=${hotelId}`)}
+      >
+        Cập nhật ngay <ChevronRight size={12} />
+      </button>
+      <button className="pr-unnumbered-close" onClick={onDismiss} title="Bỏ qua">
+        <X size={13} />
+      </button>
+    </div>
+  );
+}
+
+function UnitCard({ unit, hotelId, updateUnit }) {
+  const cfg = UNIT_STATUS_CONFIG[unit.status] || {};
+  const [draft, setDraft] = useState({
+    roomNumber: unit.roomNumber || "",
+    floor:      unit.floor != null ? String(unit.floor) : "",
+    notes:      unit.notes || "",
+    guestName:  unit.guestName || "",
+    status:     unit.status,
+  });
+  const [saving, setSaving] = useState(false);
+
+  async function save(patch) {
+    setSaving(true);
+    try {
+      await updateUnit.mutateAsync({
+        roomId: unit.roomId, unitId: unit.id, hotelId,
+        roomNumber:  patch.roomNumber?.trim() || null,
+        floor:       patch.floor !== "" ? Number(patch.floor) : null,
+        status:      patch.status,
+        notes:       patch.notes?.trim() || null,
+        guestName:   patch.guestName?.trim() || null,
+        coverImageUrl: unit.coverImageUrl ?? null,
+      });
+    } catch (e) { alert(e.message); }
+    finally { setSaving(false); }
+  }
+
+  function onBlur(field) {
+    const next = { ...draft };
+    if (
+      next.roomNumber !== (unit.roomNumber || "") ||
+      next.floor      !== (unit.floor != null ? String(unit.floor) : "") ||
+      next.notes      !== (unit.notes || "") ||
+      next.guestName  !== (unit.guestName || "") ||
+      next.status     !== unit.status
+    ) {
+      save(next);
+    }
+  }
+
+  const activeCfg = UNIT_STATUS_CONFIG[draft.status] || {};
+  const needsGuest = draft.status === "OCCUPIED" || draft.status === "RESERVED";
+
+  return (
+    <div className="rup-unit-card" style={{ borderLeftColor: activeCfg.color || "#cbd5e1", opacity: saving ? 0.7 : 1 }}>
+      {/* Row 1: số phòng + tầng */}
+      <div className="rup-unit-top">
+        <div className="rup-unit-num-wrap">
+          <Hash size={10} color="#94a3b8" />
+          <input
+            className="rup-unit-input rup-unit-num-input"
+            placeholder="Số phòng"
+            maxLength={20}
+            value={draft.roomNumber}
+            onChange={e => setDraft(d => ({ ...d, roomNumber: e.target.value }))}
+            onBlur={() => onBlur("roomNumber")}
+            title="Số phòng (nhập tay)"
+          />
+          {unit.autoGenerated && !unit.roomNumber && (
+            <span className="rup-auto-tag">Tự động</span>
+          )}
+        </div>
+        <div className="rup-unit-floor-wrap" title="Số tầng">
+          <Layers size={9} color="#94a3b8" />
+          <input
+            className="rup-unit-floor-input"
+            placeholder="T?"
+            type="number"
+            min="0"
+            value={draft.floor}
+            onChange={e => setDraft(d => ({ ...d, floor: e.target.value }))}
+            onBlur={() => onBlur("floor")}
+          />
+        </div>
+      </div>
+
+      {/* Row 2: status dropdown */}
+      <select
+        className="rup-status-select"
+        value={draft.status}
+        disabled={saving}
+        onChange={e => {
+          const next = { ...draft, status: e.target.value };
+          setDraft(next);
+          save(next);
+        }}
+        style={{ color: activeCfg.color }}
+      >
+        {Object.entries(UNIT_STATUS_CONFIG).map(([k, v]) => (
+          <option key={k} value={k}>{v.label}</option>
+        ))}
+      </select>
+
+      {/* Row 3: tên khách (chỉ hiện khi có khách hoặc đặt) */}
+      {needsGuest && (
+        <input
+          className="rup-unit-input rup-guest-input"
+          placeholder="Tên khách..."
+          maxLength={200}
+          value={draft.guestName}
+          onChange={e => setDraft(d => ({ ...d, guestName: e.target.value }))}
+          onBlur={() => onBlur("guestName")}
+          title="Tên khách đang ở / đã đặt"
+        />
+      )}
+
+      {/* Row 4: ghi chú */}
+      <textarea
+        className="rup-unit-input rup-notes-input"
+        placeholder="Ghi chú..."
+        maxLength={500}
+        rows={2}
+        value={draft.notes}
+        onChange={e => setDraft(d => ({ ...d, notes: e.target.value }))}
+        onBlur={() => onBlur("notes")}
+      />
+    </div>
+  );
+}
+
+function RoomUnitsPanel({ room, units = [], hotelId, onClose, navigate }) {
+  const updateUnit = useUpdateRoomUnit();
+  const [activeFilter, setActiveFilter] = useState("ALL");
+
+  const counts = Object.fromEntries(Object.keys(UNIT_STATUS_CONFIG).map(k => [k, 0]));
+  units.forEach(u => { if (counts[u.status] !== undefined) counts[u.status]++; });
+
+  const displayed = activeFilter === "ALL" ? units : units.filter(u => u.status === activeFilter);
+
+  const filterTabs = [
+    { key: "ALL", label: "Tất cả", count: units.length },
+    ...Object.entries(UNIT_STATUS_CONFIG)
+      .filter(([k]) => counts[k] > 0)
+      .map(([k, v]) => ({ key: k, label: v.label, count: counts[k], color: v.color, bg: v.bg })),
+  ];
+
+  return (
+    <div className="rup-panel">
+      {/* Header */}
+      <div className="rup-header">
+        <DoorOpen size={17} color="#BE1E2E" style={{ flexShrink: 0 }} />
+        <div className="rup-header-title">
+          <div className="rup-room-name">{room?.name}</div>
+          <div className="rup-room-sub">{units.length} phòng vật lý</div>
+        </div>
+        <div className="rup-header-actions">
+          <button
+            className="rup-manage-btn"
+            onClick={() => navigate(`/partner/room-units?roomId=${room?.id}&hotelId=${hotelId}`)}
+          >
+            Quản lý đầy đủ <ChevronRight size={13} />
+          </button>
+          <button className="rup-close-btn" onClick={onClose} title="Đóng">
+            <X size={14} />
+          </button>
+        </div>
+      </div>
+
+      {/* Filter tabs */}
+      {units.length > 0 && (
+        <div className="rup-filter-tabs">
+          {filterTabs.map(tab => (
+            <button
+              key={tab.key}
+              className={`rup-tab${activeFilter === tab.key ? " rup-tab--active" : ""}`}
+              style={activeFilter === tab.key && tab.color ? { background: tab.bg, color: tab.color, borderColor: tab.color + "44" } : {}}
+              onClick={() => setActiveFilter(tab.key)}
+            >
+              {tab.label}
+              <span className="rup-tab-count">{tab.count}</span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Body */}
+      {units.length === 0 ? (
+        <div className="rup-empty">
+          <DoorOpen size={28} style={{ opacity: 0.2, display: "block", margin: "0 auto 8px" }} />
+          <div style={{ fontSize: 13, fontWeight: 600 }}>Chưa có phòng vật lý</div>
+          <div style={{ fontSize: 12, marginTop: 4 }}>Hệ thống sẽ tự động sinh phòng khi tạo loại phòng</div>
+        </div>
+      ) : (
+        <div className="rup-grid">
+          {displayed.map(unit => (
+            <UnitCard key={unit.id} unit={unit} hotelId={hotelId} updateUnit={updateUnit} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function PartnerRooms() {
   const navigate = useNavigate();
   const { t } = useLang();
+  const toast = useToast();
   const CATEGORIES = [
     { key: "STANDARD", label: t("pt_cat_standard") },
     { key: "DELUXE",   label: t("pt_cat_deluxe") },
@@ -387,6 +696,8 @@ export default function PartnerRooms() {
     // FIX BUG-008: Reset pagination when switching hotels so the user never lands
     // on a page that doesn't exist for the newly selected hotel's room count.
     setPage(1);
+    setExpandedRoomId(null);
+    setOpenMenuId(null);
   }
   const [modal, setModal]       = useState(null);
   const [selected, setSelected] = useState(null);
@@ -399,7 +710,16 @@ export default function PartnerRooms() {
   const [searchText, setSearchText]     = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
   const [roomAiSuggestion, setRoomAiSuggestion] = useState({ loading: false, data: null, error: false });
+  const [expandedRoomId, setExpandedRoomId] = useState(null);
+  const [openMenuId, setOpenMenuId]         = useState(null);
   const pageSize = 8;
+
+  useEffect(() => {
+    if (!openMenuId) return;
+    function closeMenu() { setOpenMenuId(null); }
+    document.addEventListener("click", closeMenu);
+    return () => document.removeEventListener("click", closeMenu);
+  }, [openMenuId]);
 
   const { data: hotelData }   = useMyHotels();
   const { data: catalogData } = useCatalogOptions();
@@ -413,6 +733,25 @@ export default function PartnerRooms() {
 
   const hotels = Array.isArray(hotelData) ? hotelData : [];
   const rooms  = Array.isArray(roomData)  ? roomData  : [];
+
+  const { data: allUnitData = [] } = useHotelRoomUnits(selectedHotelId);
+  const allUnits = Array.isArray(allUnitData) ? allUnitData : [];
+
+  const unitsByRoomId = useMemo(() =>
+    allUnits.reduce((acc, u) => { (acc[u.roomId] ??= []).push(u); return acc; }, {}),
+  [allUnits]);
+
+  const globalCounts = useMemo(() => ({
+    total:       allUnits.length,
+    available:   allUnits.filter(u => u.status === "AVAILABLE").length,
+    reserved:    allUnits.filter(u => u.status === "RESERVED").length,
+    occupied:    allUnits.filter(u => u.status === "OCCUPIED").length,
+    cleaning:    allUnits.filter(u => u.status === "CLEANING").length,
+    maintenance: allUnits.filter(u => u.status === "MAINTENANCE").length,
+  }), [allUnits]);
+
+  const unnumbered = useMemo(() => allUnits.filter(u => !u.roomNumber), [allUnits]);
+  const [unnumberedDismissed, setUnnumberedDismissed] = useState(false);
 
   // Auto-select newly created hotel from wizard redirect
   useEffect(() => {
@@ -430,6 +769,31 @@ export default function PartnerRooms() {
       selectHotel(String(hotels[0].id));
     }
   }, [hotels]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Mở edit modal cho room cụ thể khi navigate từ PartnerRoomUnits
+  useEffect(() => {
+    if (!navState?.openEditRoomId || rooms.length === 0) return;
+    const target = rooms.find(r => r.id === navState.openEditRoomId);
+    if (target) openEdit(target);
+  }, [rooms]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Khôi phục form draft khi quay về từ trang tiện ích
+  useEffect(() => {
+    if (!navState?.returnedFromServices) return;
+    try {
+      const raw = sessionStorage.getItem("pr_room_form_draft");
+      if (!raw) return;
+      const { form: savedForm, modal: savedModal, selectedId, hotelId: savedHotelId } = JSON.parse(raw);
+      sessionStorage.removeItem("pr_room_form_draft");
+      if (savedHotelId) selectHotel(String(savedHotelId));
+      setForm(savedForm);
+      setModal(savedModal);
+      if (savedModal === "edit" && selectedId) {
+        const room = rooms.find(r => r.id === selectedId);
+        if (room) setSelected(room);
+      }
+    } catch {}
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const catalog = {
     roomCategories: Array.isArray(catalogData?.roomCategories) && catalogData.roomCategories.length ? catalogData.roomCategories : CATEGORIES.map(c => c.key),
@@ -469,7 +833,7 @@ export default function PartnerRooms() {
     } else {
       setRoomAiSuggestion({ loading: false, data: null, error: false });
     }
-  }, [form.roomCategory, modal]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [form.roomCategory, modal, rooms]);
   async function openEdit(room) {
     revokePendingImageUrls(form.images);
     setSaveError("");
@@ -534,7 +898,8 @@ export default function PartnerRooms() {
         imageUrls: getRoomImageUrls(room),
         description: room.description || null,
       });
-    } catch (e) { alert(e.message); }
+      toast.success(`Đã tạm dừng kinh doanh phòng "${room.name}"`);
+    } catch (e) { toast.error(e.message || "Không thể tạm dừng phòng"); }
   }
 
   function closeFormModal() {
@@ -589,23 +954,36 @@ export default function PartnerRooms() {
         }
       }
       revokePendingImageUrls(images);
+      const wasAdd = modal === "add";
+      const savedName = form.name;
       setModal(null);
       setSelected(null);
       setForm({ ...EMPTY_FORM, images: [] });
       setRoomAiSuggestion({ loading: false, data: null, error: false });
+      toast.success(wasAdd
+        ? `Đã thêm loại phòng "${savedName}" thành công`
+        : `Đã cập nhật loại phòng "${savedName}" thành công`
+      );
     } catch (e) {
       const fieldErrors = e.details?.map(d => `${d.field}: ${d.message}`).join("; ");
-      setSaveError(fieldErrors ? `${e.message} (${fieldErrors})` : e.message);
+      const msg = fieldErrors ? `${e.message} (${fieldErrors})` : e.message;
+      setSaveError(msg);
+      toast.error(msg);
     }
     finally { setSaving(false); }
   }
 
   async function handleDelete() {
     setSaving(true);
+    const deletedName = selected?.name;
     try {
       await deleteRoomMut.mutateAsync({ roomId: selected.id, hotelId: selectedHotelId });
       setModal(null);
-    } catch (e) { alert(e.message); }
+      toast.success(`Đã xóa loại phòng "${deletedName}"`);
+    } catch (e) {
+      toast.error(e.message || "Không thể xóa loại phòng");
+      alert(e.message);
+    }
     finally { setSaving(false); }
   }
 
@@ -743,6 +1121,17 @@ export default function PartnerRooms() {
             </div>
           </div>
 
+          {/* Summary strip + unnumbered banner */}
+          {globalCounts.total > 0 && <SummaryStrip counts={globalCounts} />}
+          {unnumbered.length > 0 && !unnumberedDismissed && selectedHotelId && (
+            <UnnumberedBanner
+              count={unnumbered.length}
+              hotelId={selectedHotelId}
+              navigate={navigate}
+              onDismiss={() => setUnnumberedDismissed(true)}
+            />
+          )}
+
           {filteredRooms.length === 0 ? (
             <Card style={{ textAlign: "center", padding: "60px 20px", borderRadius: 20 }}>
               <div className="pr-empty-icon"><Search size={36} color="#cbd5e1" /></div>
@@ -800,84 +1189,81 @@ export default function PartnerRooms() {
                   </div>
                 </div>
 
-                {/* Unit availability badge */}
-                {r.unitSummary && r.unitSummary.totalUnits > 0 && (
-                  <div className="pr-unit-availability">
-                    <span className="pr-unit-avail-dot" />
-                    <span className="pr-unit-avail-text">
-                      <strong>{r.unitSummary.availableUnits}</strong>/{r.unitSummary.totalUnits} phòng sẵn sàng
-                    </span>
-                    {r.unitSummary.maintenanceUnits > 0 && (
-                      <span className="pr-unit-maint-badge">
-                        ⚠ {r.unitSummary.maintenanceUnits} bảo trì
-                      </span>
-                    )}
-                    {r.unitSummary.cleaningUnits > 0 && (
-                      <span className="pr-unit-cleaning-badge">
-                        🧹 {r.unitSummary.cleaningUnits} dọn phòng
-                      </span>
-                    )}
-                  </div>
-                )}
-                {r.unitSummary && r.unitSummary.totalUnits === 0 && (
-                  <div className="pr-unit-availability pr-unit-availability--none">
-                    <DoorOpen size={13} color="#94a3b8" />
-                    <span className="pr-unit-avail-text" style={{ color: "#94a3b8" }}>
-                      Chưa tạo phòng cụ thể
-                    </span>
-                  </div>
-                )}
+                {/* Unit progress bar — derived from hotel-wide unit fetch */}
+                {(() => {
+                  const uc = getUnitCounts(unitsByRoomId[r.id] || []);
+                  return uc.total > 0 ? (
+                    <div className="pr-avail-bar-wrap">
+                      <div className="pr-avail-bar">
+                        <div className="pr-bar-seg pr-bar-avail"    style={{ width: `${uc.pct(uc.avail)}%` }} />
+                        <div className="pr-bar-seg pr-bar-reserved" style={{ width: `${uc.pct(uc.reserved)}%` }} />
+                        <div className="pr-bar-seg pr-bar-occ"      style={{ width: `${uc.pct(uc.occ)}%` }} />
+                        <div className="pr-bar-seg pr-bar-clean"    style={{ width: `${uc.pct(uc.clean)}%` }} />
+                        <div className="pr-bar-seg pr-bar-maint"    style={{ width: `${uc.pct(uc.maint)}%` }} />
+                      </div>
+                      <div className="pr-avail-legend">
+                        {uc.avail    > 0 && <span className="pr-leg-avail">{uc.avail} trống</span>}
+                        {uc.reserved > 0 && <span className="pr-leg-reserved">{uc.reserved} đã đặt</span>}
+                        {uc.occ      > 0 && <span className="pr-leg-occ">{uc.occ} có khách</span>}
+                        {uc.clean    > 0 && <span className="pr-leg-clean">{uc.clean} dọn phòng</span>}
+                        {uc.maint    > 0 && <span className="pr-leg-maint">{uc.maint} bảo trì</span>}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="pr-unit-availability pr-unit-availability--none">
+                      <DoorOpen size={13} color="#94a3b8" />
+                      <span className="pr-unit-avail-text" style={{ color: "#94a3b8" }}>Chưa có phòng vật lý</span>
+                    </div>
+                  );
+                })()}
 
                 <div className="pr-room-actions">
                   <button className="pr-edit-btn" onClick={() => openEdit(r)}>
                     <Edit3 size={15} /> {t("adm_edit")}
                   </button>
-                  {/* Nút quản lý phòng vật lý */}
                   <button
-                    className="pr-units-btn"
-                    onClick={() => navigate(`/partner/room-units?roomId=${r.id}&hotelId=${selectedHotelId}`)}
-                    title="Quản lý phòng vật lý"
+                    className={`pr-units-btn${expandedRoomId === r.id ? " pr-units-btn--active" : ""}`}
+                    onClick={() => setExpandedRoomId(expandedRoomId === r.id ? null : r.id)}
+                    title={expandedRoomId === r.id ? "Đóng danh sách phòng" : "Xem danh sách phòng vật lý"}
                   >
-                    <DoorOpen size={15} />
-                    {r.unitSummary?.totalUnits > 0
-                      ? `${r.unitSummary.totalUnits} phòng`
-                      : "Quản lý phòng"}
+                    {expandedRoomId === r.id ? <ChevronUp size={15} /> : <DoorOpen size={15} />}
+                    {(unitsByRoomId[r.id]?.length || 0) > 0
+                      ? `${unitsByRoomId[r.id].length} phòng`
+                      : "Xem phòng"}
                   </button>
-                  <div className="pr-room-quick-actions">
+                  <button
+                    className="pr-quick-btn"
+                    title="Lịch & giá phòng"
+                    aria-label="Xem lịch và giá phòng"
+                    onClick={() => navigate(`/partner/calendar?roomId=${r.id}`)}
+                  >
+                    <CalendarDays size={14} aria-hidden="true" />
+                  </button>
+                  {/* Overflow menu */}
+                  <div className="pr-overflow-wrap" onClick={e => e.stopPropagation()}>
                     <button
                       className="pr-quick-btn"
-                      title="Nhân bản phòng"
-                      aria-label="Nhân bản phòng"
-                      onClick={() => openDuplicate(r)}
+                      title="Thêm tùy chọn"
+                      aria-label="Thêm tùy chọn"
+                      onClick={() => setOpenMenuId(openMenuId === r.id ? null : r.id)}
                     >
-                      <Copy size={14} aria-hidden="true" />
+                      <MoreHorizontal size={15} aria-hidden="true" />
                     </button>
-                    <button
-                      className="pr-quick-btn"
-                      title="Lịch & giá phòng"
-                      aria-label="Xem lịch và giá phòng"
-                      onClick={() => navigate(`/partner/calendar?roomId=${r.id}`)}
-                    >
-                      <CalendarDays size={14} aria-hidden="true" />
-                    </button>
-                    {r.quantity > 0 && (
-                      <button
-                        className="pr-quick-btn pr-quick-btn--deactivate"
-                        title="Tạm dừng kinh doanh"
-                        aria-label="Tạm dừng kinh doanh phòng này"
-                        onClick={() => handleDeactivate(r)}
-                      >
-                        <Power size={14} aria-hidden="true" />
-                      </button>
+                    {openMenuId === r.id && (
+                      <div className="pr-overflow-menu">
+                        <button className="pr-overflow-item" onClick={() => { setOpenMenuId(null); openDuplicate(r); }}>
+                          <Copy size={13} /> Nhân bản
+                        </button>
+                        {r.quantity > 0 && (
+                          <button className="pr-overflow-item" onClick={() => { setOpenMenuId(null); handleDeactivate(r); }}>
+                            <Power size={13} /> Tạm dừng
+                          </button>
+                        )}
+                        <button className="pr-overflow-item pr-overflow-item--danger" onClick={() => { setOpenMenuId(null); openDelete(r); }}>
+                          <Trash2 size={13} /> Xóa phòng
+                        </button>
+                      </div>
                     )}
-                    <button
-                      className="pr-quick-btn pr-quick-btn--delete"
-                      title="Xóa phòng"
-                      aria-label="Xóa phòng này"
-                      onClick={() => openDelete(r)}
-                    >
-                      <Trash2 size={14} aria-hidden="true" />
-                    </button>
                   </div>
                 </div>
               </div>
@@ -887,6 +1273,20 @@ export default function PartnerRooms() {
           )}
         </>
       )}
+
+      {/* Accordion unit panel */}
+      {expandedRoomId && (() => {
+        const expandedRoom = rooms.find(r => r.id === expandedRoomId);
+        return expandedRoom ? (
+          <RoomUnitsPanel
+            room={expandedRoom}
+            units={unitsByRoomId[expandedRoomId] || []}
+            hotelId={selectedHotelId}
+            onClose={() => setExpandedRoomId(null)}
+            navigate={navigate}
+          />
+        ) : null;
+      })()}
 
       {/* Pagination */}
       {filteredRooms.length > pageSize && (
@@ -919,7 +1319,16 @@ export default function PartnerRooms() {
           aiSuggestion={roomAiSuggestion}
           isAdd={modal === "add"}
           saveError={saveError}
-          onGoToServices={() => navigate("/partner/services")}
+          onGoToServices={() => {
+            try {
+              sessionStorage.setItem("pr_room_form_draft", JSON.stringify({
+                form, modal, selectedId: selected?.id, hotelId: selectedHotelId,
+              }));
+            } catch {}
+            navigate("/partner/services", {
+              state: { returnToRooms: true, hotelId: selectedHotelId },
+            });
+          }}
           originalQuantity={modal === "edit" ? selected?.quantity : null}
         />
       )}
