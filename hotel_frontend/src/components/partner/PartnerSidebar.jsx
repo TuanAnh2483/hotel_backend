@@ -72,13 +72,8 @@ export default function PartnerSidebar({ selectedHotelId, onSelectHotel, open, o
     <aside className={`ps-root${open ? " open" : ""}`}>
       {/* Logo */}
       <div className="ps-logo">
-        <div className="ps-logo-icon">
-          <Building2 size={18} color="#fff" />
-        </div>
-        <div>
-          <div className="ps-logo-name">Hotel Hub</div>
-          <div className="ps-logo-sub">Partner Portal</div>
-        </div>
+        <img src="/logo.png" alt="VLU Hotel Hub" className="ps-logo-img" />
+        <div className="ps-logo-sub">Partner Portal</div>
       </div>
 
       {/* Property list */}
