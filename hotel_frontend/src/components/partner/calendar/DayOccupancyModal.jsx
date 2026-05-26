@@ -8,6 +8,14 @@ import { fmtDate, fmtCurrency, fmtCompact } from "./calendarUtils";
 
 const MAX_VISUAL_SLOTS = 30;
 
+const UNIT_SLOT_MAP = {
+  AVAILABLE:   { status: "vacant",      txt: "Trống" },
+  OCCUPIED:    { status: "occupied",    txt: "Có khách" },
+  RESERVED:    { status: "reserved",    txt: "Đặt trước" },
+  CLEANING:    { status: "maintenance", txt: "Dọn phòng" },
+  MAINTENANCE: { status: "maintenance", txt: "Bảo trì" },
+};
+
 const AI_SCHEME = {
   HIGH:   { bg: "#FFF1F2", border: "#FECDD3", accent: "#BE1E2E", dark: "#9f1239", label: "Nhu cầu cao" },
   MEDIUM: { bg: "#FFFBEB", border: "#FDE68A", accent: "#D97706", dark: "#92400E", label: "Nhu cầu vừa" },
@@ -21,21 +29,22 @@ function getAiLevel(suggested, currentStr) {
   return pct >= 12 ? "HIGH" : pct >= -5 ? "MEDIUM" : "LOW";
 }
 
-function SlotGrid({ slots }) {
+function SlotGrid({ slots, useRealUnits }) {
   const shown  = slots.slice(0, MAX_VISUAL_SLOTS);
   const hidden = slots.length - shown.length;
   return (
     <>
       <div className="pdom-slot-grid">
-        {shown.map(slot => (
-          <div key={slot.label} className={`pdom-slot pdom-slot--${slot.status}`}>
+        {shown.map((slot, i) => (
+          <div
+            key={slot.label + i}
+            className={`pdom-slot pdom-slot--${slot.status}`}
+            title={slot.guestName || undefined}
+          >
             <div className="pdom-slot-code">{slot.label}</div>
+            {slot.floor != null && <div className="pdom-slot-floor">T{slot.floor}</div>}
             <div className="pdom-slot-dot" />
-            <div className="pdom-slot-txt">
-              {slot.status === "occupied" ? "Có khách"
-               : slot.status === "closed"  ? "Đóng"
-               : "Trống"}
-            </div>
+            <div className="pdom-slot-txt">{slot.txt}</div>
           </div>
         ))}
         {hidden > 0 && (
@@ -44,7 +53,9 @@ function SlotGrid({ slots }) {
       </div>
       <div className="pdom-legend">
         <span className="pdom-legend-item pdom-legend--occupied">Có khách</span>
+        {useRealUnits && <span className="pdom-legend-item pdom-legend--reserved">Đặt trước</span>}
         <span className="pdom-legend-item pdom-legend--vacant">Còn trống</span>
+        {useRealUnits && <span className="pdom-legend-item pdom-legend--maintenance">Bảo trì / Dọn</span>}
         <span className="pdom-legend-item pdom-legend--closed">Đóng bán</span>
       </div>
     </>
@@ -80,6 +91,7 @@ export default function DayOccupancyModal({
   form, onChange, onSave, saving, error,
   aiData, aiLoading,
   onEditTabOpen,
+  roomUnits,
   warnModal, onWarnClose,
 }) {
   const [activeTab, setActiveTab] = useState("info");
@@ -97,12 +109,28 @@ export default function DayOccupancyModal({
   const roomName = calendar?.roomName || "—";
   const price    = item?.price ?? calendar?.basePrice;
 
-  const slots = useMemo(() =>
-    Array.from({ length: totalQ }, (_, i) => ({
-      label: `P${String(i + 1).padStart(2, "0")}`,
+  const hasRealUnits = Array.isArray(roomUnits) && roomUnits.length > 0;
+
+  const slots = useMemo(() => {
+    if (hasRealUnits) {
+      return roomUnits.map(u => {
+        const map = UNIT_SLOT_MAP[u.status] || { status: "vacant", txt: "Trống" };
+        return {
+          label:     u.roomNumber || `#${u.id}`,
+          status:    isClosed ? "closed" : map.status,
+          txt:       isClosed ? "Đóng" : map.txt,
+          floor:     u.floor,
+          guestName: u.guestName || null,
+        };
+      });
+    }
+    return Array.from({ length: totalQ }, (_, i) => ({
+      label:  `P${String(i + 1).padStart(2, "0")}`,
       status: isClosed ? "closed" : i < booked ? "occupied" : "vacant",
-    }))
-  , [totalQ, booked, isClosed]);
+      txt:    isClosed ? "Đóng" : i < booked ? "Có khách" : "Trống",
+      floor:  null,
+    }));
+  }, [hasRealUnits, roomUnits, totalQ, booked, isClosed]);
 
   const activeGuests = useMemo(() => {
     const list = bookings?.items ?? bookings ?? [];
@@ -198,13 +226,15 @@ export default function DayOccupancyModal({
               )}
 
               {/* Slot map */}
-              {totalQ > 0 && (
+              {(totalQ > 0 || hasRealUnits) && (
                 <div className="pdom-section">
                   <div className="pdom-section-hd">
                     <span className="pdom-section-title">Sơ đồ phòng</span>
-                    <span className="pdom-section-note">Đơn vị phòng theo loại — mã tự động</span>
+                    <span className="pdom-section-note">
+                      {hasRealUnits ? "Phòng vật lý thực tế — trạng thái hiện tại" : "Mã tự động theo vị trí"}
+                    </span>
                   </div>
-                  <SlotGrid slots={slots} />
+                  <SlotGrid slots={slots} useRealUnits={hasRealUnits} />
                 </div>
               )}
 

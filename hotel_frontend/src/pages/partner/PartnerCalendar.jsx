@@ -5,7 +5,7 @@ import { PageHeader } from "../../components/admin/AdminLayout";
 import {
   useMyHotels, usePartnerRooms, useRoomCalendar, useUpdateRoomCalendar,
   usePartnerRefunds, useApproveRefund, useRejectRefund, usePriceSuggestions,
-  usePartnerBookings,
+  usePartnerBookings, useHotelRoomUnits,
 } from "../../hooks/usePartnerQueries";
 import { useLang } from "../../contexts/LanguageContext";
 import {
@@ -77,6 +77,12 @@ export default function PartnerCalendar() {
   const monthBookings = useMemo(
     () => monthBookingsPage?.items ?? monthBookingsPage ?? [],
     [monthBookingsPage],
+  );
+
+  const { data: allUnitData = [] } = useHotelRoomUnits(selectedHotelId);
+  const roomUnits = useMemo(
+    () => (Array.isArray(allUnitData) ? allUnitData : []).filter(u => String(u.roomId) === String(selectedRoomId)),
+    [allUnitData, selectedRoomId],
   );
 
   const { data: refundsData, isLoading: refundsLoading } = usePartnerRefunds(
@@ -341,6 +347,7 @@ export default function PartnerCalendar() {
             aiData={aiData}
             aiLoading={aiLoading}
             onEditTabOpen={() => dayModal && setAiParams({ from: dayModal.iso, to: dayModal.iso })}
+            roomUnits={roomUnits}
             warnModal={warnModal}
             onWarnClose={() => setWarnModal(null)}
           />
