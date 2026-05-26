@@ -27,6 +27,9 @@ public class DailyRate {
     private Integer minStay;
 
     @Column(name = "is_closed", nullable = false)
-    private boolean  isClosed;
+    private boolean isClosed;
+
+    @Column(name = "close_reason", length = 255)
+    private String closeReason;
 
 }

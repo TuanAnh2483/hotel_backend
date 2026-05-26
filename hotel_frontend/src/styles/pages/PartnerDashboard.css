@@ -98,3 +98,22 @@
   border-collapse: collapse;
   font-size: 14px;
 }
+
+.partner-dashboard-kpi-3col {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+@media (max-width: 900px) {
+  .partner-dashboard-kpi-3col {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 540px) {
+  .partner-dashboard-kpi-3col {
+    grid-template-columns: 1fr;
+  }
+}

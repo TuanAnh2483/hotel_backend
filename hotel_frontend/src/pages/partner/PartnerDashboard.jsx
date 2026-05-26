@@ -100,7 +100,7 @@ function HotelKpiRow({ bookings, rooms, loading, navigate }) {
   ];
 
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, marginBottom: 24 }}>
+    <div className="partner-dashboard-kpi-3col">
       {kpis.map(k => (
         <div key={k.label} style={{ background: "#fff", borderRadius: 14, padding: "20px 24px", border: "1px solid #f1f5f9", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
@@ -368,12 +368,12 @@ export default function PartnerDashboard() {
 
           <div style={{ background: "#eff6ff", borderRadius: 16, padding: "24px", border: "1px solid #bfdbfe" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-              <div style={{ width: 32, height: 32, borderRadius: "50%", background: "#BE1E2E", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <div style={{ width: 32, height: 32, borderRadius: "50%", background: "#2563eb", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                 <BarChart3 size={16} color="#fff" />
               </div>
-              <h3 style={{ fontSize: 14, fontWeight: 800, color: "#991B1B", margin: 0, userSelect: "none", cursor: "default" }}>{t("pt_dash_monthly")}</h3>
+              <h3 style={{ fontSize: 14, fontWeight: 800, color: "#1e40af", margin: 0, userSelect: "none", cursor: "default" }}>{t("pt_dash_monthly")}</h3>
             </div>
-            <p style={{ fontSize: 13, color: "#1e40af", lineHeight: 1.5, margin: 0 }}>
+            <p style={{ fontSize: 13, color: "#3b5fad", lineHeight: 1.6, margin: 0 }}>
               {bookingTotal > 0
                 ? t("pt_dash_monthly_msg").replace("{n}", bookingTotal).replace("{revenue}", fmtPrice(monthlyRevenue))
                 : t("pt_dash_monthly_empty")}

@@ -11,5 +11,6 @@ public record PartnerRoomCalendarDayResponse(
         Integer blockedRooms,
         Integer sellableRooms,
         Boolean hasCustomRate,
-        Boolean hasInventoryRow
+        Boolean hasInventoryRow,
+        String closeReason
 ) {}

@@ -324,14 +324,14 @@ class HotelDeleteIntegrationTest {
         booking.setCheckIn(LocalDate.now().plusDays(10));
         booking.setCheckOut(LocalDate.now().plusDays(12));
         booking.setStatus(com.hotel.hotel_backend.entity.BookingStatus.CONFIRMED);
-        booking.setTotalPrice(600_000.0);
+        booking.setTotalPrice(600_000L);
         booking = bookingRepository.save(booking);
 
         com.hotel.hotel_backend.entity.BookingItem item = new com.hotel.hotel_backend.entity.BookingItem();
         item.setBooking(booking);
         item.setRoom(room);
         item.setQuantity(1);
-        item.setPrice(600_000.0);
+        item.setPrice(600_000L);
         bookingItemRepository.save(item);
     }
 }

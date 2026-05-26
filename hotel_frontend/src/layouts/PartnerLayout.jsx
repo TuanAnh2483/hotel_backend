@@ -9,16 +9,17 @@ import "./partner/PartnerLayout.css";
 const SELECTED_HOTEL_KEY = "partner_selected_hotel_id";
 
 const BREADCRUMB_MAP = {
-  "/partner":               "Tổng quan",
-  "/partner/hotels":        "Cơ sở của tôi",
-  "/partner/rooms":         "Loại phòng",
-  "/partner/calendar":      "Lịch & Vận hành",
-  "/partner/bookings":      "Booking",
-  "/partner/reviews":       "Đánh giá",
-  "/partner/revenue":       "Doanh thu",
-  "/partner/forecast":      "AI Dự báo",
-  "/partner/add-property":  "Thêm cơ sở",
-  "/partner/services":      "Quản lý dịch vụ",
+  "/partner":                "Tổng quan",
+  "/partner/hotels":         "Cơ sở của tôi",
+  "/partner/rooms":          "Loại phòng",
+  "/partner/room-units":     "Phòng",
+  "/partner/calendar":       "Lịch & Vận hành",
+  "/partner/bookings":       "Booking",
+  "/partner/reviews":        "Đánh giá",
+  "/partner/revenue":        "Doanh thu",
+  "/partner/forecast":       "AI Dự báo",
+  "/partner/add-property":   "Thêm cơ sở",
+  "/partner/services":       "Dịch vụ & tiện ích",
 };
 
 function getPageTitle(pathname) {

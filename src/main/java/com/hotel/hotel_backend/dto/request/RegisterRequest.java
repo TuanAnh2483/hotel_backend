@@ -15,6 +15,6 @@ public record RegisterRequest(
                 message = "Password must contain at least one letter and one number"
         )
         String password,
-        String confirmPassword
+        @NotBlank String confirmPassword
 ) {}
 

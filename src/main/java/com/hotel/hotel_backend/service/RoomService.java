@@ -2,16 +2,20 @@ package com.hotel.hotel_backend.service;
 
 import com.hotel.hotel_backend.dto.request.CreateRoomRequest;
 import com.hotel.hotel_backend.dto.response.RoomResponse;
+import com.hotel.hotel_backend.dto.response.RoomUnitSummaryResponse;
 import com.hotel.hotel_backend.entity.BookingMode;
 import com.hotel.hotel_backend.entity.Hotel;
 import com.hotel.hotel_backend.entity.Room;
 import com.hotel.hotel_backend.entity.RoomStatus;
+import com.hotel.hotel_backend.entity.RoomUnitStatus;
 import com.hotel.hotel_backend.exeption.ApiException;
 import com.hotel.hotel_backend.exeption.ErrorCode;
 import com.hotel.hotel_backend.repository.BookingItemRepository;
 import com.hotel.hotel_backend.repository.DailyInventoryRepository;
+import com.hotel.hotel_backend.repository.DailyRateRepository;
 import com.hotel.hotel_backend.repository.HotelRepository;
 import com.hotel.hotel_backend.repository.RoomRepository;
+import com.hotel.hotel_backend.repository.RoomUnitRepository;
 import com.hotel.hotel_backend.security.JwtPrincipal;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -22,6 +26,8 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -32,14 +38,17 @@ public class RoomService {
     private final HotelRepository hotelRepository;
     private final BookingItemRepository bookingItemRepository;
     private final DailyInventoryRepository dailyInventoryRepository;
+    private final DailyRateRepository dailyRateRepository;
     private final InventoryService inventoryService;
     private final SecurityService securityService;
+    private final RoomUnitRepository roomUnitRepository;
+    private final RoomUnitProvisionService roomUnitProvisionService;
 
     public RoomResponse create(Long hotelId, CreateRoomRequest request) {
         // Tạo phòng mới cho khách sạn thuộc sở hữu hiện tại.
         Hotel hotel = findOwnedHotel(hotelId);
 
-        // ENTIRE hotels chỉ được phép có đúng 1 room type (toàn bộ căn).
+        // ENTIRE hotels: max 1 room type, and that room type must have quantity <= 1.
         if (hotel.getBookingMode() == BookingMode.ENTIRE) {
             long activeRoomCount = roomRepository.findByHotelId(hotel.getId()).stream()
                     .filter(r -> r.getStatus() == null || r.getStatus() == RoomStatus.ACTIVE)
@@ -47,6 +56,11 @@ public class RoomService {
             if (activeRoomCount >= 1) {
                 throw new ApiException(ErrorCode.VALIDATION_ERROR,
                         "Cơ sở thuê nguyên căn chỉ được phép có 1 đơn vị phòng");
+            }
+            // FIX ISSUE-016: A villa/apartment can only ever have quantity=1 (or 0 to deactivate).
+            if (request.quantity() > 1) {
+                throw new ApiException(ErrorCode.VALIDATION_ERROR,
+                        "Cơ sở thuê nguyên căn chỉ được phép có tối đa 1 phòng mỗi loại");
             }
         }
 
@@ -66,25 +80,47 @@ public class RoomService {
 
         roomRepository.save(room);
         inventoryService.generateInventory(room);
+        roomUnitProvisionService.syncUnitsWithQuantity(room);
 
         return mapToResponse(room);
     }
 
     @Transactional(readOnly = true)
     public List<RoomResponse> getRoomsByHotel(Long hotelId) {
-        // Lấy danh sách phòng của khách sạn thuộc sở hữu hiện tại.
         Hotel hotel = findOwnedHotel(hotelId);
-
-        return roomRepository.findByHotelId(hotel.getId())
+        List<Room> rooms = roomRepository.findByHotelId(hotel.getId())
                 .stream()
                 .filter(r -> r.getStatus() == null || r.getStatus() == RoomStatus.ACTIVE)
-                .map(this::mapToResponse)
+                .toList();
+
+        if (rooms.isEmpty()) return List.of();
+
+        List<Long> roomIds = rooms.stream().map(Room::getId).toList();
+        Map<Long, RoomUnitRepository.RoomUnitSummaryRow> summaryMap = roomUnitRepository
+                .summarizeByRoomIds(roomIds)
+                .stream()
+                .collect(Collectors.toMap(RoomUnitRepository.RoomUnitSummaryRow::getRoomId, r -> r));
+
+        return rooms.stream()
+                .map(room -> {
+                    RoomUnitRepository.RoomUnitSummaryRow row = summaryMap.get(room.getId());
+                    RoomUnitSummaryResponse summary = row != null
+                            ? new RoomUnitSummaryResponse(row.getTotalCount(), row.getAvailableCount(),
+                                    row.getOccupiedCount(), row.getMaintenanceCount(), row.getCleaningCount())
+                            : new RoomUnitSummaryResponse(0, 0, 0, 0, 0);
+                    return mapToResponseWithSummary(room, summary);
+                })
                 .toList();
     }
 
     public RoomResponse update(Long roomId, CreateRoomRequest request) {
-        // Cập nhật thông tin phòng thuộc sở hữu hiện tại.
         Room room = findOwnedRoom(roomId);
+        // FIX ISSUE-016: Enforce ENTIRE mode quantity ceiling on updates too.
+        if (room.getHotel().getBookingMode() == BookingMode.ENTIRE && request.quantity() > 1) {
+            throw new ApiException(ErrorCode.VALIDATION_ERROR,
+                    "Cơ sở thuê nguyên căn chỉ được phép có tối đa 1 phòng mỗi loại");
+        }
+        int oldQuantity = room.getQuantity();
         List<String> normalizedImageUrls = normalizeImageUrls(request.imageUrls());
         room.setName(request.name());
         room.setCapacity(request.capacity());
@@ -97,6 +133,11 @@ public class RoomService {
         room.setImageUrls(normalizedImageUrls);
         room.setCoverImageUrl(resolveCoverImageUrl(room.getCoverImageUrl(), room.getImageUrls()));
         room.setDescription(request.description());
+
+        if (oldQuantity != request.quantity()) {
+            roomUnitProvisionService.syncUnitsWithQuantity(room);
+            inventoryService.generateInventory(room);
+        }
 
         return mapToResponse(room);
     }
@@ -157,11 +198,14 @@ public class RoomService {
     public void delete(Long roomId) {
         Room room = findOwnedRoom(roomId);
         if (bookingItemRepository.existsByRoomId(roomId)) {
-            // Có booking tham chiếu → soft-delete để giữ lịch sử
             room.setStatus(RoomStatus.INACTIVE);
         } else {
-            // Chưa có booking nào → hard-delete thật sự
+            // FIX BUG-001: Delete DailyRate rows BEFORE deleting the Room entity.
+            // DailyRate has a FK (room_id → rooms.id) with no cascade, so skipping this
+            // delete caused a DataIntegrityViolationException on roomRepository.delete().
+            dailyRateRepository.deleteByIdRoomId(roomId);
             dailyInventoryRepository.deleteByIdRoomId(roomId);
+            roomUnitRepository.deleteByRoomId(roomId);
             roomRepository.delete(room);
         }
     }
@@ -196,6 +240,16 @@ public class RoomService {
     }
 
     private RoomResponse mapToResponse(Room room) {
+        long total       = roomUnitRepository.countByRoomId(room.getId());
+        long available   = roomUnitRepository.countByRoomIdAndStatus(room.getId(), RoomUnitStatus.AVAILABLE);
+        long occupied    = roomUnitRepository.countByRoomIdAndStatus(room.getId(), RoomUnitStatus.OCCUPIED);
+        long maintenance = roomUnitRepository.countByRoomIdAndStatus(room.getId(), RoomUnitStatus.MAINTENANCE);
+        long cleaning    = roomUnitRepository.countByRoomIdAndStatus(room.getId(), RoomUnitStatus.CLEANING);
+        return mapToResponseWithSummary(room,
+                new RoomUnitSummaryResponse(total, available, occupied, maintenance, cleaning));
+    }
+
+    private RoomResponse mapToResponseWithSummary(Room room, RoomUnitSummaryResponse unitSummary) {
         return new RoomResponse(
                 room.getId(),
                 room.getName(),
@@ -209,7 +263,8 @@ public class RoomService {
                 room.getCustomAmenities() == null ? new HashSet<>() : new HashSet<>(room.getCustomAmenities()),
                 resolveCoverImageUrl(room.getCoverImageUrl(), room.getImageUrls()),
                 copyImageUrls(room.getImageUrls()),
-                room.getDescription()
+                room.getDescription(),
+                unitSummary
         );
     }
 
