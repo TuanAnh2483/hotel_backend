@@ -35,6 +35,9 @@ public class RoomUnit {
     @Column(length = 500)
     private String notes;
 
+    @Column(name = "guest_name", length = 200)
+    private String guestName;
+
     @Column(name = "cover_image_url", length = 1000)
     private String coverImageUrl;
 

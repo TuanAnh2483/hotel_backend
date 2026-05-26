@@ -26,6 +26,8 @@ public interface RoomUnitRepository extends JpaRepository<RoomUnit, Long> {
 
     List<RoomUnit> findByRoomIdAndStatusOrderByCreatedAtAsc(Long roomId, RoomUnitStatus status);
 
+    List<RoomUnit> findByRoomIdAndStatusInOrderByCreatedAtAsc(Long roomId, Collection<RoomUnitStatus> statuses);
+
     void deleteByRoomId(Long roomId);
 
     @Query("""
