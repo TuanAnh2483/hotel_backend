@@ -1,6 +1,7 @@
 package com.hotel.hotel_backend.dto.response;
 
 import com.hotel.hotel_backend.entity.BookingMode;
+import com.hotel.hotel_backend.entity.CancellationPolicy;
 import com.hotel.hotel_backend.entity.HotelAmenity;
 import com.hotel.hotel_backend.entity.HotelStatus;
 import com.hotel.hotel_backend.entity.HotelType;
@@ -24,6 +25,6 @@ public record HotelResponse(
         Integer ratingCount,
         String coverImageUrl,
         List<String> imageUrls,
-        HotelStatus status
-
+        HotelStatus status,
+        CancellationPolicy cancellationPolicy
 ) {}

@@ -149,10 +149,14 @@ export default function BookingDetailPage({ navigate, user, params = {}, onLogou
   const nights = nightsBetween(booking?.checkIn, booking?.checkOut);
   const statusCfg = statusMap[booking?.status] || { label: booking?.status || t("bkd_unknown"), color: "#64748b", bg: "#f8fafc", icon: AlertCircle };
   const StatusIcon = statusCfg.icon;
+  const hasPaid = payments.some(p => p.status === "SUCCESS" && p.amount > 0);
+  const allowsRefund = booking?.cancellationPolicy !== "STRICT";
   const canRequestRefund = booking
     && ["CONFIRMED", "COMPLETED", "CANCELLED"].includes(booking.status)
     && booking.status !== "REFUNDED"
-    && !refundRequest;
+    && !refundRequest
+    && hasPaid
+    && allowsRefund;
 
   return (
     <div className="bkd-root">
@@ -367,6 +371,12 @@ export default function BookingDetailPage({ navigate, user, params = {}, onLogou
                       {refundRequest.note && <div><strong>{t("bkd_refund_note")}</strong> {refundRequest.note}</div>}
                       <div><strong>{t("bkd_refund_date")}</strong> {fmtDateTime(refundRequest.requestedAt)}</div>
                       {refundRequest.reviewedAt && <div><strong>{t("bkd_refund_reviewed")}</strong> {fmtDateTime(refundRequest.reviewedAt)}</div>}
+                      {refundRequest.transferNote && (
+                        <div style={{ marginTop: 8, padding: "8px 12px", background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 8 }}>
+                          <strong style={{ color: "#166534" }}>Mã chuyển khoản: </strong>
+                          <span style={{ fontFamily: "monospace", fontWeight: 700, color: "#166534" }}>{refundRequest.transferNote}</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ) : canRequestRefund ? (

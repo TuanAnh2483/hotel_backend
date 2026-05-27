@@ -57,17 +57,26 @@ export default function RefundDashboard({
     setConfirmPending({ type, refund });
   }
 
-  function executeAction() {
+  function executeAction(transferNote) {
     if (!confirmPending) return;
     const { type, refund } = confirmPending;
-    const mutate = type === "approve" ? approveRefund.mutate : rejectRefund.mutate;
-    mutate(refund.id, {
-      onSuccess: updated => {
-        setDetailRefund(cur => cur?.id === refund.id ? updated : cur);
-        setConfirmPending(null);
-      },
-      onError: () => setConfirmPending(null),
-    });
+    if (type === "approve") {
+      approveRefund.mutate({ refundRequestId: refund.id, transferNote }, {
+        onSuccess: updated => {
+          setDetailRefund(cur => cur?.id === refund.id ? updated : cur);
+          setConfirmPending(null);
+        },
+        onError: () => setConfirmPending(null),
+      });
+    } else {
+      rejectRefund.mutate(refund.id, {
+        onSuccess: updated => {
+          setDetailRefund(cur => cur?.id === refund.id ? updated : cur);
+          setConfirmPending(null);
+        },
+        onError: () => setConfirmPending(null),
+      });
+    }
   }
 
   const metrics = [
@@ -208,6 +217,12 @@ export default function RefundDashboard({
                 <>
                   <div className="pcrd-detail-reason-lbl" style={{ marginTop: 14 }}>GHI CHÚ</div>
                   <div className="pcrd-detail-reason-txt">{detailRefund.note}</div>
+                </>
+              )}
+              {detailRefund.transferNote && (
+                <>
+                  <div className="pcrd-detail-reason-lbl" style={{ marginTop: 14 }}>MÃ CHUYỂN KHOẢN</div>
+                  <div className="pcrd-detail-reason-txt" style={{ fontFamily: "monospace", fontWeight: 700 }}>{detailRefund.transferNote}</div>
                 </>
               )}
             </div>

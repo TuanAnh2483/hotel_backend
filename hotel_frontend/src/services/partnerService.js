@@ -113,8 +113,8 @@ export const partnerService = {
     return apiClient.get("/api/partner/refunds", { params: p });
   },
 
-  approveRefund: (refundRequestId) =>
-    apiClient.post(`/api/partner/refunds/${refundRequestId}/approve`),
+  approveRefund: (refundRequestId, transferNote) =>
+    apiClient.post(`/api/partner/refunds/${refundRequestId}/approve`, { transferNote: transferNote || null }),
 
   rejectRefund: (refundRequestId) =>
     apiClient.post(`/api/partner/refunds/${refundRequestId}/reject`),

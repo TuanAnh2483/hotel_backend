@@ -63,6 +63,9 @@ public class RefundRequest {
     @Column(name = "reviewed_at")
     private LocalDateTime reviewedAt;
 
+    @Column(name = "transfer_note", length = 500)
+    private String transferNote;
+
     @PrePersist
     void prePersist() {
         if (requestedAt == null) {

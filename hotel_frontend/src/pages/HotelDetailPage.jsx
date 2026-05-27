@@ -1,5 +1,6 @@
 ﻿import { useState, useEffect } from "react";
 import { C } from "../lib/constants";
+import { ShieldCheck, Clock, ShieldOff } from "lucide-react";
 import MainNavbar from "../components/MainNavbar";
 import Footer from "../components/Footer";
 import { useHotelDetail, useAvailableRooms } from "../hooks/useHotelQueries";
@@ -637,7 +638,7 @@ export default function HotelDetailPage({ navigate, params = {}, user, onLogout,
                 const bookingRooms = isEntire
                   ? [{ id: entireRoom.id, name: entireRoom.name, price: entireRoom.price, quantity: 1 }]
                   : cartItems.map(({ room: r, quantity }) => ({ id: r.id, name: r.name, price: r.price, quantity }));
-                const bp = { hotelId: hotel?.id, hotelName: hotel?.name, rooms: bookingRooms, checkin, checkout, guests, nights };
+                const bp = { hotelId: hotel?.id, hotelName: hotel?.name, rooms: bookingRooms, checkin, checkout, guests, nights, cancellationPolicy: hotel?.cancellationPolicy || "MODERATE" };
                 if (user) navigate("booking", bp);
                 else if (requireAuth) requireAuth("booking", bp);
                 else navigate("login");
@@ -646,9 +647,22 @@ export default function HotelDetailPage({ navigate, params = {}, user, onLogout,
               {isEntire ? (t("detail_book_entire") || "Đặt nguyên căn") : t("detail_confirm_btn")}
             </button>
 
-            <div style={{ fontSize: 12, color: "#aaa", textAlign: "center", lineHeight: 1.5 }}>
-              {t("detail_cancel_policy")}
-            </div>
+            {(() => {
+              const policy = hotel?.cancellationPolicy || "MODERATE";
+              const cfg = {
+                FLEXIBLE: { Icon: ShieldCheck, color: "#16a34a", bg: "#f0fdf4", border: "#bbf7d0", label: "Miễn phí hủy trước 24h" },
+                MODERATE: { Icon: Clock,        color: "#d97706", bg: "#fffbeb", border: "#fde68a", label: "Miễn phí hủy trước 7 ngày" },
+                STRICT:   { Icon: ShieldOff,    color: "#dc2626", bg: "#fef2f2", border: "#fecaca", label: "Không hoàn tiền khi hủy" },
+              }[policy];
+              const { Icon, color, bg, border, label } = cfg;
+              return (
+                <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", borderRadius: 8, background: bg, border: `1px solid ${border}` }}>
+                  <Icon size={16} color={color} style={{ flexShrink: 0 }} />
+                  <span style={{ fontSize: 12, fontWeight: 600, color }}>{label}</span>
+                </div>
+              );
+            })()}
+
           </div>
         </div>
       </div>

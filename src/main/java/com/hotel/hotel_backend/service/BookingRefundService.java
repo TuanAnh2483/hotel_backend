@@ -26,6 +26,11 @@ public class BookingRefundService {
 
     @Transactional
     public Booking refundBooking(Booking booking, String clientRequestId) {
+        return refundBooking(booking, clientRequestId, null);
+    }
+
+    @Transactional
+    public Booking refundBooking(Booking booking, String clientRequestId, String transferNote) {
         booking = bookingExpirationService.expirePendingBookingIfNeeded(booking);
 
         PaymentTransaction existingTransaction = paymentTransactionRepository
@@ -67,7 +72,7 @@ public class BookingRefundService {
         booking.setStatus(BookingStatus.REFUNDED);
         booking.setExpiresAt(null);
         Booking savedBooking = bookingRepository.save(booking);
-        recordRefundTransaction(savedBooking, clientRequestId);
+        recordRefundTransaction(savedBooking, clientRequestId, transferNote);
         return savedBooking;
     }
 
@@ -85,13 +90,16 @@ public class BookingRefundService {
                 && paymentTransaction.getAmount() < 0;
     }
 
-    private void recordRefundTransaction(Booking booking, String clientRequestId) {
+    private void recordRefundTransaction(Booking booking, String clientRequestId, String transferNote) {
+        String providerRef = (transferNote != null && !transferNote.isBlank())
+                ? transferNote.trim()
+                : "MANUAL-REFUND-" + UUID.randomUUID();
         PaymentTransaction refundTransaction = PaymentTransaction.builder()
                 .booking(booking)
-                .method(PaymentMethod.SIMULATED)
+                .method(PaymentMethod.MANUAL_TRANSFER)
                 .status(PaymentTransactionStatus.SUCCESS)
                 .amount(-Math.abs(booking.getTotalPrice()))
-                .providerReference("SIM-REFUND-" + UUID.randomUUID())
+                .providerReference(providerRef)
                 .clientRequestId(clientRequestId)
                 .build();
         paymentTransactionRepository.save(refundTransaction);

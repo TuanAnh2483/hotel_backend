@@ -57,7 +57,8 @@ public class HotelDetailService {
                 resolveCoverImageUrl(hotel.getCoverImageUrl(), hotel.getImageUrls()),
                 copyImageUrls(hotel.getImageUrls()),
                 hotel.getRatingAvg(),
-                hotel.getRatingCount()
+                hotel.getRatingCount(),
+                hotel.getCancellationPolicy() != null ? hotel.getCancellationPolicy() : com.hotel.hotel_backend.entity.CancellationPolicy.MODERATE
         );
 
     }

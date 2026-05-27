@@ -18,6 +18,7 @@ public record RefundRequestResponse(
         LocalDate checkIn,
         LocalDate checkOut,
         LocalDateTime requestedAt,
-        LocalDateTime reviewedAt
+        LocalDateTime reviewedAt,
+        String transferNote
 ) {
 }

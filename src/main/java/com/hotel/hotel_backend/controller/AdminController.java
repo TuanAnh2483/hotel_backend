@@ -119,8 +119,11 @@ public class AdminController {
 
     @PostMapping("/refunds/{refundRequestId}/approve")
     @PreAuthorize("hasRole('ADMIN')")
-    public ApiResponse<RefundRequestResponse> approveRefundRequest(@PathVariable Long refundRequestId) {
-        return ok(refundRequestService.approveAdminRefundRequest(refundRequestId));
+    public ApiResponse<RefundRequestResponse> approveRefundRequest(
+            @PathVariable Long refundRequestId,
+            @RequestBody(required = false) java.util.Map<String, String> body) {
+        String transferNote = body != null ? body.get("transferNote") : null;
+        return ok(refundRequestService.approveAdminRefundRequest(refundRequestId, transferNote));
     }
 
     @PostMapping("/refunds/{refundRequestId}/reject")

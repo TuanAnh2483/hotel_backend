@@ -65,6 +65,7 @@ public class HotelService {
         hotel.setCustomAmenities(normalizeCustomAmenities(request.customAmenities()));
         hotel.setImageUrls(normalizeImageUrls(request.imageUrls()));
         hotel.setCoverImageUrl(resolveCoverImageUrl(null, hotel.getImageUrls()));
+        hotel.setCancellationPolicy(request.cancellationPolicy() != null ? request.cancellationPolicy() : com.hotel.hotel_backend.entity.CancellationPolicy.MODERATE);
         hotelRepository.save(hotel);
 
         return mapToResponse(hotel);
@@ -102,6 +103,9 @@ public class HotelService {
         hotel.setCustomAmenities(normalizeCustomAmenities(request.customAmenities()));
         hotel.setImageUrls(normalizeImageUrls(request.imageUrls()));
         hotel.setCoverImageUrl(resolveCoverImageUrl(hotel.getCoverImageUrl(), hotel.getImageUrls()));
+        if (request.cancellationPolicy() != null) {
+            hotel.setCancellationPolicy(request.cancellationPolicy());
+        }
 
         return mapToResponse(hotel);
     }
@@ -220,7 +224,8 @@ public class HotelService {
                 hotel.getRatingCount(),
                 resolveCoverImageUrl(hotel.getCoverImageUrl(), hotel.getImageUrls()),
                 copyImageUrls(hotel.getImageUrls()),
-                hotel.getStatus() != null ? hotel.getStatus() : HotelStatus.ACTIVE
+                hotel.getStatus() != null ? hotel.getStatus() : HotelStatus.ACTIVE,
+                hotel.getCancellationPolicy() != null ? hotel.getCancellationPolicy() : com.hotel.hotel_backend.entity.CancellationPolicy.MODERATE
         );
     }
 

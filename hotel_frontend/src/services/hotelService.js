@@ -178,6 +178,7 @@ export const hotelService = {
         imageUrl:    data.coverImageUrl || images[0] || "",
         imageUrls:   images,
         bookingMode: data.bookingMode || "BY_ROOM",
+        cancellationPolicy: data.cancellationPolicy || "MODERATE",
       };
     } catch {
       return null;

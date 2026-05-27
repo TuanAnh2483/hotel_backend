@@ -49,9 +49,15 @@ public class BookingMapper {
                 ))
                 .toList();
 
-        String hotelName = (booking.getItems() != null && !booking.getItems().isEmpty())
-                ? booking.getItems().get(0).getRoom().getHotel().getName()
-                : null;
+        String hotelName = null;
+        String cancellationPolicy = null;
+        if (booking.getItems() != null && !booking.getItems().isEmpty()) {
+            var hotel = booking.getItems().get(0).getRoom().getHotel();
+            hotelName = hotel.getName();
+            cancellationPolicy = hotel.getCancellationPolicy() != null
+                    ? hotel.getCancellationPolicy().name()
+                    : "MODERATE";
+        }
 
         return new BookingResponse(
                 booking.getId(),
@@ -62,7 +68,8 @@ public class BookingMapper {
                 booking.getStatus().name(),
                 booking.getExpiresAt(),
                 itemResponses,
-                contactResponse
+                contactResponse,
+                cancellationPolicy
         );
 
     }

@@ -45,6 +45,9 @@ export const vi = {
   detail_total:         "Tổng cộng",
   detail_confirm_btn:   "Xác nhận đặt phòng",
   detail_cancel_policy: "🛡️ Miễn phí hủy phòng trước 24 giờ nhận phòng. Không tính phí nếu hủy đúng hạn.",
+  detail_cancel_policy_flexible: "🛡️ Miễn phí hủy phòng trước 24 giờ nhận phòng.",
+  detail_cancel_policy_moderate: "🛡️ Miễn phí hủy phòng trước 7 ngày nhận phòng.",
+  detail_cancel_policy_strict:   "Không hoàn tiền khi hủy phòng.",
 
   // ── Rating labels ───────────────────────────────────────
   rating_excellent: "Xuất sắc",
@@ -97,6 +100,9 @@ export const en = {
   detail_total:         "Total",
   detail_confirm_btn:   "Confirm booking",
   detail_cancel_policy: "🛡️ Free cancellation up to 24 hours before check-in. No cancellation fee if canceled on time.",
+  detail_cancel_policy_flexible: "🛡️ Free cancellation up to 24 hours before check-in.",
+  detail_cancel_policy_moderate: "🛡️ Free cancellation up to 7 days before check-in.",
+  detail_cancel_policy_strict:   "No refund upon cancellation.",
 
   rating_excellent: "Excellent",
   rating_great:     "Very good",

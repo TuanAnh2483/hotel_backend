@@ -84,9 +84,9 @@ export const adminService = {
       return Array.isArray(data) ? data : [];
     } catch { return []; }
   },
-  updateRefundStatus(refundId, newStatus) {
+  updateRefundStatus(refundId, newStatus, transferNote) {
     if (newStatus === "APPROVED") {
-      return apiClient.post(`/api/admin/refunds/${refundId}/approve`);
+      return apiClient.post(`/api/admin/refunds/${refundId}/approve`, { transferNote: transferNote || null });
     }
     if (newStatus === "REJECTED") {
       return apiClient.post(`/api/admin/refunds/${refundId}/reject`);

@@ -626,6 +626,7 @@ export default function AddPropertyWizard() {
         description: state.description || "",
         amenities: amenityKeys,
         customAmenities: state.customAmenities || [],
+        cancellationPolicy: state.cancellationPolicy || "MODERATE",
       });
       const hotelId = hotel.id;
 

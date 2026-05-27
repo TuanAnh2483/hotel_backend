@@ -338,7 +338,7 @@ export function usePartnerRefunds(params, options = {}) {
 export function useApproveRefund(options = {}) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (refundRequestId) => partnerService.approveRefund(refundRequestId),
+    mutationFn: ({ refundRequestId, transferNote }) => partnerService.approveRefund(refundRequestId, transferNote),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["partner", "refunds"] }),
     ...options,
   });

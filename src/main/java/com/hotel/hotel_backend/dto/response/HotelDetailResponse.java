@@ -1,6 +1,7 @@
 package com.hotel.hotel_backend.dto.response;
 
 import com.hotel.hotel_backend.entity.BookingMode;
+import com.hotel.hotel_backend.entity.CancellationPolicy;
 import com.hotel.hotel_backend.entity.HotelAmenity;
 import com.hotel.hotel_backend.entity.HotelType;
 
@@ -22,7 +23,8 @@ public record HotelDetailResponse (
         String coverImageUrl,
         List<String> imageUrls,
         BigDecimal ratingAvg,
-        Integer ratingCount
+        Integer ratingCount,
+        CancellationPolicy cancellationPolicy
 )
 {
 

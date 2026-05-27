@@ -15,9 +15,11 @@ function fmt(n) {
 export default function AdminRefunds({ navigate, user, onLogout }) {
   const { t } = useLang();
   const STATUS_LABEL = { "": t("adm_rf_tab_all"), PENDING: t("adm_rf_tab_pending"), APPROVED: t("adm_rf_tab_approved"), REJECTED: t("adm_rf_tab_rejected") };
-  const [filter, setFilter]   = useState("");
-  const [detail, setDetail]   = useState(null);
-  const [page, setPage] = useState(1);
+  const [filter, setFilter]       = useState("");
+  const [detail, setDetail]       = useState(null);
+  const [page, setPage]           = useState(1);
+  const [approveModal, setApproveModal] = useState(null); // { id }
+  const [transferNote, setTransferNote] = useState("");
   const pageSize = 10;
 
   const { data: refunds = [], isLoading: loading } = useAdminRefunds(filter || null);
@@ -27,9 +29,21 @@ export default function AdminRefunds({ navigate, user, onLogout }) {
   const handleFilter = s => { setPage(1); setFilter(s); };
 
   const handleAction = (id, newStatus) => {
-    const actionKey = newStatus === "APPROVED" ? "adm_rf_confirm_approve" : "adm_rf_confirm_reject";
-    if (!window.confirm(t("adm_rf_confirm_msg").replace("{action}", t(actionKey)))) return;
+    if (newStatus === "APPROVED") {
+      setTransferNote("");
+      setApproveModal({ id });
+      return;
+    }
+    if (!window.confirm(t("adm_rf_confirm_msg").replace("{action}", t("adm_rf_confirm_reject")))) return;
     updateRefund.mutate({ refundId: id, newStatus }, {
+      onError: (e) => alert(e.message || t("adm_rf_err_update")),
+    });
+  };
+
+  const handleApproveConfirm = () => {
+    if (!approveModal) return;
+    updateRefund.mutate({ refundId: approveModal.id, newStatus: "APPROVED", transferNote }, {
+      onSuccess: () => { setApproveModal(null); setDetail(d => d?.id === approveModal.id ? null : d); },
       onError: (e) => alert(e.message || t("adm_rf_err_update")),
     });
   };
@@ -138,6 +152,7 @@ export default function AdminRefunds({ navigate, user, onLogout }) {
             [t("adm_rf_request_date"),  detail.requestedAt || "—"],
             [t("adm_rf_reason"),        detail.reason],
             [t("adm_status"),           <Badge status={detail.status} />],
+            ...(detail.transferNote ? [["Mã chuyển khoản", <span style={{ fontFamily: "monospace", fontWeight: 700 }}>{detail.transferNote}</span>]] : []),
           ].map(([k, v]) => (
             <div key={k} className="admin-modal-row">
               <span className="admin-modal-row-key">{k}</span>
@@ -155,6 +170,35 @@ export default function AdminRefunds({ navigate, user, onLogout }) {
               <Btn variant="ghost" onClick={() => setDetail(null)}>{t("adm_close")}</Btn>
             </div>
           )}
+        </Modal>
+      )}
+
+      {/* Approve modal với input mã chuyển khoản */}
+      {approveModal && (
+        <Modal title="Xác nhận duyệt hoàn tiền" onClose={() => setApproveModal(null)} width={440}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <p style={{ margin: 0, fontSize: 14, color: "#374151" }}>
+              Bạn xác nhận đã chuyển khoản hoàn tiền cho khách hàng?
+            </p>
+            <div>
+              <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#374151", marginBottom: 6 }}>
+                Mã giao dịch chuyển khoản <span style={{ color: "#9ca3af", fontWeight: 400 }}>(tuỳ chọn)</span>
+              </label>
+              <input
+                value={transferNote}
+                onChange={e => setTransferNote(e.target.value)}
+                placeholder="VD: FT26140123456"
+                style={{ width: "100%", padding: "8px 12px", border: "1px solid #e5e7eb", borderRadius: 8, fontSize: 13, boxSizing: "border-box" }}
+              />
+              <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 4 }}>
+                Khách hàng sẽ thấy mã này làm bằng chứng hoàn tiền.
+              </div>
+            </div>
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+              <Btn variant="ghost" onClick={() => setApproveModal(null)} disabled={updateRefund.isPending}>Huỷ</Btn>
+              <Btn variant="success" loading={updateRefund.isPending} onClick={handleApproveConfirm}>✅ Xác nhận duyệt</Btn>
+            </div>
+          </div>
         </Modal>
       )}
     </AdminLayout>

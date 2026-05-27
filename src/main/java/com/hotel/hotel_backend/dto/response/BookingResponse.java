@@ -13,6 +13,7 @@ public record BookingResponse (
         String status,
         LocalDateTime expiresAt,
         List<BookingItemResponse> items,
-        BookingContactResponse contact
+        BookingContactResponse contact,
+        String cancellationPolicy
 ){}
 

@@ -121,7 +121,7 @@ function Field({ label, icon, children }) {
 
 export default function BookingPage({ navigate, user, params = {}, onLogout }) {
   const { t } = useLang();
-  const { hotelId, hotelName, rooms = [], checkin, checkout, guests = 1, nights = 1 } = params;
+  const { hotelId, hotelName, rooms = [], checkin, checkout, guests = 1, nights = 1, cancellationPolicy = "MODERATE" } = params;
 
   const [contact, setContact] = useState({ fullName: "", email: user?.email || "", phone: "" });
   const [error, setError]     = useState("");
@@ -265,8 +265,8 @@ export default function BookingPage({ navigate, user, params = {}, onLogout }) {
                 <SvgIcon k="shield" size={18} color="#2e7d32" />
               </div>
               <div>
-                <div className="bkp-policy-title">{t("booking_cancel_policy_title")}</div>
-                <div className="bkp-policy-text">{t("booking_cancel_policy_text")}</div>
+                <div className="bkp-policy-title">{t(`booking_cancel_policy_title_${cancellationPolicy.toLowerCase()}`)}</div>
+                <div className="bkp-policy-text">{t(`booking_cancel_policy_text_${cancellationPolicy.toLowerCase()}`)}</div>
               </div>
             </div>
           </Card>

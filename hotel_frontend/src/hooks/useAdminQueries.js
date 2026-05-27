@@ -140,7 +140,7 @@ export function useAdminRefunds(status, options = {}) {
 export function useUpdateRefundStatus(options = {}) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ refundId, newStatus }) => adminService.updateRefundStatus(refundId, newStatus),
+    mutationFn: ({ refundId, newStatus, transferNote }) => adminService.updateRefundStatus(refundId, newStatus, transferNote),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin", "refunds"] }),
     ...options,
   });

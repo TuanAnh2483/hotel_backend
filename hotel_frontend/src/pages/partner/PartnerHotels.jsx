@@ -49,7 +49,14 @@ const EMPTY_FORM = {
   hotelType: "HOTEL", bookingMode: "BY_ROOM", description: "",
   amenities: [], customAmenities: [],
   images: [], coverImageUrl: "",
+  cancellationPolicy: "MODERATE",
 };
+
+const CANCELLATION_POLICY_OPTIONS = [
+  { value: "FLEXIBLE", label: "Linh hoạt", desc: "Hủy miễn phí trước 24h" },
+  { value: "MODERATE", label: "Trung bình", desc: "Hủy miễn phí trước 7 ngày" },
+  { value: "STRICT",   label: "Nghiêm ngặt", desc: "Không hoàn tiền khi hủy" },
+];
 
 function HotelStatusBadge(status) {
   const cfg = HOTEL_STATUS_CONFIG[status] || HOTEL_STATUS_CONFIG.ACTIVE;
@@ -127,6 +134,20 @@ function HotelForm({ form, setForm, onSubmit, onCancel, saving, title, hotelType
 
         <Field label={t("pt_hotels_desc")}>
           <textarea className="partner-hotel-form-input" style={{ height: 120, resize: "vertical" }} value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder={t("pt_hotels_desc_ph")} />
+        </Field>
+
+        <Field label="Chính sách hủy phòng">
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {CANCELLATION_POLICY_OPTIONS.map(p => (
+              <label key={p.value} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", borderRadius: 8, border: form.cancellationPolicy === p.value ? "2px solid #BE1E2E" : "1px solid #e5e7eb", cursor: "pointer", background: form.cancellationPolicy === p.value ? "#fff5f5" : "#fff" }}>
+                <input type="radio" checked={form.cancellationPolicy === p.value} onChange={() => setForm(f => ({ ...f, cancellationPolicy: p.value }))} style={{ accentColor: "#BE1E2E" }} />
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: 13, color: "#374151" }}>{p.label}</div>
+                  <div style={{ fontSize: 12, color: "#9ca3af" }}>{p.desc}</div>
+                </div>
+              </label>
+            ))}
+          </div>
         </Field>
 
         <Field label={t("pt_hotels_amenities")}>
@@ -269,6 +290,7 @@ export default function PartnerHotels() {
       customAmenities: hotel.customAmenities ? [...hotel.customAmenities] : [],
       images: createExistingImageItems(getHotelImageUrls(hotel)),
       coverImageUrl: hotel.coverImageUrl || "",
+      cancellationPolicy: hotel.cancellationPolicy || "MODERATE",
     });
     setModal("edit");
   }

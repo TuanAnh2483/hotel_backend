@@ -42,14 +42,14 @@ public class RefundRequestService {
             throw new ApiException(ErrorCode.CONFLICT, "Booking has no successful payment to refund");
         }
 
+        if (booking.getStatus() == BookingStatus.REFUNDED) {
+            throw new ApiException(ErrorCode.CONFLICT, "Booking already refunded");
+        }
+
         if (booking.getStatus() != BookingStatus.CANCELLED
                 && booking.getStatus() != BookingStatus.CONFIRMED
                 && booking.getStatus() != BookingStatus.COMPLETED) {
             throw new ApiException(ErrorCode.CONFLICT, "Booking is not eligible for refund request");
-        }
-
-        if (booking.getStatus() == BookingStatus.REFUNDED) {
-            throw new ApiException(ErrorCode.CONFLICT, "Booking already refunded");
         }
 
         Hotel hotel = resolveHotelFromBooking(booking);
@@ -93,7 +93,7 @@ public class RefundRequestService {
                 .toList();
     }
 
-    public RefundRequestResponse approvePartnerRefundRequest(Long refundRequestId) {
+    public RefundRequestResponse approvePartnerRefundRequest(Long refundRequestId, String transferNote) {
         long ownerId = securityService.getCurrentPrincipal().userId();
         RefundRequest refundRequest = refundRequestRepository.findById(refundRequestId)
                 .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND, "Refund request not found"));
@@ -102,7 +102,7 @@ public class RefundRequestService {
             throw new ApiException(ErrorCode.NOT_FOUND, "Refund request not found");
         }
 
-        return approve(refundRequest);
+        return approve(refundRequest, transferNote);
     }
 
     public RefundRequestResponse rejectPartnerRefundRequest(Long refundRequestId) {
@@ -117,10 +117,10 @@ public class RefundRequestService {
         return reject(refundRequest);
     }
 
-    public RefundRequestResponse approveAdminRefundRequest(Long refundRequestId) {
+    public RefundRequestResponse approveAdminRefundRequest(Long refundRequestId, String transferNote) {
         RefundRequest refundRequest = refundRequestRepository.findById(refundRequestId)
                 .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND, "Refund request not found"));
-        return approve(refundRequest);
+        return approve(refundRequest, transferNote);
     }
 
     public RefundRequestResponse rejectAdminRefundRequest(Long refundRequestId) {
@@ -129,19 +129,21 @@ public class RefundRequestService {
         return reject(refundRequest);
     }
 
-    private RefundRequestResponse approve(RefundRequest refundRequest) {
+    private RefundRequestResponse approve(RefundRequest refundRequest, String transferNote) {
         assertPending(refundRequest);
 
         User reviewer = securityService.getCurrentUser();
         Booking refundedBooking = bookingRefundService.refundBooking(
                 refundRequest.getBooking(),
-                "refund-request-" + refundRequest.getId()
+                "refund-request-" + refundRequest.getId(),
+                transferNote
         );
 
         refundRequest.setBooking(refundedBooking);
         refundRequest.setStatus(RefundRequestStatus.APPROVED);
         refundRequest.setReviewedBy(reviewer);
         refundRequest.setReviewedAt(LocalDateTime.now());
+        refundRequest.setTransferNote(normalizeOptionalText(transferNote));
         return toResponse(refundRequestRepository.save(refundRequest));
     }
 
@@ -164,7 +166,15 @@ public class RefundRequestService {
         if (booking.getItems() == null || booking.getItems().isEmpty()) {
             throw new ApiException(ErrorCode.CONFLICT, "Booking items are missing");
         }
-        return booking.getItems().get(0).getRoom().getHotel();
+        var room = booking.getItems().get(0).getRoom();
+        if (room == null) {
+            throw new ApiException(ErrorCode.CONFLICT, "Booking room is missing");
+        }
+        var hotel = room.getHotel();
+        if (hotel == null) {
+            throw new ApiException(ErrorCode.CONFLICT, "Booking hotel is missing");
+        }
+        return hotel;
     }
 
     private String normalizeOptionalText(String note) {
@@ -190,7 +200,8 @@ public class RefundRequestService {
                 refundRequest.getBooking().getCheckIn(),
                 refundRequest.getBooking().getCheckOut(),
                 refundRequest.getRequestedAt(),
-                refundRequest.getReviewedAt()
+                refundRequest.getReviewedAt(),
+                refundRequest.getTransferNote()
         );
     }
 }

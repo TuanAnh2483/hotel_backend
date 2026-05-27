@@ -145,8 +145,11 @@ public class PartnerController {
 
     @PostMapping("/refunds/{refundRequestId}/approve")
     @PreAuthorize("hasRole('PARTNER')")
-    public ApiResponse<RefundRequestResponse> approveRefundRequest(@PathVariable Long refundRequestId) {
-        return ApiResponse.ok(refundRequestService.approvePartnerRefundRequest(refundRequestId));
+    public ApiResponse<RefundRequestResponse> approveRefundRequest(
+            @PathVariable Long refundRequestId,
+            @RequestBody(required = false) java.util.Map<String, String> body) {
+        String transferNote = body != null ? body.get("transferNote") : null;
+        return ApiResponse.ok(refundRequestService.approvePartnerRefundRequest(refundRequestId, transferNote));
     }
 
     @PostMapping("/refunds/{refundRequestId}/reject")

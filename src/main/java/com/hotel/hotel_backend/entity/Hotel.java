@@ -75,6 +75,10 @@ public class  Hotel {
     private Integer ratingCount = 0;
 
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false, columnDefinition = "varchar(255) not null default 'MODERATE'")
+    private CancellationPolicy cancellationPolicy = CancellationPolicy.MODERATE;
+
+    @Enumerated(EnumType.STRING)
     private HotelStatus status = HotelStatus.ACTIVE;
 
     private OffsetDateTime createdAt;

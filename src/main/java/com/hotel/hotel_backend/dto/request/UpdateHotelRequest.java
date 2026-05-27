@@ -1,6 +1,7 @@
 package com.hotel.hotel_backend.dto.request;
 
 import com.hotel.hotel_backend.entity.BookingMode;
+import com.hotel.hotel_backend.entity.CancellationPolicy;
 import com.hotel.hotel_backend.entity.HotelAmenity;
 import com.hotel.hotel_backend.entity.HotelStatus;
 import com.hotel.hotel_backend.entity.HotelType;
@@ -26,5 +27,6 @@ public record UpdateHotelRequest(
         Set<HotelAmenity> amenities,
         Set<String> customAmenities,
         List<@NotBlank(message = "imageUrl must not be blank") String> imageUrls,
-        HotelStatus status
+        HotelStatus status,
+        CancellationPolicy cancellationPolicy
 ) {}
