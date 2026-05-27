@@ -4,9 +4,16 @@ import com.hotel.hotel_backend.entity.PartnerApplicationStatus;
 import com.hotel.hotel_backend.entity.User;
 import com.hotel.hotel_backend.entity.UserStatus;
 import com.hotel.hotel_backend.entity.UserType;
+import com.hotel.hotel_backend.repository.BookingItemRepository;
+import com.hotel.hotel_backend.repository.BookingRepository;
+import com.hotel.hotel_backend.repository.DailyInventoryRepository;
+import com.hotel.hotel_backend.repository.DailyRateRepository;
 import com.hotel.hotel_backend.repository.HotelRepository;
 import com.hotel.hotel_backend.repository.HotelReviewRepository;
 import com.hotel.hotel_backend.repository.PartnerApplicationRepository;
+import com.hotel.hotel_backend.repository.PaymentTransactionRepository;
+import com.hotel.hotel_backend.repository.RoomRepository;
+import com.hotel.hotel_backend.repository.RoomUnitRepository;
 import com.hotel.hotel_backend.repository.UserRepository;
 import com.hotel.hotel_backend.security.JwtService;
 import org.junit.jupiter.api.BeforeEach;
@@ -50,6 +57,27 @@ class AdminPartnerIntegrationTest {
     private HotelReviewRepository hotelReviewRepository;
 
     @Autowired
+    private RoomUnitRepository roomUnitRepository;
+
+    @Autowired
+    private RoomRepository roomRepository;
+
+    @Autowired
+    private DailyInventoryRepository dailyInventoryRepository;
+
+    @Autowired
+    private DailyRateRepository dailyRateRepository;
+
+    @Autowired
+    private BookingItemRepository bookingItemRepository;
+
+    @Autowired
+    private BookingRepository bookingRepository;
+
+    @Autowired
+    private PaymentTransactionRepository paymentTransactionRepository;
+
+    @Autowired
     private PartnerApplicationRepository partnerApplicationRepository;
 
     @Autowired
@@ -62,6 +90,13 @@ class AdminPartnerIntegrationTest {
     void setUp() {
         partnerApplicationRepository.deleteAll();
         hotelReviewRepository.deleteAll();
+        paymentTransactionRepository.deleteAll();
+        bookingItemRepository.deleteAll();
+        bookingRepository.deleteAll();
+        dailyRateRepository.deleteAll();
+        dailyInventoryRepository.deleteAll();
+        roomUnitRepository.deleteAll();
+        roomRepository.deleteAll();
         hotelRepository.deleteAll();
         userRepository.deleteAll();
     }
