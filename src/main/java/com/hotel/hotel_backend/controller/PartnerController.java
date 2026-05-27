@@ -1,6 +1,7 @@
 package com.hotel.hotel_backend.controller;
 
 import com.hotel.hotel_backend.dto.request.CreateRoomRequest;
+import com.hotel.hotel_backend.dto.request.CreateRoomUnitRequest;
 import com.hotel.hotel_backend.dto.request.CreateHotelRequest;
 import com.hotel.hotel_backend.dto.request.PartnerAnalyticsSummaryRequest;
 import com.hotel.hotel_backend.dto.request.PartnerBookingRefundRequest;
@@ -11,6 +12,7 @@ import com.hotel.hotel_backend.dto.request.PartnerRoomCalendarUpsertRequest;
 import com.hotel.hotel_backend.dto.request.SetBasePricingRequest;
 import com.hotel.hotel_backend.dto.request.SetCoverImageRequest;
 import com.hotel.hotel_backend.dto.request.UpdateHotelRequest;
+import com.hotel.hotel_backend.dto.request.UpdateRoomUnitRequest;
 import com.hotel.hotel_backend.dto.response.ApiResponse;
 import com.hotel.hotel_backend.dto.response.HotelResponse;
 import com.hotel.hotel_backend.dto.response.HotelReviewResponse;
@@ -19,15 +21,19 @@ import com.hotel.hotel_backend.dto.response.PartnerBookingDetailResponse;
 import com.hotel.hotel_backend.dto.response.PartnerBookingPageResponse;
 import com.hotel.hotel_backend.dto.response.PartnerRoomCalendarResponse;
 import com.hotel.hotel_backend.dto.response.RefundRequestResponse;
+import com.hotel.hotel_backend.dto.response.HotelRoomUnitResponse;
 import com.hotel.hotel_backend.dto.response.RoomResponse;
+import com.hotel.hotel_backend.dto.response.RoomUnitResponse;
 import com.hotel.hotel_backend.entity.RefundRequestStatus;
 import com.hotel.hotel_backend.service.HotelService;
 import com.hotel.hotel_backend.service.HotelReviewService;
+import com.hotel.hotel_backend.service.ImageStorageRouterService;
 import com.hotel.hotel_backend.service.PartnerBookingService;
 import com.hotel.hotel_backend.service.PartnerImageUploadService;
 import com.hotel.hotel_backend.service.PartnerRoomCalendarService;
 import com.hotel.hotel_backend.service.RefundRequestService;
 import com.hotel.hotel_backend.service.RoomService;
+import com.hotel.hotel_backend.service.RoomUnitService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
@@ -55,11 +61,13 @@ public class PartnerController {
 
     private final HotelService hotelService;
     private final RoomService roomService;
+    private final RoomUnitService roomUnitService;
     private final PartnerBookingService partnerBookingService;
     private final PartnerRoomCalendarService partnerRoomCalendarService;
     private final HotelReviewService hotelReviewService;
     private final PartnerImageUploadService partnerImageUploadService;
     private final RefundRequestService refundRequestService;
+    private final ImageStorageRouterService imageStorageRouterService;
 
     @GetMapping("/hotels")
     @PreAuthorize("hasRole('PARTNER')")
@@ -312,5 +320,59 @@ public class PartnerController {
             @Valid @RequestBody SetCoverImageRequest request
     ) {
         return ApiResponse.ok(partnerImageUploadService.setRoomCoverImage(roomId, request.imageUrl()));
+    }
+
+    // ── Room Units ─────────────────────────────────────────────────────────
+
+    @GetMapping("/hotels/{hotelId}/room-units")
+    @PreAuthorize("hasRole('PARTNER')")
+    public ApiResponse<List<HotelRoomUnitResponse>> getHotelRoomUnits(@PathVariable Long hotelId) {
+        return ApiResponse.ok(roomUnitService.getUnitsByHotel(hotelId));
+    }
+
+    @GetMapping("/rooms/{roomId}/units")
+    @PreAuthorize("hasRole('PARTNER')")
+    public ApiResponse<List<RoomUnitResponse>> getRoomUnits(@PathVariable Long roomId) {
+        return ApiResponse.ok(roomUnitService.getUnits(roomId));
+    }
+
+    @PostMapping("/rooms/{roomId}/units")
+    @PreAuthorize("hasRole('PARTNER')")
+    public ApiResponse<RoomUnitResponse> createRoomUnit(
+            @PathVariable Long roomId,
+            @Valid @RequestBody CreateRoomUnitRequest request
+    ) {
+        return ApiResponse.ok(roomUnitService.create(roomId, request));
+    }
+
+    @PutMapping("/rooms/{roomId}/units/{unitId}")
+    @PreAuthorize("hasRole('PARTNER')")
+    public ApiResponse<RoomUnitResponse> updateRoomUnit(
+            @PathVariable Long roomId,
+            @PathVariable Long unitId,
+            @Valid @RequestBody UpdateRoomUnitRequest request
+    ) {
+        return ApiResponse.ok(roomUnitService.update(roomId, unitId, request));
+    }
+
+    @DeleteMapping("/rooms/{roomId}/units/{unitId}")
+    @PreAuthorize("hasRole('PARTNER')")
+    public ApiResponse<Void> deleteRoomUnit(
+            @PathVariable Long roomId,
+            @PathVariable Long unitId
+    ) {
+        roomUnitService.delete(roomId, unitId);
+        return ApiResponse.ok(null);
+    }
+
+    @PostMapping(value = "/rooms/{roomId}/units/{unitId}/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasRole('PARTNER')")
+    public ApiResponse<RoomUnitResponse> uploadRoomUnitImage(
+            @PathVariable Long roomId,
+            @PathVariable Long unitId,
+            @RequestParam("file") MultipartFile file
+    ) {
+        List<String> urls = imageStorageRouterService.storeRoomImages(roomId, List.of(file));
+        return ApiResponse.ok(roomUnitService.setCoverImage(roomId, unitId, urls.get(0)));
     }
 }

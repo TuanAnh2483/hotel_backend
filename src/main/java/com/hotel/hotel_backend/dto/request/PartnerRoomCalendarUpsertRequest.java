@@ -21,5 +21,7 @@ public record PartnerRoomCalendarUpsertRequest(
         Boolean closed,
 
         @Min(value = 0, message = "availableRooms must be >= 0")
-        Integer availableRooms
+        Integer availableRooms,
+
+        String closeReason
 ) {}

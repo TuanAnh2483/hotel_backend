@@ -4,6 +4,7 @@ import { useMyHotels, usePartnerBookings, usePartnerBookingDetail, useCompleteBo
 import { PageHeader, Card, Badge, Btn, Table, Modal } from "../../components/admin/AdminLayout";
 import { Filter, Calendar, Download, User, Building2, Eye, CheckCircle2 } from "lucide-react";
 import { useLang } from "../../contexts/LanguageContext";
+import "../../styles/pages/partner/PartnerBookings.css";
 
 const fmtPrice = (n) => new Intl.NumberFormat("vi-VN").format(n) + " ₫";
 
@@ -40,6 +41,7 @@ export default function PartnerBookings() {
     setFilters(f => ({ ...f, hotelId: ctxHotelId ? String(ctxHotelId) : "", page: 1 }));
   }, [ctxHotelId]);
   const [detailId, setDetailId] = useState(null);
+  const [checkoutConfirmId, setCheckoutConfirmId] = useState(null);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
 
@@ -76,7 +78,8 @@ export default function PartnerBookings() {
   };
 
   const handleCheckout = (booking) => {
-    if (!booking || !window.confirm(t("pt_bk_confirm_checkout"))) return;
+    if (!booking) return;
+    setCheckoutConfirmId(null);
     setError("");
     setMessage("");
     completeBooking.mutate(booking.bookingId, {
@@ -116,14 +119,32 @@ export default function PartnerBookings() {
         <Eye size={14} /> {t("pt_bk_detail")}
       </button>,
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-        {canCheckout && (
+        {canCheckout && checkoutConfirmId !== b.bookingId && (
           <button
-            onClick={() => handleCheckout(b)}
+            onClick={() => setCheckoutConfirmId(b.bookingId)}
             disabled={isCheckingOut}
-            style={{ alignItems: "center", background: "#10b981", border: "none", borderRadius: 10, color: "#fff", cursor: isCheckingOut ? "not-allowed" : "pointer", display: "flex", fontSize: 12, fontWeight: 800, gap: 6, opacity: isCheckingOut ? 0.7 : 1, padding: "8px 12px" }}
+            style={{ alignItems: "center", background: "#10b981", border: "none", borderRadius: 10, color: "#fff", cursor: "pointer", display: "flex", fontSize: 12, fontWeight: 800, gap: 6, padding: "8px 12px" }}
           >
-            <CheckCircle2 size={14} /> {isCheckingOut ? t("pt_bk_checking_out") : t("pt_bk_checkout_btn")}
+            <CheckCircle2 size={14} /> {t("pt_bk_checkout_btn")}
           </button>
+        )}
+        {canCheckout && checkoutConfirmId === b.bookingId && (
+          <div style={{ display: "flex", gap: 6, alignItems: "center", background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 10, padding: "6px 10px" }}>
+            <span style={{ fontSize: 12, fontWeight: 700, color: "#047857" }}>Xác nhận check-out?</span>
+            <button
+              onClick={() => handleCheckout(b)}
+              disabled={isCheckingOut}
+              style={{ background: "#10b981", border: "none", borderRadius: 8, color: "#fff", cursor: "pointer", fontSize: 12, fontWeight: 800, padding: "5px 10px", opacity: isCheckingOut ? 0.7 : 1 }}
+            >
+              {isCheckingOut ? "..." : "Xác nhận"}
+            </button>
+            <button
+              onClick={() => setCheckoutConfirmId(null)}
+              style={{ background: "#f1f5f9", border: "none", borderRadius: 8, color: "#64748b", cursor: "pointer", fontSize: 12, fontWeight: 700, padding: "5px 10px" }}
+            >
+              Hủy
+            </button>
+          </div>
         )}
         {b.status === "COMPLETED" && (
           <span style={{ alignItems: "center", background: "#ecfdf5", border: "1px solid #bbf7d0", borderRadius: 10, color: "#047857", display: "flex", fontSize: 12, fontWeight: 800, gap: 6, padding: "7px 10px" }}>
@@ -179,11 +200,7 @@ export default function PartnerBookings() {
       </div>
 
       {/* Filter Bar */}
-      <div style={{
-        background: "#fff", borderRadius: 20, padding: "24px", marginBottom: 32,
-        border: "1px solid #f1f5f9", boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
-        display: "grid", gridTemplateColumns: "2fr 1fr 1fr auto", gap: 16, alignItems: "end"
-      }}>
+      <div className="pb-filter-bar">
         <div>
           <div style={{ fontSize: 12, fontWeight: 700, color: "#64748b", marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
             <Building2 size={14} /> {t("pt_bk_hotel_label")}
@@ -310,9 +327,8 @@ export default function PartnerBookings() {
               <div style={{ marginTop: 10 }}>
                 {canCheckoutBooking(detail) && (
                   <Btn
-                    variant="success"
                     loading={completeBooking.isPending && completeBooking.variables === detail.bookingId}
-                    style={{ width: "100%", marginBottom: 10 }}
+                    style={{ width: "100%", marginBottom: 10, background: "#10b981", boxShadow: "0 4px 12px rgba(16,185,129,0.3)" }}
                     onClick={() => handleCheckout(detail)}
                   >
                     <CheckCircle2 size={15} /> {t("pt_bk_checkout_btn")}

@@ -9,16 +9,17 @@ import "./partner/PartnerLayout.css";
 const SELECTED_HOTEL_KEY = "partner_selected_hotel_id";
 
 const BREADCRUMB_MAP = {
-  "/partner":               "Tổng quan",
-  "/partner/hotels":        "Cơ sở của tôi",
-  "/partner/rooms":         "Loại phòng",
-  "/partner/calendar":      "Lịch & Vận hành",
-  "/partner/bookings":      "Booking",
-  "/partner/reviews":       "Đánh giá",
-  "/partner/revenue":       "Doanh thu",
-  "/partner/forecast":      "AI Dự báo",
-  "/partner/add-property":  "Thêm cơ sở",
-  "/partner/services":      "Quản lý dịch vụ",
+  "/partner":                "Tổng quan",
+  "/partner/hotels":         "Cơ sở của tôi",
+  "/partner/rooms":          "Loại phòng",
+  "/partner/room-units":     "Phòng",
+  "/partner/calendar":       "Lịch & Vận hành",
+  "/partner/bookings":       "Booking",
+  "/partner/reviews":        "Đánh giá",
+  "/partner/revenue":        "Doanh thu",
+  "/partner/forecast":       "AI Dự báo",
+  "/partner/add-property":   "Thêm cơ sở",
+  "/partner/services":       "Dịch vụ & tiện ích",
 };
 
 function getPageTitle(pathname) {
@@ -81,9 +82,12 @@ export default function PartnerLayout() {
             <span className="partner-topbar-sep">/</span>
             <span className="partner-topbar-title">{pageTitle}</span>
           </div>
-          <button className="partner-topbar-bell" aria-label="Thông báo">
-            <Bell size={18} />
-          </button>
+          <div className="partner-topbar-bell-wrap">
+            <button className="partner-topbar-bell" aria-label="Thông báo">
+              <Bell size={18} />
+            </button>
+            <span className="partner-topbar-bell-tip">Tính năng thông báo đang phát triển</span>
+          </div>
         </div>
 
         <div className="partner-content">

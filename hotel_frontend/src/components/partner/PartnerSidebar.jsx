@@ -1,16 +1,15 @@
+import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, Building2, BedDouble, CalendarDays,
   BookOpen, Star, TrendingUp, Sparkles, Plus,
-  ChevronRight, User, LogOut, Wrench,
+  ChevronRight, ChevronDown, User, LogOut, Wrench,
 } from "lucide-react";
 import { useMyHotels, usePartnerReviews, usePartnerBookings } from "../../hooks/usePartnerQueries";
 import { useAuth } from "../../contexts/AuthContext";
 import { getPropertyGroup, getGroupColor, getTypeLabel } from "../../utils/propertyGroupUtils";
 import { useLang } from "../../contexts/LanguageContext";
 import "./PartnerSidebar.css";
-
-const HOTEL_LIKE = ["HOTEL", "RESORT", "HOSTEL"];
 
 function NavItem({ icon: Icon, label, path, active, badge, navigate, disabled, soon }) {
   const cls = [
@@ -35,6 +34,17 @@ function NavItem({ icon: Icon, label, path, active, badge, navigate, disabled, s
   );
 }
 
+function SubNavItem({ label, path, active, navigate }) {
+  return (
+    <button
+      className={`ps-nav-sub-item${active ? " active" : ""}`}
+      onClick={() => navigate(path)}
+    >
+      <span className="ps-nav-sub-label">{label}</span>
+    </button>
+  );
+}
+
 export default function PartnerSidebar({ selectedHotelId, onSelectHotel, open, onClose }) {
   const { pathname } = useLocation();
   const { user, logout } = useAuth();
@@ -48,26 +58,22 @@ export default function PartnerSidebar({ selectedHotelId, onSelectHotel, open, o
   const { data: bookingsPage } = usePartnerBookings({ status: "CONFIRMED", size: 1 });
   const pendingBookings = bookingsPage?.totalItems ?? 0;
 
-  const selectedHotel = hotels.find(h => h.id === selectedHotelId) || hotels[0];
-  const hotelType = selectedHotel?.hotelType || "HOTEL";
-  const showRoomTypes = HOTEL_LIKE.includes(hotelType);
+  const isRoomRoute = pathname.startsWith("/partner/rooms") || pathname.startsWith("/partner/room-units");
+  const [roomMenuOpen, setRoomMenuOpen] = useState(isRoomRoute);
 
   const isActive = (path) => {
     if (path === "/partner") return pathname === "/partner";
     return pathname.startsWith(path);
   };
 
+  const effectiveRoomMenuOpen = roomMenuOpen || isRoomRoute;
+
   return (
     <aside className={`ps-root${open ? " open" : ""}`}>
       {/* Logo */}
       <div className="ps-logo">
-        <div className="ps-logo-icon">
-          <Building2 size={18} color="#fff" />
-        </div>
-        <div>
-          <div className="ps-logo-name">Hotel Hub</div>
-          <div className="ps-logo-sub">Partner Portal</div>
-        </div>
+        <img src="/logo.png" alt="VLU Hotel Hub" className="ps-logo-img" />
+        <div className="ps-logo-sub">Partner Portal</div>
       </div>
 
       {/* Property list */}
@@ -104,12 +110,41 @@ export default function PartnerSidebar({ selectedHotelId, onSelectHotel, open, o
         <div className="ps-section-label">Quản lý</div>
         <NavItem icon={LayoutDashboard} label="Tổng quan"       path="/partner"              active={isActive("/partner")}              navigate={navigate} />
         <NavItem icon={Building2}      label="Cơ sở của tôi"    path="/partner/hotels"       active={isActive("/partner/hotels")}       navigate={navigate} />
-        {showRoomTypes && (
-          <NavItem icon={BedDouble}    label="Loại phòng"        path="/partner/rooms"        active={isActive("/partner/rooms")}        navigate={navigate} />
-        )}
+
+        {/* Collapsible: Quản lý phòng */}
+        <div className="ps-nav-group">
+          <button
+            className={`ps-nav-item ps-nav-group-toggle${isRoomRoute ? " active" : ""}`}
+            onClick={() => setRoomMenuOpen(v => !v)}
+          >
+            <span className="ps-nav-icon"><BedDouble size={16} /></span>
+            <span className="ps-nav-label">Quản lý phòng</span>
+            <ChevronDown
+              size={13}
+              className={`ps-nav-chevron${effectiveRoomMenuOpen ? " open" : ""}`}
+            />
+          </button>
+          {effectiveRoomMenuOpen && (
+            <div className="ps-nav-sub">
+              <SubNavItem
+                label="Loại phòng"
+                path="/partner/rooms"
+                active={pathname.startsWith("/partner/rooms")}
+                navigate={navigate}
+              />
+              <SubNavItem
+                label="Phòng"
+                path="/partner/room-units"
+                active={pathname.startsWith("/partner/room-units")}
+                navigate={navigate}
+              />
+            </div>
+          )}
+        </div>
+
         <NavItem icon={CalendarDays}   label="Lịch & Vận hành"  path="/partner/calendar"     active={isActive("/partner/calendar")}     navigate={navigate} />
         <NavItem icon={BookOpen}       label="Booking"           path="/partner/bookings"     active={isActive("/partner/bookings")}     navigate={navigate} badge={pendingBookings} />
-        <NavItem icon={Wrench}         label="Quản lý dịch vụ"  path="/partner/services"     active={false}                             navigate={navigate} disabled soon />
+        <NavItem icon={Wrench}         label="Dịch vụ & tiện ích" path="/partner/services"    active={isActive("/partner/services")}     navigate={navigate} />
 
         <div className="ps-section-label">Phân tích</div>
         <NavItem icon={Star}           label="Đánh giá"          path="/partner/reviews"      active={isActive("/partner/reviews")}      navigate={navigate} badge={unrepliedCount} />

@@ -197,12 +197,12 @@ export default function AdminLayout({ page, navigate, user, onLogout, children }
 
 export function PageHeader({ title, subtitle, action }) {
   return (
-    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 28 }}>
-      <div>
-        <h1 style={{ fontSize: 22, fontWeight: 800, color: "#1a1a1a", margin: 0, userSelect: "none", cursor: "default" }}>{title}</h1>
-        {subtitle && <p style={{ color: "#888", fontSize: 13, marginTop: 4, marginBottom: 0 }}>{subtitle}</p>}
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 28, gap: 16 }}>
+      <div style={{ minWidth: 0 }}>
+        <h1 style={{ fontSize: 22, fontWeight: 800, color: "#1e293b", margin: 0, userSelect: "none", cursor: "default" }}>{title}</h1>
+        {subtitle && <p style={{ color: "#64748b", fontSize: 13, marginTop: 4, marginBottom: 0 }}>{subtitle}</p>}
       </div>
-      {action}
+      {action && <div style={{ flexShrink: 0 }}>{action}</div>}
     </div>
   );
 }

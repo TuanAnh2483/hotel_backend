@@ -104,6 +104,13 @@ public class PartnerRoomCalendarService {
                 }
                 if (request.closed() != null) {
                     rate.setClosed(request.closed());
+                    if (!request.closed()) {
+                        rate.setCloseReason(null);
+                    } else if (request.closeReason() != null) {
+                        rate.setCloseReason(request.closeReason());
+                    }
+                } else if (request.closeReason() != null && rate.isClosed()) {
+                    rate.setCloseReason(request.closeReason());
                 }
 
                 ratesByDate.put(date, rate);
@@ -160,7 +167,7 @@ public class PartnerRoomCalendarService {
 
         for (Room room : rooms) {
             PartnerRoomCalendarUpsertRequest req = new PartnerRoomCalendarUpsertRequest(
-                    from, to, basePrice, minStay, null, null
+                    from, to, basePrice, minStay, null, null, null
             );
             upsertCalendar(room.getId(), req);
         }
@@ -191,7 +198,8 @@ public class PartnerRoomCalendarService {
                     blockedRooms,
                     availableRooms - blockedRooms,
                     rate != null,
-                    inventory != null
+                    inventory != null,
+                    rate != null ? rate.getCloseReason() : null
             ));
         }
 

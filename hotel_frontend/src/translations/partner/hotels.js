@@ -1,7 +1,7 @@
 export const vi = {
   pt_hotels_title:        "Cơ sở lưu trú của tôi",
   pt_hotels_subtitle:     "Quản lý thông tin, phòng và dịch vụ cho các cơ sở lưu trú bạn sở hữu",
-  pt_hotels_add_btn:      "+ Thêm cơ sở mới",
+  pt_hotels_add_btn:      "Thêm cơ sở mới",
   pt_hotels_view_dashboard: "Xem Dashboard",
   pt_hotels_search_ph:    "Tìm kiếm nhanh khách sạn theo tên, tỉnh thành hoặc quận huyện...",
   pt_hotels_results:      "KẾT QUẢ",
@@ -55,7 +55,7 @@ export const vi = {
 export const en = {
   pt_hotels_title:        "My properties",
   pt_hotels_subtitle:     "Manage information, rooms and services for the properties you own",
-  pt_hotels_add_btn:      "+ Add new property",
+  pt_hotels_add_btn:      "Add new property",
   pt_hotels_view_dashboard: "View Dashboard",
   pt_hotels_search_ph:    "Search by name, city or district...",
   pt_hotels_results:      "RESULTS",

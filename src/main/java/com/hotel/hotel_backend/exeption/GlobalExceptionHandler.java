@@ -45,7 +45,7 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(code.status).body(ApiResponse.fail(err));
     }
 
-    public ResponseEntity<ApiResponse<Void>>badRequest(BindingResult bindingResult) {
+    private ResponseEntity<ApiResponse<Void>> badRequest(BindingResult bindingResult) {
         List<ApiError.FieldErrorItem> details = bindingResult.getFieldErrors()
                 .stream()
                 .map(this::toFieldError)

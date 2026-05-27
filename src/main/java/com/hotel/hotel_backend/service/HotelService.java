@@ -13,6 +13,7 @@ import com.hotel.hotel_backend.exeption.ApiException;
 import com.hotel.hotel_backend.exeption.ErrorCode;
 import com.hotel.hotel_backend.repository.BookingItemRepository;
 import com.hotel.hotel_backend.repository.DailyInventoryRepository;
+import com.hotel.hotel_backend.repository.DailyRateRepository;
 import com.hotel.hotel_backend.repository.HotelRepository;
 import com.hotel.hotel_backend.repository.RoomRepository;
 import com.hotel.hotel_backend.repository.UserRepository;
@@ -37,6 +38,7 @@ public class HotelService {
     private final RoomRepository roomRepository;
     private final BookingItemRepository bookingItemRepository;
     private final DailyInventoryRepository dailyInventoryRepository;
+    private final DailyRateRepository dailyRateRepository;
     private final SecurityService securityService;
 
     public HotelResponse create(CreateHotelRequest request) {
@@ -73,7 +75,7 @@ public class HotelService {
 
         return hotelRepository.findByOwnerId(userId)
                 .stream()
-                .filter(h -> h.getStatus() == null || h.getStatus() == HotelStatus.ACTIVE)
+                .filter(h -> h.getStatus() == null || h.getStatus() != HotelStatus.BLOCKED)
                 .map(this::mapToResponse)
                 .toList();
     }
@@ -167,7 +169,11 @@ public class HotelService {
         } else {
             // Chưa có booking nào → hard-delete thật sự
             var roomIds = rooms.stream().map(r -> r.getId()).toList();
-            dailyInventoryRepository.deleteByIdRoomIdIn(roomIds);
+            if (!roomIds.isEmpty()) {
+                // FIX BUG-001: Delete DailyRate rows before rooms to avoid FK constraint violation.
+                dailyRateRepository.deleteByIdRoomIdIn(roomIds);
+                dailyInventoryRepository.deleteByIdRoomIdIn(roomIds);
+            }
             roomRepository.deleteAll(rooms);
             hotelRepository.delete(hotel);
         }
@@ -210,7 +216,8 @@ public class HotelService {
                 hotel.getRatingAvg(),
                 hotel.getRatingCount(),
                 resolveCoverImageUrl(hotel.getCoverImageUrl(), hotel.getImageUrls()),
-                copyImageUrls(hotel.getImageUrls())
+                copyImageUrls(hotel.getImageUrls()),
+                hotel.getStatus() != null ? hotel.getStatus() : HotelStatus.ACTIVE
         );
     }
 
