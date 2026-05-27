@@ -131,7 +131,30 @@ function StepPropertyType({ state, update }) {
   return (
     <div>
       <h2 style={{ fontSize: 22, fontWeight: 800, color: "#111827", marginBottom: 8 }}>Bạn muốn đăng ký loại hình nào?</h2>
-      <p style={{ color: "#6b7280", marginBottom: 28 }}>Chọn loại phù hợp để chúng tôi tùy chỉnh form cho bạn</p>
+      <p style={{ color: "#6b7280", marginBottom: 16 }}>Chọn loại phù hợp để chúng tôi tùy chỉnh form cho bạn</p>
+
+      {/* Hướng dẫn phân biệt loại hình */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 24 }}>
+        <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 12, padding: "12px 14px" }}>
+          <div style={{ fontSize: 12, fontWeight: 800, color: "#15803d", marginBottom: 6, display: "flex", alignItems: "center", gap: 5 }}>
+            <Building2 size={13} /> Cho thuê theo phòng
+          </div>
+          <div style={{ fontSize: 12, color: "#166534", lineHeight: 1.6 }}>
+            Khách đặt từng phòng riêng lẻ trong cơ sở.<br />
+            Áp dụng cho: <strong>Khách sạn, Resort, Hostel, Nhà nghỉ, Homestay</strong>
+          </div>
+        </div>
+        <div style={{ background: "#fefce8", border: "1px solid #fde68a", borderRadius: 12, padding: "12px 14px" }}>
+          <div style={{ fontSize: 12, fontWeight: 800, color: "#b45309", marginBottom: 6, display: "flex", alignItems: "center", gap: 5 }}>
+            <Home size={13} /> Cho thuê nguyên căn
+          </div>
+          <div style={{ fontSize: 12, color: "#92400e", lineHeight: 1.6 }}>
+            Khách thuê toàn bộ cơ sở, không chia phòng.<br />
+            Áp dụng cho: <strong>Villa, Căn hộ</strong>
+          </div>
+        </div>
+      </div>
+
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 16 }}>
         {PROPERTY_TYPES.map(({ value, label, Icon, desc }) => {
           const selected = state.propertyType === value;
@@ -545,11 +568,17 @@ export default function AddPropertyWizard() {
     }
 
     if (state.step === 1) {
-      if (!state.name.trim())     { setError("Vui lòng nhập tên cơ sở lưu trú"); return; }
-      if (!state.address.trim())  { setError("Vui lòng nhập địa chỉ"); return; }
-      if (!state.district.trim()) { setError("Vui lòng nhập Quận / Huyện"); return; }
-      if (!state.province.trim()) { setError("Vui lòng nhập Tỉnh / Thành phố"); return; }
-      if (!state.phone.trim())    { setError("Vui lòng nhập số điện thoại liên hệ"); return; }
+      if (!state.name.trim())                        { setError("Vui lòng nhập tên cơ sở lưu trú"); return; }
+      if (state.name.trim().length < 5)              { setError("Tên cơ sở phải có ít nhất 5 ký tự"); return; }
+      if (state.name.trim().length > 100)            { setError("Tên cơ sở không được vượt quá 100 ký tự"); return; }
+      if (!state.address.trim())                     { setError("Vui lòng nhập địa chỉ"); return; }
+      if (state.address.trim().length < 5)           { setError("Địa chỉ phải có ít nhất 5 ký tự"); return; }
+      if (!state.district.trim())                    { setError("Vui lòng nhập Quận / Huyện"); return; }
+      if (!state.province.trim())                    { setError("Vui lòng nhập Tỉnh / Thành phố"); return; }
+      if (!state.phone.trim())                       { setError("Vui lòng nhập số điện thoại liên hệ"); return; }
+      if (!/^(\+84|0)[3-9]\d{8}$/.test(state.phone.trim().replace(/\s/g, ""))) {
+        setError("Số điện thoại không hợp lệ (VD: 0901234567)"); return;
+      }
     }
 
     if (state.step === 2) {
@@ -564,6 +593,10 @@ export default function AddPropertyWizard() {
         const missingPrice = state.roomTypes.find(rt => rt.name?.trim() && !Number(rt.price));
         if (missingPrice) {
           setError(`Loại phòng "${missingPrice.name}" chưa có giá`); return;
+        }
+        const lowPrice = state.roomTypes.find(rt => rt.name?.trim() && Number(rt.price) > 0 && Number(rt.price) < 10000);
+        if (lowPrice) {
+          setError(`Giá loại phòng "${lowPrice.name}" phải từ 10.000 ₫ trở lên`); return;
         }
         const totalRoomsNum = Number(state.totalRooms);
         const sumQuantity = state.roomTypes
@@ -580,7 +613,36 @@ export default function AddPropertyWizard() {
         // homestay
         if (!state.hostName?.trim())  { setError("Vui lòng nhập tên chủ nhà"); return; }
         if (!state.hostPhone?.trim()) { setError("Vui lòng nhập SĐT chủ nhà"); return; }
+        if (!/^(\+84|0)[3-9]\d{8}$/.test(state.hostPhone.trim().replace(/\s/g, ""))) {
+          setError("SĐT chủ nhà không hợp lệ (VD: 0901234567)"); return;
+        }
         if (!state.houseRules?.trim()) { setError("Vui lòng nhập quy định nhà ở"); return; }
+      }
+    }
+
+    // Step 4: bắt buộc ít nhất 1 ảnh
+    if (state.step === 4) {
+      if (!state.images || state.images.length === 0) {
+        setError("Vui lòng tải lên ít nhất 1 ảnh cho cơ sở"); return;
+      }
+    }
+
+    // Step 5: validate giá villa/homestay
+    if (state.step === 5) {
+      const group = getPropertyGroup(state.propertyType);
+      if (group !== "hotel") {
+        if (!state.basePrice || Number(state.basePrice) <= 0) {
+          setError("Vui lòng nhập giá thuê / đêm"); return;
+        }
+        if (Number(state.basePrice) < 10000) {
+          setError("Giá thuê phải từ 10.000 ₫ trở lên"); return;
+        }
+        if (state.weekendMarkup !== "" && (Number(state.weekendMarkup) < 0 || Number(state.weekendMarkup) > 200)) {
+          setError("Tăng giá cuối tuần phải từ 0% đến 200%"); return;
+        }
+        if (state.cleaningFee !== "" && Number(state.cleaningFee) < 0) {
+          setError("Phí dọn dẹp không được âm"); return;
+        }
       }
     }
 

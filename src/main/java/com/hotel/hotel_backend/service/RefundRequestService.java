@@ -68,14 +68,10 @@ public class RefundRequestService {
 
     @Transactional(readOnly = true)
     public RefundRequestResponse getMyRefundRequest(Long userId, Long bookingId) {
-        RefundRequest refundRequest = refundRequestRepository.findByBookingId(bookingId)
-                .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND, "Refund request not found"));
-
-        if (!refundRequest.getUser().getId().equals(userId)) {
-            throw new ApiException(ErrorCode.NOT_FOUND, "Refund request not found");
-        }
-
-        return toResponse(refundRequest);
+        return refundRequestRepository.findByBookingId(bookingId)
+                .filter(r -> r.getUser().getId().equals(userId))
+                .map(this::toResponse)
+                .orElse(null);
     }
 
     @Transactional(readOnly = true)

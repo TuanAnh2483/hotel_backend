@@ -304,10 +304,13 @@ export default function PartnerHotels() {
   }
 
   async function handleSave() {
-    if (!form.name.trim())     { setSaveError("Vui lòng nhập tên cơ sở"); return; }
-    if (!form.province.trim()) { setSaveError("Vui lòng nhập Tỉnh / Thành phố"); return; }
-    if (!form.district.trim()) { setSaveError("Vui lòng nhập Quận / Huyện"); return; }
-    if (!form.address.trim())  { setSaveError("Vui lòng nhập địa chỉ"); return; }
+    if (!form.name.trim())                 { setSaveError("Vui lòng nhập tên cơ sở"); return; }
+    if (form.name.trim().length < 5)       { setSaveError("Tên cơ sở phải có ít nhất 5 ký tự"); return; }
+    if (form.name.trim().length > 100)     { setSaveError("Tên cơ sở không được vượt quá 100 ký tự"); return; }
+    if (!form.province.trim())             { setSaveError("Vui lòng nhập Tỉnh / Thành phố"); return; }
+    if (!form.district.trim())             { setSaveError("Vui lòng nhập Quận / Huyện"); return; }
+    if (!form.address.trim())              { setSaveError("Vui lòng nhập địa chỉ"); return; }
+    if (form.address.trim().length < 5)    { setSaveError("Địa chỉ phải có ít nhất 5 ký tự"); return; }
     setSaving(true);
     setSaveError("");
     try {

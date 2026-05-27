@@ -222,9 +222,13 @@ export default function PartnerCalendar() {
     const endDate        = form.endDate   || modal.endDate;
 
     if (!startDate || !endDate) { setCalError("Vui lòng chọn đủ từ ngày và đến ngày."); return; }
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    if (new Date(startDate) < today) { setCalError("Từ ngày không được là ngày trong quá khứ."); return; }
     if (new Date(endDate) < new Date(startDate)) { setCalError("Đến ngày phải bằng hoặc sau từ ngày."); return; }
-    if (price !== null && (!Number.isFinite(price) || price < 0)) { setCalError("Giá phải là số lớn hơn hoặc bằng 0."); return; }
+    if (price !== null && (!Number.isFinite(price) || price < 0)) { setCalError("Giá phải là số ≥ 0."); return; }
+    if (price !== null && price > 0 && price < 10000) { setCalError("Giá phải từ 10.000 ₫ trở lên."); return; }
     if (minStay !== null && (!Number.isInteger(minStay) || minStay < 1)) { setCalError("Min stay phải là số nguyên từ 1 trở lên."); return; }
+    if (minStay !== null && minStay > 365) { setCalError("Min stay tối đa là 365 đêm."); return; }
     if (availableRooms !== null && (!Number.isInteger(availableRooms) || availableRooms < 0)) { setCalError("Số phòng cho phép đặt phải là số nguyên từ 0 trở lên."); return; }
 
     const totalRooms = calendar?.defaultQuantity;

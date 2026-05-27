@@ -456,7 +456,25 @@ export default function PartnerRoomUnits() {
   }
 
   async function handleEditSave(data) {
-    setSaving(true); setFormError("");
+    setFormError("");
+    // Validate floor
+    if (data.floor !== null && data.floor !== undefined) {
+      if (!Number.isInteger(data.floor) || data.floor < 0 || data.floor > 200) {
+        setFormError("Số tầng phải từ 0 đến 200"); return;
+      }
+    }
+    // Validate duplicate room number
+    if (data.roomNumber) {
+      const duplicate = units.find(u =>
+        u.id !== editingUnit.id &&
+        u.roomNumber &&
+        u.roomNumber.trim().toLowerCase() === data.roomNumber.trim().toLowerCase()
+      );
+      if (duplicate) {
+        setFormError(`Số phòng "${data.roomNumber}" đã tồn tại trong cơ sở này`); return;
+      }
+    }
+    setSaving(true);
     try {
       await updateUnit.mutateAsync({
         roomId: editingUnit.roomId, unitId: editingUnit.id,

@@ -716,6 +716,8 @@ export default function PartnerRooms() {
 
   const hotels = Array.isArray(hotelData) ? hotelData : [];
   const rooms  = Array.isArray(roomData)  ? roomData  : [];
+  const currentHotel = hotels.find(h => String(h.id) === String(selectedHotelId)) || null;
+  const isEntire = currentHotel?.bookingMode === "ENTIRE";
 
   const { data: allUnitData = [] } = useHotelRoomUnits(selectedHotelId);
   const allUnits = Array.isArray(allUnitData) ? allUnitData : [];
@@ -895,12 +897,18 @@ export default function PartnerRooms() {
 
   async function handleSave() {
     if (!form.name.trim())                         { setSaveError("Vui lòng nhập tên loại phòng"); return; }
+    if (form.name.trim().length < 2)               { setSaveError("Tên loại phòng phải có ít nhất 2 ký tự"); return; }
+    if (form.name.trim().length > 100)             { setSaveError("Tên loại phòng không được vượt quá 100 ký tự"); return; }
     if (!Number.isFinite(Number(form.price)) || Number(form.price) < 0)
-                                                   { setSaveError("Giá phòng phải là số nguyên ≥ 0"); return; }
+                                                   { setSaveError("Giá phòng phải là số ≥ 0"); return; }
+    if (Number(form.price) > 0 && Number(form.price) < 10000)
+                                                   { setSaveError("Giá phòng phải từ 10.000 ₫ trở lên"); return; }
     if (!Number.isInteger(Number(form.capacity)) || Number(form.capacity) < 1)
                                                    { setSaveError("Sức chứa phải là số nguyên ≥ 1"); return; }
+    if (Number(form.capacity) > 30)                { setSaveError("Sức chứa tối đa là 30 khách"); return; }
     if (!Number.isInteger(Number(form.quantity)) || Number(form.quantity) < 1)
                                                    { setSaveError("Số lượng phòng phải là số nguyên ≥ 1"); return; }
+    if (Number(form.quantity) > 500)               { setSaveError("Số lượng phòng tối đa là 500"); return; }
     const currentHotel = hotels.find(h => String(h.id) === String(selectedHotelId));
     if (currentHotel?.bookingMode === "ENTIRE" && Number(form.quantity) > 1)
                                                    { setSaveError("Cơ sở thuê nguyên căn chỉ cho phép tối đa 1 phòng mỗi loại"); return; }
@@ -973,11 +981,11 @@ export default function PartnerRooms() {
   return (
     <div className="pr-root">
       <PageHeader
-        title={t("pt_rooms_title")}
-        subtitle={t("pt_rooms_subtitle")}
-        action={selectedHotelId && (
+        title={isEntire ? "Thông tin căn" : t("pt_rooms_title")}
+        subtitle={isEntire ? "Quản lý thông tin, giá và tiện ích của căn cho thuê" : t("pt_rooms_subtitle")}
+        action={selectedHotelId && !(isEntire && rooms.length >= 1) && (
           <button className="pr-add-btn" onClick={openAdd}>
-            <Plus size={20} /> {t("pt_rooms_add_btn")}
+            <Plus size={20} /> {isEntire ? "Thêm thông tin căn" : t("pt_rooms_add_btn")}
           </button>
         )}
       />
@@ -998,7 +1006,10 @@ export default function PartnerRooms() {
               Cơ sở đã được tạo thành công!
             </div>
             <div style={{ fontSize: 13, color: "#64748b" }}>
-              Hãy bổ sung <strong>ảnh</strong> và <strong>tiện ích</strong> cho từng loại phòng để tăng khả năng được đặt phòng.
+              {isEntire
+                ? <>Hãy bổ sung <strong>ảnh</strong>, <strong>tiện ích</strong> và <strong>giá</strong> cho căn để tăng khả năng được đặt.</>
+                : <>Hãy bổ sung <strong>ảnh</strong> và <strong>tiện ích</strong> cho từng loại phòng để tăng khả năng được đặt phòng.</>
+              }
             </div>
           </div>
           <button
@@ -1072,13 +1083,14 @@ export default function PartnerRooms() {
           <div className="pr-empty-icon">
             <Bed size={40} color="#cbd5e1" />
           </div>
-          <h3 className="pr-empty-title">{t("pt_rooms_empty_title")}</h3>
-          <p className="pr-empty-desc">{t("pt_rooms_empty_desc")}</p>
-          <Btn onClick={openAdd}>{t("pt_rooms_add_btn")}</Btn>
+          <h3 className="pr-empty-title">{isEntire ? "Chưa có thông tin căn" : t("pt_rooms_empty_title")}</h3>
+          <p className="pr-empty-desc">{isEntire ? "Thêm thông tin để khách có thể đặt căn của bạn" : t("pt_rooms_empty_desc")}</p>
+          <Btn onClick={openAdd}>{isEntire ? "Thêm thông tin căn" : t("pt_rooms_add_btn")}</Btn>
         </Card>
       ) : (
         <>
-          {/* Filter bar */}
+          {/* Filter bar — ẩn với ENTIRE vì chỉ có 1 đơn vị */}
+          {!isEntire && (
           <div className="pr-filter-bar">
             <div className="pr-filter-search-wrap">
               <Search size={15} color="#94a3b8" className="pr-filter-search-icon" />
@@ -1103,6 +1115,7 @@ export default function PartnerRooms() {
               {filteredRooms.length} / {rooms.length} loại phòng
             </div>
           </div>
+          )}
 
           {/* Summary strip + unnumbered banner */}
           {globalCounts.total > 0 && <SummaryStrip counts={globalCounts} />}
@@ -1135,7 +1148,7 @@ export default function PartnerRooms() {
                 )}
                 <div className="pr-room-badge-wrap">
                   <span className="pr-room-category-badge">
-                    {(categoryOptions.find(c => c.key === r.roomCategory)?.label || r.roomCategory || "PHÒNG").toUpperCase()}
+                    {isEntire ? "Căn cho thuê" : (categoryOptions.find(c => c.key === r.roomCategory)?.label || r.roomCategory || "PHÒNG").toUpperCase()}
                   </span>
                 </div>
                 <div className="pr-room-price-wrap">
@@ -1162,10 +1175,12 @@ export default function PartnerRooms() {
                     <div className="pr-room-meta-icon"><Bed size={14} color="#64748b" /></div>
                     {bedTypeOptions.find(b => b.key === r.bedType)?.label || r.bedType || "—"}
                   </div>
+                  {!isEntire && (
                   <div className="pr-room-meta-item">
                     <div className="pr-room-meta-icon"><Grid size={14} color="#64748b" /></div>
                     {r.quantity} phòng
                   </div>
+                  )}
                   <div className="pr-room-meta-item">
                     <div className="pr-room-meta-icon"><Wrench size={14} color="#64748b" /></div>
                     {(r.amenities?.length || 0) + (r.customAmenities?.length || 0)} tiện ích
@@ -1211,8 +1226,8 @@ export default function PartnerRooms() {
                   >
                     {expandedRoomId === r.id ? <ChevronUp size={15} /> : <DoorOpen size={15} />}
                     {(unitsByRoomId[r.id]?.length || 0) > 0
-                      ? `${unitsByRoomId[r.id].length} phòng`
-                      : "Xem phòng"}
+                      ? `${unitsByRoomId[r.id].length} ${isEntire ? "đơn vị" : "phòng"}`
+                      : isEntire ? "Xem đơn vị" : "Xem phòng"}
                   </button>
                   <button
                     className="pr-quick-btn"
@@ -1234,9 +1249,11 @@ export default function PartnerRooms() {
                     </button>
                     {openMenuId === r.id && (
                       <div className="pr-overflow-menu">
+                        {!isEntire && (
                         <button className="pr-overflow-item" onClick={() => { setOpenMenuId(null); openDuplicate(r); }}>
                           <Copy size={13} /> Nhân bản
                         </button>
+                        )}
                         {r.quantity > 0 && (
                           <button className="pr-overflow-item" onClick={() => { setOpenMenuId(null); handleDeactivate(r); }}>
                             <Power size={13} /> Tạm dừng
