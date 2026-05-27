@@ -13,6 +13,7 @@ import com.hotel.hotel_backend.repository.PaymentTransactionRepository;
 import com.hotel.hotel_backend.repository.RoomRepository;
 import com.hotel.hotel_backend.repository.UserRepository;
 import com.hotel.hotel_backend.security.JwtService;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,6 +21,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -61,18 +63,35 @@ class VillaBookingFlowIntegrationTest {
     @Autowired private BookingRepository bookingRepository;
     @Autowired private PaymentTransactionRepository paymentTransactionRepository;
     @Autowired private HotelReviewRepository hotelReviewRepository;
+    @Autowired private JdbcTemplate jdbcTemplate;
 
     @BeforeEach
     void setUp() {
-        hotelReviewRepository.deleteAll();
-        bookingItemRepository.deleteAll();
-        bookingRepository.deleteAll();
-        paymentTransactionRepository.deleteAll();
-        dailyRateRepository.deleteAll();
-        dailyInventoryRepository.deleteAll();
-        roomRepository.deleteAll();
-        hotelRepository.deleteAll();
-        userRepository.deleteAll();
+        cleanAll();
+    }
+
+    @AfterEach
+    void tearDown() {
+        cleanAll();
+    }
+
+    private void cleanAll() {
+        // Disable FK checks so leftover data from other test classes (room collection
+        // tables such as room_amenities, room_images, etc.) does not block deletion.
+        jdbcTemplate.execute("SET REFERENTIAL_INTEGRITY FALSE");
+        try {
+            hotelReviewRepository.deleteAll();
+            bookingItemRepository.deleteAll();
+            bookingRepository.deleteAll();
+            paymentTransactionRepository.deleteAll();
+            dailyRateRepository.deleteAll();
+            dailyInventoryRepository.deleteAll();
+            roomRepository.deleteAll();
+            hotelRepository.deleteAll();
+            userRepository.deleteAll();
+        } finally {
+            jdbcTemplate.execute("SET REFERENTIAL_INTEGRITY TRUE");
+        }
     }
 
     @Test
