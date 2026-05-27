@@ -329,7 +329,7 @@ class PartnerBookingIntegrationTest {
 
         assertThat(paymentTransactionRepository.findByBookingIdOrderByCreatedAtAsc(bookingId))
                 .hasSize(2)
-                .anySatisfy(transaction -> assertThat(transaction.getAmount()).isEqualTo(-1_000_000.0));
+                .anySatisfy(transaction -> assertThat(transaction.getAmount()).isEqualTo(-1_000_000L));
     }
 
     @Test

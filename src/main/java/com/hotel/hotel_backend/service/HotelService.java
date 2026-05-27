@@ -16,6 +16,7 @@ import com.hotel.hotel_backend.repository.DailyInventoryRepository;
 import com.hotel.hotel_backend.repository.DailyRateRepository;
 import com.hotel.hotel_backend.repository.HotelRepository;
 import com.hotel.hotel_backend.repository.RoomRepository;
+import com.hotel.hotel_backend.repository.RoomUnitRepository;
 import com.hotel.hotel_backend.repository.UserRepository;
 import com.hotel.hotel_backend.security.JwtPrincipal;
 import lombok.RequiredArgsConstructor;
@@ -36,6 +37,7 @@ public class HotelService {
     private final HotelRepository hotelRepository;
     private final UserRepository userRepository;
     private final RoomRepository roomRepository;
+    private final RoomUnitRepository roomUnitRepository;
     private final BookingItemRepository bookingItemRepository;
     private final DailyInventoryRepository dailyInventoryRepository;
     private final DailyRateRepository dailyRateRepository;
@@ -170,9 +172,10 @@ public class HotelService {
             // Chưa có booking nào → hard-delete thật sự
             var roomIds = rooms.stream().map(r -> r.getId()).toList();
             if (!roomIds.isEmpty()) {
-                // FIX BUG-001: Delete DailyRate rows before rooms to avoid FK constraint violation.
+                // FIX BUG-001: Delete child rows before rooms to avoid FK constraint violation.
                 dailyRateRepository.deleteByIdRoomIdIn(roomIds);
                 dailyInventoryRepository.deleteByIdRoomIdIn(roomIds);
+                roomIds.forEach(roomUnitRepository::deleteByRoomId);
             }
             roomRepository.deleteAll(rooms);
             hotelRepository.delete(hotel);

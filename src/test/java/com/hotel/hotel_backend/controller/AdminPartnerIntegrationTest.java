@@ -4,6 +4,7 @@ import com.hotel.hotel_backend.entity.PartnerApplicationStatus;
 import com.hotel.hotel_backend.entity.User;
 import com.hotel.hotel_backend.entity.UserStatus;
 import com.hotel.hotel_backend.entity.UserType;
+import com.hotel.hotel_backend.repository.HotelRepository;
 import com.hotel.hotel_backend.repository.PartnerApplicationRepository;
 import com.hotel.hotel_backend.repository.UserRepository;
 import com.hotel.hotel_backend.security.JwtService;
@@ -42,6 +43,9 @@ class AdminPartnerIntegrationTest {
     private UserRepository userRepository;
 
     @Autowired
+    private HotelRepository hotelRepository;
+
+    @Autowired
     private PartnerApplicationRepository partnerApplicationRepository;
 
     @Autowired
@@ -53,6 +57,7 @@ class AdminPartnerIntegrationTest {
     @BeforeEach
     void setUp() {
         partnerApplicationRepository.deleteAll();
+        hotelRepository.deleteAll();
         userRepository.deleteAll();
     }
 
