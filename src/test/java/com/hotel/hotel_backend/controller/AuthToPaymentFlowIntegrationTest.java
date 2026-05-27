@@ -8,6 +8,7 @@ import com.hotel.hotel_backend.repository.BookingRepository;
 import com.hotel.hotel_backend.repository.DailyInventoryRepository;
 import com.hotel.hotel_backend.repository.DailyRateRepository;
 import com.hotel.hotel_backend.repository.HotelRepository;
+import com.hotel.hotel_backend.repository.HotelReviewRepository;
 import com.hotel.hotel_backend.repository.PartnerApplicationRepository;
 import com.hotel.hotel_backend.repository.PaymentTransactionRepository;
 import com.hotel.hotel_backend.repository.RoomRepository;
@@ -78,8 +79,12 @@ class AuthToPaymentFlowIntegrationTest {
     @Autowired
     private BookingRepository bookingRepository;
 
+    @Autowired
+    private HotelReviewRepository hotelReviewRepository;
+
     @BeforeEach
     void setUp() {
+        hotelReviewRepository.deleteAll();
         paymentTransactionRepository.deleteAll();
         bookingItemRepository.deleteAll();
         bookingRepository.deleteAll();
