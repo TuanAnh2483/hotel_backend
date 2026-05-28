@@ -2,8 +2,6 @@ package com.hotel.hotel_backend.service;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -13,21 +11,18 @@ import java.time.OffsetDateTime;
 @Service
 public class EmailVerificationEmailService {
 
-    private final JavaMailSender mailSender;
+    private final AppEmailSender emailSender;
     private final String frontendVerifyUrl;
-    private final boolean mailEnabled;
-    private final String mailFrom;
+    private final boolean exposeDebugTokens;
 
     public EmailVerificationEmailService(
-            JavaMailSender mailSender,
+            AppEmailSender emailSender,
             @Value("${app.email-verification.frontend-verify-url:http://localhost:5173/verify-email}") String frontendVerifyUrl,
-            @Value("${app.mail.enabled:false}") boolean mailEnabled,
-            @Value("${app.mail.from:no-reply@hotel.local}") String mailFrom
+            @Value("${app.mail.expose-debug-tokens:false}") boolean exposeDebugTokens
     ) {
-        this.mailSender = mailSender;
+        this.emailSender = emailSender;
         this.frontendVerifyUrl = frontendVerifyUrl;
-        this.mailEnabled = mailEnabled;
-        this.mailFrom = mailFrom;
+        this.exposeDebugTokens = exposeDebugTokens;
     }
 
     public EmailVerificationDelivery sendVerificationEmail(
@@ -40,21 +35,13 @@ public class EmailVerificationEmailService {
                 .build()
                 .toUriString();
 
-        if (!mailEnabled) {
-            log.info(
-                    "Mock email verification queued: to={}, expiresAt={}, verificationLink={}",
-                    email,
-                    expiresAt,
-                    verificationLink
-            );
-            return new EmailVerificationDelivery(deliveryMode());
-        }
+        log.info("Sending verification email: to={}, expiresAt={}{}", email, expiresAt,
+                exposeDebugTokens ? ", link=" + verificationLink : "");
 
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setFrom(mailFrom);
-        message.setTo(email);
-        message.setSubject("Verify your hotel account email");
-        message.setText("""
+        String deliveryMode = emailSender.send(
+                email,
+                "Verify your hotel account email",
+                """
                 Welcome to Hotel.
 
                 Verify your email by opening this link:
@@ -64,15 +51,14 @@ public class EmailVerificationEmailService {
                 %s
 
                 If you did not create this account, ignore this email.
-                """.formatted(verificationLink, expiresAt));
+                """.formatted(verificationLink, expiresAt)
+        );
 
-        mailSender.send(message);
-        log.info("Verification email sent via SMTP: to={}", email);
-        return new EmailVerificationDelivery(deliveryMode());
+        return new EmailVerificationDelivery(deliveryMode);
     }
 
     public String deliveryMode() {
-        return mailEnabled ? "EMAIL" : "EMAIL_LOG";
+        return emailSender.deliveryMode();
     }
 
     public record EmailVerificationDelivery(String deliveryMode) {
