@@ -114,7 +114,7 @@ app:
       public-base-url: ${UPLOAD_S3_PUBLIC_BASE_URL:}
 
   ai:
-    gemini-api-key: ${GEMINI_API_KEY}
+    gemini-api-key: ${GEMINI_API_KEY:}
     model: ${GEMINI_MODEL:gemini-2.0-flash}
 
 logging:
