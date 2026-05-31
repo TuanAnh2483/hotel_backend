@@ -11,10 +11,10 @@
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>com.hotel</groupId>
-	<artifactId>hotel-backend</artifactId>
+	<artifactId>vlu-hotel-hub-backend</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>hotel-backend</name>
-	<description>Hotel booking marketplace backend (MVP)</description>
+	<name>VLU HOTEL HUB - Backend</name>
+	<description>VLU Hotel Hub - Hotel booking marketplace backend</description>
 	<url/>
 	<licenses>
 		<license/>

@@ -44,13 +44,7 @@ build/
 ### User uploaded files ###
 uploads/
 
-### Frontend build output ###
-hotel_frontend/node_modules/
-hotel_frontend/dist/
-hotel_frontend/.env
-hotel_frontend/.env.local
-hotel_frontend/.env.development
-hotel_frontend/.env.production
+### Frontend (separate folder - not tracked here) ###
 
 ### Logs ###
 logs/
