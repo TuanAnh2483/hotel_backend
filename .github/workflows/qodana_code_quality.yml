@@ -28,13 +28,10 @@ jobs:
         env:
           QODANA_TOKEN: ${{ secrets.QODANA_TOKEN }}
         with:
-          project-dir: backend
-          # When pr-mode is set to true, Qodana analyzes only the files that have been changed
+          args: --project-dir,backend
           pr-mode: false
           use-caches: true
           post-pr-comment: true
           use-annotations: true
-          # Upload Qodana results (SARIF, other artifacts, logs) as an artifact to the job
           upload-result: false
-          # quick-fixes available in Ultimate and Ultimate Plus plans
           push-fixes: 'none'
