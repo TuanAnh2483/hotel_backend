@@ -2,7 +2,7 @@ package com.hotel.hotel_backend.security;
 
 import com.hotel.hotel_backend.dto.response.ApiError;
 import com.hotel.hotel_backend.dto.response.ApiResponse;
-import com.hotel.hotel_backend.exeption.ErrorCode;
+import com.hotel.hotel_backend.exception.ErrorCode;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;

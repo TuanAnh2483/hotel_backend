@@ -2,8 +2,8 @@ package com.hotel.hotel_backend.service.price;
 
 
 import com.hotel.hotel_backend.entity.PriceFeedback;
-import com.hotel.hotel_backend.exeption.ApiException;
-import com.hotel.hotel_backend.exeption.ErrorCode;
+import com.hotel.hotel_backend.exception.ApiException;
+import com.hotel.hotel_backend.exception.ErrorCode;
 import com.hotel.hotel_backend.repository.PriceFeedbackRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

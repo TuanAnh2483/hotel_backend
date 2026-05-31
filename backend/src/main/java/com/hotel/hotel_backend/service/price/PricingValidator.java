@@ -5,8 +5,8 @@ package com.hotel.hotel_backend.service.price;
 
 import com.hotel.hotel_backend.entity.PricingModel;
 import com.hotel.hotel_backend.entity.Room;
-import com.hotel.hotel_backend.exeption.ApiException;
-import com.hotel.hotel_backend.exeption.ErrorCode;
+import com.hotel.hotel_backend.exception.ApiException;
+import com.hotel.hotel_backend.exception.ErrorCode;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;

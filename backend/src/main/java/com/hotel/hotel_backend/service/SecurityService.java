@@ -1,8 +1,8 @@
 package com.hotel.hotel_backend.service;
 
 import com.hotel.hotel_backend.entity.User;
-import com.hotel.hotel_backend.exeption.ApiException;
-import com.hotel.hotel_backend.exeption.ErrorCode;
+import com.hotel.hotel_backend.exception.ApiException;
+import com.hotel.hotel_backend.exception.ErrorCode;
 import com.hotel.hotel_backend.repository.UserRepository;
 import com.hotel.hotel_backend.security.JwtPrincipal;
 import lombok.RequiredArgsConstructor;

@@ -1,8 +1,8 @@
 package com.hotel.hotel_backend.service;
 
 import com.hotel.hotel_backend.config.UploadStorageProperties;
-import com.hotel.hotel_backend.exeption.ApiException;
-import com.hotel.hotel_backend.exeption.ErrorCode;
+import com.hotel.hotel_backend.exception.ApiException;
+import com.hotel.hotel_backend.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;

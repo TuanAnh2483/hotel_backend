@@ -1,4 +1,4 @@
-package com.hotel.hotel_backend.exeption;
+package com.hotel.hotel_backend.exception;
 
 import org.springframework.http.HttpStatus;
 

@@ -1,4 +1,4 @@
-package com.hotel.hotel_backend.exeption;
+package com.hotel.hotel_backend.exception;
 
 public class ApiException extends  RuntimeException {
     private final ErrorCode code ;

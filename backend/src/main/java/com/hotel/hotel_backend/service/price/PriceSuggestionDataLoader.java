@@ -2,8 +2,8 @@ package com.hotel.hotel_backend.service.price;
 
 import com.hotel.hotel_backend.dto.PriceSuggestionData;
 import com.hotel.hotel_backend.entity.*;
-import com.hotel.hotel_backend.exeption.ApiException;
-import com.hotel.hotel_backend.exeption.ErrorCode;
+import com.hotel.hotel_backend.exception.ApiException;
+import com.hotel.hotel_backend.exception.ErrorCode;
 import com.hotel.hotel_backend.repository.BookingRepository;
 import com.hotel.hotel_backend.repository.DailyRateRepository;
 import com.hotel.hotel_backend.repository.RoomRepository;

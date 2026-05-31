@@ -2,8 +2,8 @@ package com.hotel.hotel_backend.service.search;
 
 
 import com.hotel.hotel_backend.entity.PublicHoliday;
-import com.hotel.hotel_backend.exeption.ApiException;
-import com.hotel.hotel_backend.exeption.ErrorCode;
+import com.hotel.hotel_backend.exception.ApiException;
+import com.hotel.hotel_backend.exception.ErrorCode;
 import com.hotel.hotel_backend.repository.PublicHolidayRepository;
 
 import lombok.RequiredArgsConstructor;
