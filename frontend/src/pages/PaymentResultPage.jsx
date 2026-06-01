@@ -1,12 +1,18 @@
-﻿import { useLocation } from "react-router-dom";
+﻿import { useLocation, Navigate } from "react-router-dom";
 import { C } from "../lib/constants";
 import MainNavbar from "../components/MainNavbar";
 import Footer from "../components/Footer";
 
 function fmt(n) { return (n || 0).toLocaleString("vi-VN") + " ₫"; }
 
+const CANCEL_POLICY_TEXT = {
+  FLEXIBLE: "Miễn phí hủy trước 24 giờ nhận phòng",
+  MODERATE: "Miễn phí hủy trước 7 ngày nhận phòng",
+  STRICT:   "Chính sách không hoàn tiền khi hủy",
+};
+
 function SuccessPage({ navigate, user, onLogout, state }) {
-  const { bookingId, amount, hotelName } = state || {};
+  const { bookingId, amount, hotelName, cancellationPolicy } = state || {};
 
   return (
     <div style={{ minHeight: "100vh", background: "linear-gradient(135deg, #ffffff 0%, #fdf4f5 45%, #f7ebeb 100%)", fontFamily: "'Segoe UI',sans-serif", display: "flex", flexDirection: "column" }}>
@@ -52,7 +58,7 @@ function SuccessPage({ navigate, user, onLogout, state }) {
           {[
             "Email xác nhận đã được gửi đến địa chỉ của bạn",
             "Xuất trình mã đặt phòng khi nhận phòng",
-            "Miễn phí hủy trước 24 giờ nhận phòng",
+            ...(CANCEL_POLICY_TEXT[cancellationPolicy] ? [CANCEL_POLICY_TEXT[cancellationPolicy]] : []),
           ].map(msg => (
             <div key={msg} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, textAlign: "left" }}>
               <span style={{ color: "#16a34a", flexShrink: 0 }}>✓</span>
@@ -150,9 +156,11 @@ function FailedPage({ navigate, user, onLogout, state }) {
 
 export default function PaymentResultPage({ navigate, user, onLogout, variant }) {
   const location = useLocation();
-  const state    = location.state || {};
-  const isSuccess = variant === "success";
+  const state    = location.state;
 
+  if (!state) return <Navigate to="/customer/bookings" replace />;
+
+  const isSuccess = variant === "success";
   return isSuccess
     ? <SuccessPage navigate={navigate} user={user} onLogout={onLogout} state={state} />
     : <FailedPage  navigate={navigate} user={user} onLogout={onLogout} state={state} />;

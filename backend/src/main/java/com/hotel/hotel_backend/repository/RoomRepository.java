@@ -33,6 +33,7 @@ public interface RoomRepository extends JpaRepository<Room, Long> {
 
     boolean existsByHotelIdAndStatus(Long hotelId, RoomStatus  roomStatus);
 
+    @EntityGraph(attributePaths = {"amenities", "hotel"})
     List<Room> findByHotelIdInAndStatus(List<Long> hotelIds, RoomStatus roomStatus);
 
 }

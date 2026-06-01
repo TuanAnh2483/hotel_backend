@@ -76,81 +76,84 @@ export default function PartnerSidebar({ selectedHotelId, onSelectHotel, open, o
         <div className="ps-logo-sub">Partner Portal</div>
       </div>
 
-      {/* Property list */}
-      <div className="ps-hotels">
-        <div className="ps-section-label">Cơ sở lưu trú</div>
-        {hotels.map(hotel => {
-          const color = getGroupColor(hotel.hotelType);
-          const isSelected = selectedHotelId ? hotel.id === selectedHotelId : hotel === hotels[0];
-          return (
-            <button
-              key={hotel.id}
-              onClick={() => onSelectHotel(hotel.id)}
-              className={`ps-hotel-item${isSelected ? " active" : ""}`}
-            >
-              <div className="ps-hotel-dot" style={{ background: color }} />
-              <div className="ps-hotel-info">
-                <div className="ps-hotel-name">{hotel.name}</div>
-                <div className="ps-hotel-type">{getTypeLabel(hotel.hotelType, lang)}</div>
-              </div>
-              {isSelected && <ChevronRight size={12} color="#BE1E2E" />}
-            </button>
-          );
-        })}
-        <button
-          className="ps-add-btn"
-          onClick={() => navigate("/partner/add-property")}
-        >
-          <Plus size={13} /> Thêm cơ sở mới
-        </button>
-      </div>
-
-      {/* Feature menu */}
-      <nav className="ps-nav">
-        <div className="ps-section-label">Quản lý</div>
-        <NavItem icon={LayoutDashboard} label="Tổng quan"       path="/partner"              active={isActive("/partner")}              navigate={navigate} />
-        <NavItem icon={Building2}      label="Cơ sở của tôi"    path="/partner/hotels"       active={isActive("/partner/hotels")}       navigate={navigate} />
-
-        {/* Collapsible: Quản lý phòng */}
-        <div className="ps-nav-group">
+      {/* Scrollable middle: hotels + nav */}
+      <div className="ps-middle">
+        {/* Property list */}
+        <div className="ps-hotels">
+          <div className="ps-section-label">Cơ sở lưu trú</div>
+          {hotels.map(hotel => {
+            const color = getGroupColor(hotel.hotelType);
+            const isSelected = selectedHotelId ? hotel.id === selectedHotelId : hotel === hotels[0];
+            return (
+              <button
+                key={hotel.id}
+                onClick={() => onSelectHotel(hotel.id)}
+                className={`ps-hotel-item${isSelected ? " active" : ""}`}
+              >
+                <div className="ps-hotel-dot" style={{ background: color }} />
+                <div className="ps-hotel-info">
+                  <div className="ps-hotel-name">{hotel.name}</div>
+                  <div className="ps-hotel-type">{getTypeLabel(hotel.hotelType, lang)}</div>
+                </div>
+                {isSelected && <ChevronRight size={12} color="#BE1E2E" />}
+              </button>
+            );
+          })}
           <button
-            className={`ps-nav-item ps-nav-group-toggle${isRoomRoute ? " active" : ""}`}
-            onClick={() => setRoomMenuOpen(v => !v)}
+            className="ps-add-btn"
+            onClick={() => navigate("/partner/add-property")}
           >
-            <span className="ps-nav-icon"><BedDouble size={16} /></span>
-            <span className="ps-nav-label">Quản lý phòng</span>
-            <ChevronDown
-              size={13}
-              className={`ps-nav-chevron${effectiveRoomMenuOpen ? " open" : ""}`}
-            />
+            <Plus size={13} /> Thêm cơ sở mới
           </button>
-          {effectiveRoomMenuOpen && (
-            <div className="ps-nav-sub">
-              <SubNavItem
-                label="Loại phòng"
-                path="/partner/rooms"
-                active={pathname.startsWith("/partner/rooms")}
-                navigate={navigate}
-              />
-              <SubNavItem
-                label="Phòng"
-                path="/partner/room-units"
-                active={pathname.startsWith("/partner/room-units")}
-                navigate={navigate}
-              />
-            </div>
-          )}
         </div>
 
-        <NavItem icon={CalendarDays}   label="Lịch & Vận hành"  path="/partner/calendar"     active={isActive("/partner/calendar")}     navigate={navigate} />
-        <NavItem icon={BookOpen}       label="Booking"           path="/partner/bookings"     active={isActive("/partner/bookings")}     navigate={navigate} badge={pendingBookings} />
-        <NavItem icon={Wrench}         label="Dịch vụ & tiện ích" path="/partner/services"    active={isActive("/partner/services")}     navigate={navigate} />
+        {/* Feature menu */}
+        <nav className="ps-nav">
+          <div className="ps-section-label">Quản lý</div>
+          <NavItem icon={LayoutDashboard} label="Tổng quan"       path="/partner"              active={isActive("/partner")}              navigate={navigate} />
+          <NavItem icon={Building2}      label="Cơ sở của tôi"    path="/partner/hotels"       active={isActive("/partner/hotels")}       navigate={navigate} />
 
-        <div className="ps-section-label">Phân tích</div>
-        <NavItem icon={Star}           label="Đánh giá"          path="/partner/reviews"      active={isActive("/partner/reviews")}      navigate={navigate} badge={unrepliedCount} />
-        <NavItem icon={TrendingUp}     label="Doanh thu"         path="/partner/revenue"      active={isActive("/partner/revenue")}      navigate={navigate} />
-        <NavItem icon={Sparkles}       label="AI Dự báo"         path="/partner/forecast"     active={isActive("/partner/forecast")}     navigate={navigate} />
-      </nav>
+          {/* Collapsible: Quản lý phòng */}
+          <div className="ps-nav-group">
+            <button
+              className={`ps-nav-item ps-nav-group-toggle${isRoomRoute ? " active" : ""}`}
+              onClick={() => setRoomMenuOpen(v => !v)}
+            >
+              <span className="ps-nav-icon"><BedDouble size={16} /></span>
+              <span className="ps-nav-label">Quản lý phòng</span>
+              <ChevronDown
+                size={13}
+                className={`ps-nav-chevron${effectiveRoomMenuOpen ? " open" : ""}`}
+              />
+            </button>
+            {effectiveRoomMenuOpen && (
+              <div className="ps-nav-sub">
+                <SubNavItem
+                  label="Loại phòng"
+                  path="/partner/rooms"
+                  active={pathname.startsWith("/partner/rooms")}
+                  navigate={navigate}
+                />
+                <SubNavItem
+                  label="Phòng"
+                  path="/partner/room-units"
+                  active={pathname.startsWith("/partner/room-units")}
+                  navigate={navigate}
+                />
+              </div>
+            )}
+          </div>
+
+          <NavItem icon={CalendarDays}   label="Lịch & Vận hành"  path="/partner/calendar"     active={isActive("/partner/calendar")}     navigate={navigate} />
+          <NavItem icon={BookOpen}       label="Booking"           path="/partner/bookings"     active={isActive("/partner/bookings")}     navigate={navigate} badge={pendingBookings} />
+          <NavItem icon={Wrench}         label="Dịch vụ & tiện ích" path="/partner/services"    active={isActive("/partner/services")}     navigate={navigate} />
+
+          <div className="ps-section-label">Phân tích</div>
+          <NavItem icon={Star}           label="Đánh giá"          path="/partner/reviews"      active={isActive("/partner/reviews")}      navigate={navigate} badge={unrepliedCount} />
+          <NavItem icon={TrendingUp}     label="Doanh thu"         path="/partner/revenue"      active={isActive("/partner/revenue")}      navigate={navigate} />
+          <NavItem icon={Sparkles}       label="AI Dự báo"         path="/partner/forecast"     active={isActive("/partner/forecast")}     navigate={navigate} />
+        </nav>
+      </div>
 
       {/* User footer */}
       <div className="ps-footer">
@@ -166,9 +169,6 @@ export default function PartnerSidebar({ selectedHotelId, onSelectHotel, open, o
           </div>
         </button>
         <div className="ps-footer-actions">
-          <button className="ps-footer-btn" onClick={() => navigate("/profile")}>
-            <User size={13} /> Hồ sơ
-          </button>
           <button className="ps-footer-btn logout" onClick={logout}>
             <LogOut size={13} /> Đăng xuất
           </button>

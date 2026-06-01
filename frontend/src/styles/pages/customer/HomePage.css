@@ -347,16 +347,9 @@
 /* ── Hotel Cards Row ──────────────────────────────────────────────────── */
 
 .customer-homepage-hotels-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
   gap: 20px;
-  overflow-x: auto;
-  padding-bottom: 16px;
-  align-items: stretch;
-  scrollbar-width: none;
-}
-
-.customer-homepage-hotels-row::-webkit-scrollbar {
-  display: none;
 }
 
 .customer-homepage-hotel-card {
@@ -364,7 +357,6 @@
   border-radius: 10px;
   overflow: hidden;
   border: 1px solid #e5e7eb;
-  flex: 0 0 300px;
   cursor: pointer;
   box-shadow: 0 4px 16px rgba(15, 23, 42, 0.08);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -531,17 +523,64 @@
   justify-content: center;
 }
 
-.customer-homepage-more-card {
-  flex: 0 0 52px;
+.customer-homepage-hotels-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.customer-homepage-hotels-row {
+  flex: 1;
+}
+
+.customer-homepage-nav-btn {
+  width: 34px;
+  height: 34px;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #fff;
-  border-radius: 10px;
-  border: 1px solid #e5e7eb;
+  color: #555;
+  transition: border-color 0.18s ease, color 0.18s ease;
+  flex-shrink: 0;
+}
+
+.customer-homepage-nav-btn:hover:not(:disabled) {
+  border-color: #BE1E2E;
+  color: #BE1E2E;
+}
+
+.customer-homepage-nav-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.customer-homepage-hotels-dots {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  margin-top: 22px;
+}
+
+.customer-homepage-dot {
+  height: 8px;
+  width: 8px;
+  border-radius: 50%;
+  border: none;
+  background: #e5e7eb;
   cursor: pointer;
-  align-self: stretch;
-  min-height: 200px;
+  padding: 0;
+  transition: background 0.2s ease, width 0.2s ease, border-radius 0.2s ease;
+}
+
+.customer-homepage-dot.active {
+  background: #BE1E2E;
+  width: 22px;
+  border-radius: 4px;
 }
 
 /* ── Discovery and property type strips ──────────────────────────────── */
@@ -802,8 +841,9 @@
     flex-direction: column;
   }
 
-  .customer-homepage-hotel-card {
-    flex-basis: 282px;
+  .customer-homepage-hotels-row {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
   }
 
   .customer-homepage-property-card {
@@ -839,6 +879,17 @@
   /* Section padding adjusted for extra searchbar height */
   .customer-homepage-section {
     padding: 200px 14px 24px;
+  }
+
+  .customer-homepage-hotels-row {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  .customer-homepage-nav-btn {
+    width: 30px;
+    height: 30px;
+    flex-shrink: 0;
   }
 
   .customer-homepage-section + .customer-homepage-section {

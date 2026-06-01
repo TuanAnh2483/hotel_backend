@@ -12,6 +12,7 @@ import com.hotel.hotel_backend.repository.HotelRepository;
 import com.hotel.hotel_backend.repository.HotelReviewRepository;
 import com.hotel.hotel_backend.repository.PartnerApplicationRepository;
 import com.hotel.hotel_backend.repository.PaymentTransactionRepository;
+import com.hotel.hotel_backend.repository.RefundRequestRepository;
 import com.hotel.hotel_backend.repository.RoomRepository;
 import com.hotel.hotel_backend.repository.RoomUnitRepository;
 import com.hotel.hotel_backend.repository.UserRepository;
@@ -81,6 +82,9 @@ class AdminPartnerIntegrationTest {
     private PartnerApplicationRepository partnerApplicationRepository;
 
     @Autowired
+    private RefundRequestRepository refundRequestRepository;
+
+    @Autowired
     private PasswordEncoder passwordEncoder;
 
     @Autowired
@@ -90,6 +94,7 @@ class AdminPartnerIntegrationTest {
     void setUp() {
         partnerApplicationRepository.deleteAll();
         hotelReviewRepository.deleteAll();
+        refundRequestRepository.deleteAll();
         paymentTransactionRepository.deleteAll();
         bookingItemRepository.deleteAll();
         bookingRepository.deleteAll();

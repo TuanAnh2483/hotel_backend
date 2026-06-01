@@ -58,7 +58,6 @@ import PartnerReviews   from "./pages/partner/PartnerReviews";
 import PartnerBookingDetailPage from "./pages/partner/PartnerBookingDetailPage";
 import PartnerServices          from "./pages/partner/PartnerServices";
 
-import PartnerManagePage   from "./pages/PartnerManagePage";
 import UnauthorizedPage    from "./pages/UnauthorizedPage";
 import ResetPasswordPage   from "./pages/ResetPasswordPage";
 import BecomePartnerPage   from "./pages/BecomePartnerPage";
@@ -244,11 +243,6 @@ function RefundRequestRoute() {
   return <RefundRequestPage navigate={navigate} user={user} onLogout={logout} />;
 }
 
-function PartnerManageRoute() {
-  const navigate         = useAppNavigate();
-  const { user, logout } = useAuth();
-  return <PartnerManagePage navigate={navigate} user={user} onLogout={logout} />;
-}
 
 function ProfileRoute() {
   const navigate         = useAppNavigate();
@@ -349,12 +343,8 @@ function AppRoutes() {
         <ProtectedRoute role="ADMIN"><AdminRoute page={AdminSystem} /></ProtectedRoute>
       } />
 
-      {/* ── Partner Manage (PARTNER only, standalone page) ──────────── */}
-      <Route path="/partner-manage" element={
-        <ProtectedRoute role="PARTNER">
-          <PartnerManageRoute />
-        </ProtectedRoute>
-      } />
+      {/* /partner-manage đã deprecated → redirect về Partner Portal */}
+      <Route path="/partner-manage" element={<Navigate to="/partner" replace />} />
 
       {/* ── Become Partner (auth required, CUSTOMER only) ─────────── */}
       <Route path="/become-partner" element={<ProtectedRoute role="CUSTOMER"><BecomePartnerRoute /></ProtectedRoute>} />

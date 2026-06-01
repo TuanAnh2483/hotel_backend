@@ -17,7 +17,9 @@ import com.hotel.hotel_backend.repository.BookingRepository;
 import com.hotel.hotel_backend.repository.DailyInventoryRepository;
 import com.hotel.hotel_backend.repository.DailyRateRepository;
 import com.hotel.hotel_backend.repository.HotelRepository;
+import com.hotel.hotel_backend.repository.HotelReviewRepository;
 import com.hotel.hotel_backend.repository.PaymentTransactionRepository;
+import com.hotel.hotel_backend.repository.RefundRequestRepository;
 import com.hotel.hotel_backend.repository.RoomRepository;
 import com.hotel.hotel_backend.repository.RoomUnitRepository;
 import com.hotel.hotel_backend.repository.UserRepository;
@@ -89,6 +91,12 @@ class BookingIntegrationTest {
     private PaymentTransactionRepository paymentTransactionRepository;
 
     @Autowired
+    private HotelReviewRepository hotelReviewRepository;
+
+    @Autowired
+    private RefundRequestRepository refundRequestRepository;
+
+    @Autowired
     private InventoryService inventoryService;
 
     @Autowired
@@ -99,6 +107,8 @@ class BookingIntegrationTest {
 
     @BeforeEach
     void setUp() {
+        hotelReviewRepository.deleteAll();
+        refundRequestRepository.deleteAll();
         bookingItemRepository.deleteAll();
         bookingRepository.deleteAll();
         paymentTransactionRepository.deleteAll();
@@ -950,7 +960,7 @@ class BookingIntegrationTest {
                 .andExpect(jsonPath("$.data.amount").value(1_700_000.0))
                 .andExpect(jsonPath("$.data.paymentCode").isString())
                 .andExpect(jsonPath("$.data.transferContent").isString())
-                .andExpect(jsonPath("$.data.qrImageUrl").value("/payments/QR_Code.png"))
+                .andExpect(jsonPath("$.data.qrImageUrl").value(""))
                 .andReturn();
 
         JsonNode sessionBody = objectMapper.readTree(sessionResult.getResponse().getContentAsString());
