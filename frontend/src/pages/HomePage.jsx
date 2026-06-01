@@ -14,7 +14,7 @@ import {
 import ProvinceCombobox from "../components/ui/ProvinceCombobox";
 import { useVietnamProvinces, useVietnamDistricts } from "../hooks/useVietnamAdmin";
 import { stripProvincePrefix, nfc } from "../services/vnAdminService";
-import { Bed, Calendar, ChevronRight, MapPin, Search, Users, X as XIcon, AlertCircle } from "lucide-react";
+import { Bed, Calendar, ChevronRight, ChevronLeft, MapPin, Search, Users, X as XIcon, AlertCircle } from "lucide-react";
 import "../styles/pages/customer/HomePage.css";
 
 const PLACEHOLDER_BG = "repeating-conic-gradient(#ccc 0% 25%,#e8e8e8 0% 50%) 0 0/20px 20px";
@@ -344,6 +344,7 @@ function PropertyTypeCard({ item, onNavigate }) {
 
 export default function HomePage({ navigate, user, onLogout }) {
   const { t } = useLang();
+  const [hotelPage, setHotelPage] = useState(0);
   const [searchQuery, setSearchQuery] = useState(() => {
     try {
       const saved = sessionStorage.getItem("homeSearch");
@@ -354,9 +355,12 @@ export default function HomePage({ navigate, user, onLogout }) {
   });
 
   const { data: searchResult, isLoading: loadingHotels } = useHotelSearch(
-    { size: 8, sort: "recommended" }
+    { size: 12, sort: "recommended" }
   );
-  const hotels = searchResult?.hotels?.slice(0, 8) ?? [];
+  const hotels = searchResult?.hotels?.slice(0, 12) ?? [];
+  const HOTEL_PAGE_SIZE = 4;
+  const totalHotelPages = Math.max(1, Math.ceil(hotels.length / HOTEL_PAGE_SIZE));
+  const visibleHotels = hotels.slice(hotelPage * HOTEL_PAGE_SIZE, (hotelPage + 1) * HOTEL_PAGE_SIZE);
 
   const destinationResults = useDestinationCounts(DESTINATION_CARDS);
   const destinations = destinationResults.every((r) => r.data)
@@ -410,33 +414,60 @@ export default function HomePage({ navigate, user, onLogout }) {
 
       {/* ── Featured Hotels ── */}
       <div className="customer-homepage-section">
-            <p className="customer-homepage-section-eyebrow">{t("section_featured_eyebrow")}</p>
-            <div className="customer-homepage-section-header">
-              <div>
-                <h2 className="customer-homepage-section-title">{t("section_featured_title")}</h2>
-                <p className="customer-homepage-section-desc">{t("section_featured_desc")}</p>
-              </div>
-              <a className="customer-homepage-view-all" onClick={() => startSearchFromPreset({})}>
-                {t("view_all")} <Ic k="arrow" size={14} color={C.primary} />
-              </a>
-            </div>
-            <div className="customer-homepage-hotels-row">
-              {loadingHotels
-                ? Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)
-                : hotels.map((h, i) => (
-                    <HotelCard
-                      key={h.id}
-                      hotel={h}
-                      imgUrl={h.imageUrl || IMG_HOTELS[i] || ""}
-                      onView={() => navigate("hotel", { hotelId: h.id, ...defaultStayParams(searchQuery || {}) })}
-                    />
-                  ))
-              }
-              <div className="customer-homepage-more-card" onClick={() => startSearchFromPreset({})} title="Xem tất cả khách sạn">
-                <Ic k="arrow" size={22} color={C.primary} />
-              </div>
-            </div>
+        <p className="customer-homepage-section-eyebrow">{t("section_featured_eyebrow")}</p>
+        <div className="customer-homepage-section-header">
+          <div>
+            <h2 className="customer-homepage-section-title">{t("section_featured_title")}</h2>
+            <p className="customer-homepage-section-desc">{t("section_featured_desc")}</p>
           </div>
+          <a className="customer-homepage-view-all" onClick={() => startSearchFromPreset({})}>
+            {t("view_all")} <Ic k="arrow" size={14} color={C.primary} />
+          </a>
+        </div>
+        <div className="customer-homepage-hotels-wrapper">
+          <button
+            className="customer-homepage-nav-btn"
+            onClick={() => setHotelPage(p => p - 1)}
+            disabled={hotelPage === 0}
+            aria-label="Trang trước"
+          >
+            <ChevronLeft size={18} strokeWidth={2.5} />
+          </button>
+          <div className="customer-homepage-hotels-row">
+            {loadingHotels
+              ? Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)
+              : visibleHotels.map((h, i) => (
+                  <HotelCard
+                    key={h.id}
+                    hotel={h}
+                    imgUrl={h.imageUrl || IMG_HOTELS[hotelPage * HOTEL_PAGE_SIZE + i] || ""}
+                    onView={() => navigate("hotel", { hotelId: h.id, ...defaultStayParams(searchQuery || {}) })}
+                  />
+                ))
+            }
+          </div>
+          <button
+            className="customer-homepage-nav-btn"
+            onClick={() => setHotelPage(p => p + 1)}
+            disabled={hotelPage >= totalHotelPages - 1}
+            aria-label="Trang sau"
+          >
+            <ChevronRight size={18} strokeWidth={2.5} />
+          </button>
+        </div>
+        {totalHotelPages > 1 && (
+          <div className="customer-homepage-hotels-dots">
+            {Array.from({ length: totalHotelPages }).map((_, i) => (
+              <button
+                key={i}
+                className={`customer-homepage-dot${i === hotelPage ? " active" : ""}`}
+                onClick={() => setHotelPage(i)}
+                aria-label={`Trang ${i + 1}`}
+              />
+            ))}
+          </div>
+        )}
+      </div>
 
           {/* ── Trending Destinations ── */}
           <div className="customer-homepage-section customer-homepage-discovery-section">

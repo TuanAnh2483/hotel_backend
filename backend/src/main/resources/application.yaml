@@ -49,7 +49,7 @@ app:
   payment:
     provider: ${PAYMENT_PROVIDER:sepay-vietqr}
     transfer-prefix: ${PAYMENT_TRANSFER_PREFIX:HHB}
-    qr-image-url: ${PAYMENT_QR_IMAGE_URL:/payments/QR_Code.png}
+    qr-image-url: ${PAYMENT_QR_IMAGE_URL:}
     bank:
       account-no: ${PAYMENT_BANK_ACCOUNT_NO}
       account-name: ${PAYMENT_BANK_ACCOUNT_NAME}

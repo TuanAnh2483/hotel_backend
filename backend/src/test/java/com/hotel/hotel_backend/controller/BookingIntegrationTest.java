@@ -960,7 +960,7 @@ class BookingIntegrationTest {
                 .andExpect(jsonPath("$.data.amount").value(1_700_000.0))
                 .andExpect(jsonPath("$.data.paymentCode").isString())
                 .andExpect(jsonPath("$.data.transferContent").isString())
-                .andExpect(jsonPath("$.data.qrImageUrl").value("/payments/QR_Code.png"))
+                .andExpect(jsonPath("$.data.qrImageUrl").value(""))
                 .andReturn();
 
         JsonNode sessionBody = objectMapper.readTree(sessionResult.getResponse().getContentAsString());
