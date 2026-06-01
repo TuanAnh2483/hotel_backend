@@ -78,8 +78,6 @@ export default function PartnerLayout() {
             <Menu size={20} />
           </button>
           <div className="partner-topbar-breadcrumb">
-            <span className="partner-topbar-parent">Partner</span>
-            <span className="partner-topbar-sep">/</span>
             <span className="partner-topbar-title">{pageTitle}</span>
           </div>
           <div className="partner-topbar-bell-wrap">

@@ -269,9 +269,12 @@ export default function PartnerHotels() {
 
   const hotelTypeOptions = Array.isArray(catalog.hotelTypes) && catalog.hotelTypes.length ? catalog.hotelTypes : HOTEL_TYPES;
 
-  const filteredHotels = hotels.filter(h => 
-    (h.name || "").toLowerCase().includes(searchTerm.toLowerCase()) || 
-    h.province?.toLowerCase().includes(searchTerm.toLowerCase())
+  const q = searchTerm.toLowerCase();
+  const filteredHotels = hotels.filter(h =>
+    (h.name     || "").toLowerCase().includes(q) ||
+    (h.province || "").toLowerCase().includes(q) ||
+    (h.district || "").toLowerCase().includes(q) ||
+    (h.address  || "").toLowerCase().includes(q)
   );
 
   function openAdd() {
@@ -373,7 +376,7 @@ export default function PartnerHotels() {
           <Search size={20} color="#94a3b8" className="partner-hotel-filter-search-icon" />
           <input
             value={searchTerm}
-            onChange={e => setSearchTerm(e.target.value)}
+            onChange={e => { setSearchTerm(e.target.value); setPage(1); }}
             placeholder={t("pt_hotels_search_ph")}
             className="partner-hotel-filter-search-input"
           />

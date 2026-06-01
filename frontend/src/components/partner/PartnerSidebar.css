@@ -16,30 +16,48 @@
 /* ── Logo ─────────────────────────────────────────────────────────────── */
 
 .ps-logo {
-  padding: 14px 16px 12px;
+  padding: 10px 14px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  gap: 6px;
+  gap: 10px;
   flex-shrink: 0;
 }
 
 .ps-logo-img {
-  width: 160px;
-  height: auto;
+  height: 34px;
+  width: auto;
+  max-width: 105px;
   object-fit: contain;
-  border-radius: 8px;
-  background: rgba(255,255,255,0.06);
-  padding: 6px 10px;
+  border-radius: 7px;
+  flex-shrink: 0;
+  opacity: 0.88;
 }
 
 .ps-logo-sub {
-  color: #64748b;
+  color: #475569;
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 1px;
   text-transform: uppercase;
+}
+
+/* ── Scrollable middle container ──────────────────────────────────────── */
+
+.ps-middle {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.ps-middle::-webkit-scrollbar {
+  width: 4px;
+}
+
+.ps-middle::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 2px;
 }
 
 /* ── Hotel switcher ───────────────────────────────────────────────────── */
@@ -47,18 +65,6 @@
 .ps-hotels {
   padding: 0 8px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-  max-height: 196px;
-  overflow-y: auto;
-  flex-shrink: 0;
-}
-
-.ps-hotels::-webkit-scrollbar {
-  width: 4px;
-}
-
-.ps-hotels::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 2px;
 }
 
 /* ── Section label ────────────────────────────────────────────────────── */
@@ -157,18 +163,7 @@
 /* ── Nav ──────────────────────────────────────────────────────────────── */
 
 .ps-nav {
-  flex: 1;
   padding: 0 8px 8px;
-  overflow-y: auto;
-}
-
-.ps-nav::-webkit-scrollbar {
-  width: 4px;
-}
-
-.ps-nav::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.08);
-  border-radius: 2px;
 }
 
 .ps-nav-item {
