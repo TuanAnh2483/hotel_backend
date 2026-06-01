@@ -31,7 +31,7 @@ app:
   payment:
     provider: sepay-vietqr
     transfer-prefix: HHB
-    qr-image-url: /payments/QR_Code.png
+    qr-image-url: ""
     bank:
       account-no: "0966927203"
       account-name: "Test Account"

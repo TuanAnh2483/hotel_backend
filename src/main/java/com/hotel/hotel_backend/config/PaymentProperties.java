@@ -21,7 +21,7 @@ public class PaymentProperties {
      */
     private String provider = "sepay-vietqr";
     private String transferPrefix = "HHB";
-    private String qrImageUrl = "/payments/QR_Code.png";
+    private String qrImageUrl = "";
     private Bank bank = new Bank();
     private Sepay sepay = new Sepay();
 
