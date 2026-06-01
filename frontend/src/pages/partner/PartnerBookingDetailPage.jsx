@@ -8,7 +8,7 @@ import { PageHeader, Card, Badge, Modal, Btn } from "../../components/admin/Admi
 import { useLang } from "../../contexts/LanguageContext";
 import {
   ArrowLeft, Calendar, User, Building2, CreditCard,
-  Clock, CheckCircle2, BedDouble, LogIn, AlertTriangle,
+  Clock, CheckCircle2, BedDouble, LogIn, AlertTriangle, Pencil,
 } from "lucide-react";
 import "../../styles/pages/PartnerBookingDetailPage.css";
 
@@ -31,7 +31,7 @@ function canCheckoutBooking(booking) {
   const today = new Date(); today.setHours(0, 0, 0, 0);
   return !isNaN(co) && co <= today;
 }
-function canCheckinBooking(booking) {
+function isCheckinDay(booking) {
   if (booking?.status !== "CONFIRMED" || !booking.checkIn) return false;
   const ci = new Date(`${booking.checkIn}T00:00:00`);
   const today = new Date(); today.setHours(0, 0, 0, 0);
@@ -57,83 +57,25 @@ function UnitBadge({ status }) {
   );
 }
 
-// ── RoomPhysicalSection ────────────────────────────────────────────────────
+// ── AssignRoomModal ────────────────────────────────────────────────────────
+// mode: "assign" → set RESERVED  |  "checkin" → set OCCUPIED
 
-function RoomPhysicalSection({ booking, allUnits, customerName, canCheckin, onOpenCheckin }) {
-  const items = booking?.items ?? [];
-
-  return (
-    <Card title={
-      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <BedDouble size={16} color="#64748b" />
-        <span>Phòng vật lý</span>
-      </div>
-    }>
-      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-        {items.map((item, idx) => {
-          const typeName   = item.roomTypeName || item.roomName || "";
-          const matchUnits = allUnits.filter(u => u.roomName === typeName);
-          const assigned   = matchUnits.filter(
-            u => u.guestName === customerName &&
-                 (u.status === "OCCUPIED" || u.status === "RESERVED")
-          );
-
-          return (
-            <div key={idx} className="pbd-room-type-block">
-              <div className="pbd-room-type-header">
-                <span className="pbd-room-type-name">{typeName || "Phòng"}</span>
-                <span className="pbd-room-type-qty">× {item.quantity}</span>
-              </div>
-
-              {matchUnits.length === 0 ? (
-                <p className="pbd-unit-hint">Chưa có phòng vật lý nào cho loại này.</p>
-              ) : assigned.length > 0 ? (
-                <div className="pbd-unit-list">
-                  {assigned.map(u => (
-                    <div key={u.id} className="pbd-unit-row">
-                      <BedDouble size={14} color="#64748b" />
-                      <span className="pbd-unit-number">
-                        {u.roomNumber ? `Phòng ${u.roomNumber}` : `#${u.id}`}
-                        {u.floor != null ? ` · Tầng ${u.floor}` : ""}
-                      </span>
-                      <UnitBadge status={u.status} />
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="pbd-unit-hint pbd-unit-hint--warn">
-                  <AlertTriangle size={13} style={{ flexShrink: 0 }} />
-                  Chưa gán phòng cụ thể — check-in để chỉ định phòng.
-                </p>
-              )}
-            </div>
-          );
-        })}
-      </div>
-
-      {canCheckin && (
-        <button className="pbd-checkin-btn" onClick={onOpenCheckin}>
-          <LogIn size={15} /> Check-in khách
-        </button>
-      )}
-
-      {!canCheckin && booking?.status === "CONFIRMED" && (
-        <p className="pbd-unit-hint" style={{ marginTop: 12 }}>
-          Check-in mở lúc ngày nhận phòng ({fmtDate(booking.checkIn)}).
-        </p>
-      )}
-    </Card>
-  );
-}
-
-// ── CheckinModal ───────────────────────────────────────────────────────────
-
-function CheckinModal({ booking, allUnits, customerName, onConfirm, onClose, loading }) {
-  const items = booking?.items ?? [];
+function AssignRoomModal({ booking, allUnits, customerName, mode, onConfirm, onClose, loading }) {
+  const items       = booking?.items ?? [];
+  const isCheckin   = mode === "checkin";
+  const targetLabel = isCheckin ? "Có khách" : "Đã đặt";
+  const targetColor = isCheckin ? "#3b82f6"  : "#8b5cf6";
 
   const [selected, setSelected] = useState(() => {
     const init = {};
-    items.forEach(item => { init[item.roomTypeName || ""] = new Set(); });
+    items.forEach(item => {
+      const key  = item.roomTypeName || "";
+      // Pre-select units already reserved for this guest
+      const pre  = allUnits
+        .filter(u => u.roomName === key && u.guestName === customerName && u.status === "RESERVED")
+        .map(u => u.id);
+      init[key] = new Set(pre);
+    });
     return init;
   });
 
@@ -151,10 +93,16 @@ function CheckinModal({ booking, allUnits, customerName, onConfirm, onClose, loa
   });
 
   return (
-    <Modal title={`Check-in: ${customerName}`} onClose={onClose} width={520}>
+    <Modal
+      title={isCheckin ? `Check-in: ${customerName}` : `Gán phòng: ${customerName}`}
+      onClose={onClose}
+      width={520}
+    >
       <p style={{ fontSize: 13, color: "#64748b", marginBottom: 20 }}>
-        Chọn phòng vật lý cho khách. Phòng được chọn chuyển sang&nbsp;
-        <strong style={{ color: "#3b82f6" }}>Có khách</strong>.
+        {isCheckin
+          ? <>Chọn phòng vật lý cho khách. Phòng chuyển sang <strong style={{ color: targetColor }}>{targetLabel}</strong>.</>
+          : <>Chọn phòng sẽ giữ cho booking này. Phòng chuyển sang <strong style={{ color: targetColor }}>{targetLabel}</strong>.</>
+        }
       </p>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
@@ -218,10 +166,94 @@ function CheckinModal({ booking, allUnits, customerName, onConfirm, onClose, loa
       <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 24 }}>
         <Btn variant="ghost" onClick={onClose} disabled={loading}>Hủy</Btn>
         <Btn onClick={() => onConfirm(selected)} disabled={!isValid || loading} loading={loading}>
-          <LogIn size={14} /> Xác nhận Check-in
+          {isCheckin ? <><LogIn size={14} /> Xác nhận Check-in</> : <><BedDouble size={14} /> Xác nhận Gán phòng</>}
         </Btn>
       </div>
     </Modal>
+  );
+}
+
+// ── RoomPhysicalSection ────────────────────────────────────────────────────
+
+function RoomPhysicalSection({ booking, allUnits, customerName, onAssign, onCheckin, checkinDay }) {
+  const items = booking?.items ?? [];
+  const isConfirmed = booking?.status === "CONFIRMED";
+
+  return (
+    <Card title={
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <BedDouble size={16} color="#64748b" />
+        <span>Phòng vật lý</span>
+      </div>
+    }>
+      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        {items.map((item, idx) => {
+          const typeName   = item.roomTypeName || item.roomName || "";
+          const matchUnits = allUnits.filter(u => u.roomName === typeName);
+          const assigned   = matchUnits.filter(
+            u => u.guestName === customerName &&
+                 (u.status === "OCCUPIED" || u.status === "RESERVED")
+          );
+
+          return (
+            <div key={idx} className="pbd-room-type-block">
+              <div className="pbd-room-type-header">
+                <span className="pbd-room-type-name">{typeName || "Phòng"}</span>
+                <span className="pbd-room-type-qty">× {item.quantity}</span>
+              </div>
+
+              {matchUnits.length === 0 ? (
+                <p className="pbd-unit-hint">Chưa có phòng vật lý nào cho loại này.</p>
+              ) : assigned.length > 0 ? (
+                <div className="pbd-unit-list">
+                  {assigned.map(u => (
+                    <div key={u.id} className="pbd-unit-row">
+                      <BedDouble size={14} color="#64748b" />
+                      <span className="pbd-unit-number">
+                        {u.roomNumber ? `Phòng ${u.roomNumber}` : `#${u.id}`}
+                        {u.floor != null ? ` · Tầng ${u.floor}` : ""}
+                      </span>
+                      <UnitBadge status={u.status} />
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="pbd-unit-hint pbd-unit-hint--warn">
+                  <AlertTriangle size={13} style={{ flexShrink: 0 }} />
+                  Chưa gán phòng cụ thể.
+                </p>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Action buttons */}
+      {isConfirmed && (
+        <div className="pbd-room-actions">
+          {/* Gán phòng — luôn hiện khi CONFIRMED */}
+          <button className="pbd-assign-btn" onClick={onAssign}>
+            <Pencil size={14} />
+            {allUnits.some(u => u.guestName === customerName && u.status === "RESERVED")
+              ? "Thay đổi phòng"
+              : "Gán phòng"}
+          </button>
+
+          {/* Check-in — chỉ hiện khi đến ngày */}
+          {checkinDay && (
+            <button className="pbd-checkin-btn" onClick={onCheckin}>
+              <LogIn size={14} /> Check-in khách
+            </button>
+          )}
+        </div>
+      )}
+
+      {isConfirmed && !checkinDay && (
+        <p className="pbd-unit-hint" style={{ marginTop: 10 }}>
+          Check-in mở vào ngày {fmtDate(booking.checkIn)}.
+        </p>
+      )}
+    </Card>
   );
 }
 
@@ -234,7 +266,8 @@ export default function PartnerBookingDetailPage() {
 
   const [actionError,   setActionError]   = useState("");
   const [actionMessage, setActionMessage] = useState("");
-  const [checkinOpen,   setCheckinOpen]   = useState(false);
+  // modal: null | "assign" | "checkin"
+  const [modalMode, setModalMode] = useState(null);
 
   const { data: booking, isLoading: loading, error } = usePartnerBookingDetail(bookingId);
   const { data: allUnits = [] } = useHotelRoomUnits(booking?.hotelId);
@@ -242,45 +275,80 @@ export default function PartnerBookingDetailPage() {
   const completeBooking = useCompleteBooking();
   const updateUnit      = useUpdateRoomUnit();
 
-  const completing  = completeBooking.isPending || updateUnit.isPending;
-  const checkinBusy = updateUnit.isPending;
+  const completing = completeBooking.isPending || updateUnit.isPending;
+  const modalBusy  = updateUnit.isPending;
 
   const customerName = booking?.customerName
     || booking?.contact?.fullName
     || booking?.contact?.email
     || "khách hàng";
 
+  // Units reserved/occupied by this guest
   const assignedUnits = allUnits.filter(
     u => u.guestName === customerName &&
          (u.status === "OCCUPIED" || u.status === "RESERVED")
   );
 
-  // ── check-in ──────────────────────────────────────────────────────────────
-  async function handleCheckin(selected) {
-    const updates = [];
-    for (const item of (booking?.items ?? [])) {
-      const typeName = item.roomTypeName || item.roomName || "";
-      for (const uid of [...(selected[typeName] ?? [])]) {
-        const unit = allUnits.find(u => u.id === uid);
-        if (!unit) continue;
-        updates.push({
-          roomId: unit.roomId, unitId: unit.id, hotelId: booking.hotelId,
-          status: "OCCUPIED", guestName: customerName,
-          notes: unit.notes ?? null, roomNumber: unit.roomNumber ?? null,
-          floor: unit.floor ?? null, coverImageUrl: unit.coverImageUrl ?? null,
-        });
-      }
+  // ── gán phòng (RESERVED) ──────────────────────────────────────────────────
+  async function handleAssign(selected) {
+    const updates = buildUpdates(selected, "RESERVED");
+    // Clear previously assigned units not in new selection
+    const prevReserved = allUnits.filter(
+      u => u.guestName === customerName && u.status === "RESERVED"
+    );
+    const newIds = new Set(updates.map(u => u.unitId));
+    const toRelease = prevReserved.filter(u => !newIds.has(u.id));
+
+    try {
+      await Promise.all([
+        ...updates.map(u => updateUnit.mutateAsync(u)),
+        ...toRelease.map(u => updateUnit.mutateAsync({
+          roomId: u.roomId, unitId: u.id, hotelId: booking.hotelId,
+          status: "AVAILABLE", guestName: null,
+          notes: u.notes ?? null, roomNumber: u.roomNumber ?? null,
+          floor: u.floor ?? null, coverImageUrl: u.coverImageUrl ?? null,
+        })),
+      ]);
+      setModalMode(null);
+      setActionMessage(`Đã gán ${updates.length} phòng cho ${customerName}.`);
+      setActionError("");
+    } catch (e) {
+      setActionError(e.message || "Gán phòng thất bại.");
     }
+  }
+
+  // ── check-in (RESERVED → OCCUPIED) ───────────────────────────────────────
+  async function handleCheckin(selected) {
+    // Nếu đã có phòng RESERVED → flip luôn, không cần chọn lại
+    const reservedUnits = allUnits.filter(
+      u => u.guestName === customerName && u.status === "RESERVED"
+    );
+
+    let updates;
+    if (reservedUnits.length > 0) {
+      // Flip toàn bộ RESERVED → OCCUPIED
+      updates = reservedUnits.map(u => ({
+        roomId: u.roomId, unitId: u.id, hotelId: booking.hotelId,
+        status: "OCCUPIED", guestName: customerName,
+        notes: u.notes ?? null, roomNumber: u.roomNumber ?? null,
+        floor: u.floor ?? null, coverImageUrl: u.coverImageUrl ?? null,
+      }));
+    } else {
+      // Chưa gán → dùng selection từ modal
+      updates = buildUpdates(selected, "OCCUPIED");
+    }
+
     try {
       await Promise.all(updates.map(u => updateUnit.mutateAsync(u)));
-      setCheckinOpen(false);
+      setModalMode(null);
       setActionMessage(`Đã check-in ${updates.length} phòng cho ${customerName}.`);
+      setActionError("");
     } catch (e) {
       setActionError(e.message || "Check-in thất bại.");
     }
   }
 
-  // ── complete (checkout) ───────────────────────────────────────────────────
+  // ── complete (checkout + CLEANING) ────────────────────────────────────────
   async function handleComplete() {
     if (!booking || !window.confirm(t("pt_bk_confirm_checkout"))) return;
     setActionError(""); setActionMessage("");
@@ -306,6 +374,37 @@ export default function PartnerBookingDetailPage() {
     }
   }
 
+  // ── helper: build updateUnit payload list ─────────────────────────────────
+  function buildUpdates(selected, status) {
+    const updates = [];
+    for (const item of (booking?.items ?? [])) {
+      const typeName = item.roomTypeName || item.roomName || "";
+      for (const uid of [...(selected?.[typeName] ?? [])]) {
+        const unit = allUnits.find(u => u.id === uid);
+        if (!unit) continue;
+        updates.push({
+          roomId: unit.roomId, unitId: unit.id, hotelId: booking.hotelId,
+          status, guestName: customerName,
+          notes: unit.notes ?? null, roomNumber: unit.roomNumber ?? null,
+          floor: unit.floor ?? null, coverImageUrl: unit.coverImageUrl ?? null,
+        });
+      }
+    }
+    return updates;
+  }
+
+  // ── open check-in: if rooms already reserved, no modal needed ────────────
+  function openCheckin() {
+    const hasReserved = allUnits.some(
+      u => u.guestName === customerName && u.status === "RESERVED"
+    );
+    if (hasReserved) {
+      handleCheckin(null); // flip directly, no modal
+    } else {
+      setModalMode("checkin"); // open modal to select + check-in at once
+    }
+  }
+
   // ── guards ────────────────────────────────────────────────────────────────
   if (loading) return (
     <div style={{ padding: 40, textAlign: "center", color: "#94a3b8" }}>{t("pt_loading")}</div>
@@ -316,7 +415,7 @@ export default function PartnerBookingDetailPage() {
     </div>
   );
 
-  const showCheckin  = canCheckinBooking(booking);
+  const checkinDay   = isCheckinDay(booking);
   const showCheckout = canCheckoutBooking(booking);
 
   return (
@@ -373,13 +472,14 @@ export default function PartnerBookingDetailPage() {
             </div>
           </Card>
 
-          {/* Physical rooms */}
+          {/* Physical room assignment */}
           <RoomPhysicalSection
             booking={booking}
             allUnits={allUnits}
             customerName={customerName}
-            canCheckin={showCheckin}
-            onOpenCheckin={() => setCheckinOpen(true)}
+            checkinDay={checkinDay}
+            onAssign={() => setModalMode("assign")}
+            onCheckin={openCheckin}
           />
 
           {/* Customer */}
@@ -430,16 +530,6 @@ export default function PartnerBookingDetailPage() {
               </div>
             )}
 
-            {showCheckin && (
-              <button
-                className="pbd-checkin-btn"
-                style={{ marginTop: 14 }}
-                onClick={() => setCheckinOpen(true)}
-              >
-                <LogIn size={15} /> Check-in khách
-              </button>
-            )}
-
             {showCheckout && (
               <button
                 onClick={handleComplete}
@@ -448,7 +538,7 @@ export default function PartnerBookingDetailPage() {
                   alignItems: "center", background: "#10b981", border: "none",
                   borderRadius: 10, color: "#fff", cursor: completing ? "not-allowed" : "pointer",
                   display: "flex", fontSize: 13, fontWeight: 800, gap: 8,
-                  justifyContent: "center", marginTop: 12, opacity: completing ? 0.7 : 1,
+                  justifyContent: "center", marginTop: 16, opacity: completing ? 0.7 : 1,
                   padding: "12px 14px", width: "100%",
                 }}
               >
@@ -486,14 +576,16 @@ export default function PartnerBookingDetailPage() {
         </div>
       </div>
 
-      {checkinOpen && (
-        <CheckinModal
+      {/* Modal */}
+      {modalMode && (
+        <AssignRoomModal
           booking={booking}
           allUnits={allUnits}
           customerName={customerName}
-          loading={checkinBusy}
-          onConfirm={handleCheckin}
-          onClose={() => setCheckinOpen(false)}
+          mode={modalMode}
+          loading={modalBusy}
+          onConfirm={modalMode === "assign" ? handleAssign : handleCheckin}
+          onClose={() => setModalMode(null)}
         />
       )}
     </div>

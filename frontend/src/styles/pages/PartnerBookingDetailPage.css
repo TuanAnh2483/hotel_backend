@@ -106,25 +106,46 @@
   margin: 0;
 }
 
-/* ── Check-in button ──────────────────────────────────────────────────── */
+/* ── Room action buttons ──────────────────────────────────────────────── */
 
+.pbd-room-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.pbd-assign-btn,
 .pbd-checkin-btn {
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  width: 100%;
-  margin-top: 16px;
-  padding: 11px 14px;
-  background: #BE1E2E;
-  color: #fff;
+  gap: 7px;
+  padding: 10px 14px;
   border: none;
   border-radius: 10px;
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 700;
   cursor: pointer;
-  transition: background 0.15s;
+  transition: background 0.15s, opacity 0.15s;
   font-family: inherit;
+}
+
+.pbd-assign-btn {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+}
+
+.pbd-assign-btn:hover {
+  background: #e2e8f0;
+  color: #1e293b;
+}
+
+.pbd-checkin-btn {
+  background: #BE1E2E;
+  color: #fff;
+  font-weight: 800;
 }
 
 .pbd-checkin-btn:hover {
