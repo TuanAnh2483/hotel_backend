@@ -148,7 +148,7 @@ export default function PaymentPage({ navigate, user, params = {}, onLogout }) {
   useEffect(() => {
     if (!booking) return;
     if (booking.status === "CONFIRMED") {
-      navigate("payment-success", { bookingId, amount: booking.totalPrice, hotelName: booking.hotelName });
+      navigate("payment-success", { bookingId, amount: booking.totalPrice, hotelName: booking.hotelName, cancellationPolicy: booking.cancellationPolicy });
     }
     if (booking.status === "CANCELLED") {
       navigate("payment-failed", { bookingId, errorMessage: "Phiên thanh toán đã hết hạn." });
@@ -169,7 +169,7 @@ export default function PaymentPage({ navigate, user, params = {}, onLogout }) {
        */
       const { data: latest } = await refetchBooking();
       if (latest?.status === "CONFIRMED") {
-        navigate("payment-success", { bookingId, amount: latest.totalPrice, hotelName: latest.hotelName });
+        navigate("payment-success", { bookingId, amount: latest.totalPrice, hotelName: latest.hotelName, cancellationPolicy: latest.cancellationPolicy });
         return;
       }
       if (latest?.status === "CANCELLED") {

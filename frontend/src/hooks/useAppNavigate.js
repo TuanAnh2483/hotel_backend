@@ -82,9 +82,8 @@ export function useAppNavigate() {
       case "partner-forecast":
         return rrNavigate("/partner/forecast");
 
-      // ── Admin ────────────────────────────────────────────────────────
       case "partner-manage":
-        return rrNavigate("/partner-manage");
+        return rrNavigate("/partner");
 
       // ── Admin ────────────────────────────────────────────────────────
       case "admin-dashboard":
