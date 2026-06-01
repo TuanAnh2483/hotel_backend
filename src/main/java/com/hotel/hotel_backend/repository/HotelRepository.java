@@ -26,5 +26,6 @@ public interface HotelRepository extends JpaRepository<Hotel, Long> {
  @EntityGraph(attributePaths = "amenities")
  List<Hotel> findByProvinceAndDistrictAndStatus(String province, String district, HotelStatus status);
 
+ @EntityGraph(attributePaths = {"amenities"})
  List<Hotel> findByStatus(HotelStatus status);
 }
