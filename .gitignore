@@ -32,3 +32,6 @@ Thumbs.db
 .idea/
 .vscode/
 *.iml
+
+frontend/.env.production
+frontend/payment
