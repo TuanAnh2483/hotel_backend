@@ -8,7 +8,7 @@ import { PageHeader, Card } from "../../components/admin/AdminLayout";
 import { useLang } from "../../contexts/LanguageContext";
 import {
   Activity, Sparkles, Gift, Building2, Hotel,
-  ArrowDownRight, Minus, CheckCircle2, Brain, Zap,
+  Minus, CheckCircle2, Brain, Zap,
   CircleDollarSign, TrendingUp, BarChart2,
 } from "lucide-react";
 
@@ -295,27 +295,27 @@ export default function PartnerForecast() {
           {/* Metrics */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16, marginBottom: 20 }}>
             <MetricCard
-              icon={CircleDollarSign} tone="#7C3AED"
+              icon={CircleDollarSign}
               label={t("pt_fc_metric_rev7")}
               value={fmtCurrency(analytics?.revenue7Days)}
               sub={analytics ? `${fmtPct(analytics.weeklyGrowthPct)} ${t("pt_fc_vs_last_week")}` : t("pt_fc_no_data")}
               subColor={analytics?.weeklyGrowthPct >= 0 ? "#059669" : "#BE1E2E"}
             />
             <MetricCard
-              icon={BarChart2} tone="#0EA5E9"
+              icon={BarChart2}
               label={t("pt_fc_metric_rev28")}
               value={fmtCurrency(analytics?.revenue28Days)}
               sub={t("pt_fc_last_4weeks")}
             />
             <MetricCard
-              icon={TrendingUp} tone="#BE1E2E"
+              icon={TrendingUp}
               label={t("pt_fc_metric_highdays")}
               value={t("pt_fc_n_days").replace("{n}", highCount)}
               valueColor="#BE1E2E"
               sub={t("pt_fc_in_next_days").replace("{n}", daysCount)}
             />
             <MetricCard
-              icon={Sparkles} tone="#D97706"
+              icon={Sparkles}
               label={t("pt_fc_metric_ai_rate")}
               value={analytics ? `${Number(analytics.acceptanceRate).toFixed(1)}%` : "—"}
               sub={analytics
@@ -333,31 +333,18 @@ export default function PartnerForecast() {
               fontSize: 12,
             }}>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
-                <Brain size={16} color={suggestions.hasSufficientData ? "#059669" : "#D97706"} />
-                <span style={{ fontWeight: 800, color: suggestions.hasSufficientData ? "#059669" : "#D97706" }}>
+                <Brain size={15} color={suggestions.hasSufficientData ? "#059669" : "#D97706"} />
+                <span style={{ fontWeight: 700, fontSize: 13, color: suggestions.hasSufficientData ? "#059669" : "#D97706" }}>
                   {suggestions.hasSufficientData ? t("pt_fc_model_trained") : t("pt_fc_model_learning")}
                 </span>
-                <Sep />
-                <span style={{ color: "#64748b" }}>{t("pt_fc_model_round").replace("{n}", suggestions.trainingRound)}</span>
-                <Sep />
-                <span style={{ color: "#64748b" }}>{t("pt_fc_model_points").replace("{n}", suggestions.trainingDataPoints)}</span>
-                <Sep />
-                <span style={{ color: "#64748b" }}>{t("pt_fc_model_flex")} {(suggestions.priceAggressiveness * 100).toFixed(0)}%</span>
-                <Sep />
-                <span style={{ color: "#64748b" }}>{t("pt_fc_model_accept")} {(suggestions.lastAcceptanceRate * 100).toFixed(0)}%</span>
-                <div style={{ marginLeft: "auto", display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 3 }}>
-                  <button
-                    onClick={handleTrain}
-                    disabled={trainLoading}
-                    title="AI sẽ xem lại các quyết định giá bạn đã thực hiện và tự điều chỉnh để đề xuất phù hợp hơn với phong cách định giá của bạn. Nên dùng sau khi bạn đã phản hồi ít nhất 5 đề xuất giá."
-                    style={trainBtnSt(trainLoading)}
-                  >
-                    <Zap size={12} /> {trainLoading ? t("pt_fc_improving") : t("pt_fc_improve")}
-                  </button>
-                  <span style={{ fontSize: 9, color: "#94a3b8", fontStyle: "italic" }}>
-                    {t("pt_fc_train_hint")}
-                  </span>
-                </div>
+                <button
+                  onClick={handleTrain}
+                  disabled={trainLoading}
+                  title="AI sẽ xem lại các quyết định giá và tự điều chỉnh. Nên dùng sau khi đã phản hồi ít nhất 5 đề xuất."
+                  style={{ ...trainBtnSt(trainLoading), marginLeft: "auto" }}
+                >
+                  <Zap size={12} /> {trainLoading ? t("pt_fc_improving") : t("pt_fc_improve")}
+                </button>
               </div>
               {trainMsg && (
                 <div style={{ marginTop: 8, fontSize: 11, color: "#475569", fontWeight: 600 }}>{trainMsg}</div>
@@ -383,10 +370,8 @@ export default function PartnerForecast() {
 
             {items.map(item => {
               const d    = DEMAND_CFG[effectiveDemand(item.deltaPct)] ?? DEMAND_CFG.MEDIUM;
-              const conf = CONF_CFG[item.confidence] ?? CONF_CFG.MEDIUM;
               const fb   = applied[item.date];
               const busy = Boolean(feedbackPending[item.date]);
-              const minus5Price = item.suggestedPrice ? Math.round(item.suggestedPrice * 0.95) : null;
 
               return (
                 <div key={item.date} style={{ ...dayCardSt, border: fb ? "1.5px solid #A7F3D0" : "1px solid #f1f5f9" }}>
@@ -404,72 +389,40 @@ export default function PartnerForecast() {
                     )}
                   </div>
 
-                  {/* Demand + occupancy */}
+                  {/* Demand badge — compact */}
                   <div style={demandSectionSt}>
-                    <span style={{ display: "inline-block", padding: "3px 10px", borderRadius: 99, marginBottom: 8, background: d.bg, border: `1px solid ${d.border}`, color: d.color, fontSize: 11, fontWeight: 800 }}>
-                      {t("pt_fc_demand_prefix")} {d.label}
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "3px 10px", borderRadius: 99, background: d.bg, border: `1px solid ${d.border}`, color: d.color, fontSize: 11, fontWeight: 700 }}>
+                      <span style={{ width: 6, height: 6, borderRadius: "50%", background: d.color, flexShrink: 0 }} />
+                      {d.label}
                     </span>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <div style={{ flex: 1, height: 5, background: "#f1f5f9", borderRadius: 99, overflow: "hidden" }}>
-                        <div style={{ width: `${Math.round((item.occupancy ?? 0) * 100)}%`, height: "100%", background: d.color }} />
-                      </div>
-                      <span style={{ fontSize: 12, fontWeight: 800, color: d.color, minWidth: 34 }}>
-                        {Math.round((item.occupancy ?? 0) * 100)}%
-                      </span>
-                    </div>
-                    <div style={{ fontSize: 10, color: "#94a3b8", marginTop: 4 }}>
-                      {t("pt_fc_bookings_rooms").replace("{booked}", item.activeBookings).replace("{total}", item.totalRooms)}
-                    </div>
-                    <div style={{ fontSize: 10, color: "#94a3b8", marginTop: 2 }}>
-                      {item.velocity > 0 && (
-                        <span style={{ color: "#D97706", fontWeight: 700 }}>
-                          {t("pt_fc_new_in_7d").replace("{n}", item.velocity)} ·{" "}
-                        </span>
-                      )}
-                      {item.daysUntil === 0 ? t("pt_fc_today") : t("pt_fc_days_left").replace("{n}", item.daysUntil)}
-                    </div>
                   </div>
 
-                  {/* Price */}
+                  {/* Price — focal point */}
                   <div style={priceSectionSt}>
-                    <div style={{ fontSize: 10, color: "#94a3b8", fontWeight: 800, marginBottom: 4, textTransform: "uppercase" }}>{t("pt_fc_price_label")}</div>
-                    <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
-                      <span style={{ fontSize: 11, color: "#94a3b8", textDecoration: "line-through" }}>{fmtCurrency(item.currentPrice)}</span>
-                      <span style={{ fontSize: 20, fontWeight: 900, color: d.color }}>
+                    <div style={{ fontSize: 10, color: "#94a3b8", fontWeight: 700, marginBottom: 5, textTransform: "uppercase", letterSpacing: "0.4px" }}>{t("pt_fc_price_label")}</div>
+                    <div style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap" }}>
+                      <span style={{ fontSize: 12, color: "#cbd5e1", textDecoration: "line-through" }}>{fmtCurrency(item.currentPrice)}</span>
+                      <span style={{ fontSize: 22, fontWeight: 900, color: "#0f172a" }}>
                         {fmtCurrency(item.suggestedPrice)}
                       </span>
-                      <span style={{ fontSize: 12, fontWeight: 800, color: d.color }}>{fmtPct(item.deltaPct)}</span>
-                    </div>
-                    <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 3, display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
-                      <span>{t("pt_fc_range")} {fmtCurrency(item.priceLow)} – {fmtCurrency(item.priceHigh)}</span>
-                      <span style={{ color: conf.color, fontWeight: 700 }}>{conf.label}</span>
-                      {item.aiGenerated && (
-                        <span style={{ padding: "1px 6px", borderRadius: 4, background: "#EFF6FF", color: "#2563EB", fontWeight: 800, fontSize: 10 }}>AI</span>
+                      {item.deltaPct != null && (
+                        <span style={{ fontSize: 12, fontWeight: 700, color: item.deltaPct >= 0 ? "#059669" : "#BE1E2E", background: item.deltaPct >= 0 ? "#f0fdf4" : "#fff1f2", padding: "2px 7px", borderRadius: 6 }}>
+                          {fmtPct(item.deltaPct)}
+                        </span>
                       )}
                     </div>
                   </div>
 
-                  {/* Reason */}
-                  <div style={reasonSectionSt}>
-                    {item.reason}
-                    {item.factors?.length > 0 && (
-                      <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 6 }}>
-                        {item.factors.map((f, fi) => (
-                          <span key={fi} style={{ padding: "2px 8px", borderRadius: 6, background: "#f8fafc", border: "1px solid #e2e8f0", fontSize: 10, fontWeight: 700, color: "#475569" }}>
-                            {f}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+                  {/* Reason — 1 line */}
+                  <div style={reasonSectionSt}>{item.reason}</div>
 
                   {/* Actions */}
                   <div style={actionsSectionSt}>
                     {fb ? (
                       <div style={appliedBadgeSt}>
-                        <CheckCircle2 size={16} color="#059669" />
+                        <CheckCircle2 size={15} color="#059669" />
                         <div>
-                          <div style={{ fontSize: 11, fontWeight: 800, color: "#059669" }}>
+                          <div style={{ fontSize: 11, fontWeight: 700, color: "#059669" }}>
                             {fb.outcome === "SKIPPED" ? t("pt_fc_ignored") : t("pt_fc_applied")}
                           </div>
                           {fb.appliedPrice && <div style={{ fontSize: 10, color: "#64748b" }}>{fmtCurrency(fb.appliedPrice)}</div>}
@@ -479,11 +432,7 @@ export default function PartnerForecast() {
                       <>
                         <button onClick={() => handleFeedback(item, "APPLIED")} disabled={busy || item.suggestedPrice == null}
                           style={{ ...actionBtn, background: "#BE1E2E", color: "#fff", opacity: busy ? 0.6 : 1 }}>
-                          <CheckCircle2 size={13} /> {t("pt_fc_apply")} {fmtCurrency(item.suggestedPrice)}
-                        </button>
-                        <button onClick={() => handleFeedback(item, "APPLIED_MINUS5")} disabled={busy || item.suggestedPrice == null}
-                          style={{ ...actionBtn, background: "#0f172a", color: "#fff", opacity: busy ? 0.6 : 1 }}>
-                          <ArrowDownRight size={13} /> {t("pt_fc_apply_minus5")} ({fmtCurrency(minus5Price)})
+                          <CheckCircle2 size={13} /> {t("pt_fc_apply")}
                         </button>
                         <button onClick={() => handleFeedback(item, "SKIPPED")} disabled={busy}
                           style={{ ...actionBtn, background: "#f8fafc", color: "#64748b", border: "1px solid #e2e8f0", opacity: busy ? 0.6 : 1 }}>
@@ -519,12 +468,12 @@ export default function PartnerForecast() {
 }
 
 // ── sub-components ────────────────────────────────────────────────────
-function MetricCard({ icon: Icon, tone, label, value, valueColor, sub, subColor }) {
+function MetricCard({ icon: Icon, label, value, valueColor, sub, subColor }) {
   return (
     <Card style={{ padding: 20, borderRadius: 20 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
-        <span style={{ fontSize: 10, color: "#94a3b8", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.5px" }}>{label}</span>
-        <Icon size={16} color={tone} />
+        <span style={{ fontSize: 10, color: "#94a3b8", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px" }}>{label}</span>
+        <Icon size={15} color="#94a3b8" />
       </div>
       <div style={{ fontSize: 22, fontWeight: 900, color: valueColor ?? "#0f172a", marginBottom: 4 }}>{value}</div>
       {sub && <div style={{ fontSize: 11, color: subColor ?? "#64748b", fontWeight: 600 }}>{sub}</div>}
