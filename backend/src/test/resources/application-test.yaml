@@ -46,6 +46,9 @@ app:
       account-no: "0966927203"
       account-name: "Test Account"
       bank-name: "MB Bank"
+      # Cố định rỗng để test không bị rò rỉ PAYMENT_BANK_BIN từ file .env (qua spring.config.import).
+      # Khi bank-bin rỗng, buildVietQrUrl fallback về qr-image-url ("") -> qrImageUrl rỗng như test mong đợi.
+      bank-bin: ""
     sepay:
       webhook-api-key: hhb_sepay_webhook_2026
   ai:

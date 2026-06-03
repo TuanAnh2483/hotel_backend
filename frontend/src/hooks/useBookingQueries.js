@@ -85,6 +85,17 @@ export function useCreatePaymentSession(options = {}) {
   });
 }
 
+export function useReconcilePayment(options = {}) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (bookingId) => bookingService.reconcilePayment(bookingId),
+    onSuccess: (_data, bookingId) => {
+      queryClient.invalidateQueries({ queryKey: bookingKeys.detail(bookingId) });
+    },
+    ...options,
+  });
+}
+
 export function useCancelBooking(options = {}) {
   const queryClient = useQueryClient();
   return useMutation({

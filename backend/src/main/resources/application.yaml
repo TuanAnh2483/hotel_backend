@@ -58,6 +58,8 @@ app:
       bank-bin: ${PAYMENT_BANK_BIN:}
     sepay:
       webhook-api-key: ${PAYMENT_SEPAY_WEBHOOK_API_KEY}
+      api-token: ${PAYMENT_SEPAY_API_TOKEN:}
+      api-base-url: ${PAYMENT_SEPAY_API_BASE_URL:https://my.sepay.vn}
 
   jwt:
     secret: ${JWT_SECRET}

@@ -1027,6 +1027,54 @@ class BookingIntegrationTest {
     }
 
     @Test
+    void reconcileShouldNotConfirmWhenSepayApiHasNoMatchingTransaction() throws Exception {
+        // Profile test không cấu hình PAYMENT_SEPAY_API_TOKEN -> SepayTransactionClient trả rỗng.
+        // Đây cũng là hành vi an toàn ở production khi API tạm không gọi được: reconcile no-op,
+        // booking giữ nguyên PENDING_PAYMENT thay vì bị confirm nhầm.
+        String customerToken = createToken("customer-reconcile@test.com", UserType.CUSTOMER);
+        User owner = createUser("partner-reconcile@test.com", UserType.PARTNER);
+
+        Hotel hotel = createHotel(owner, "Reconcile Hotel");
+        Room room = createRoom(hotel, "Reconcile Room", 2);
+        initInventory(room);
+        createDailyRate(room, checkIn, 800_000L, 1, false);
+        createDailyRate(room, checkIn.plusDays(1), 900_000L, 1, false);
+
+        MvcResult createResult = mockMvc.perform(post("/api/bookings")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(customerToken))
+                        .content("""
+                                {
+                                  "checkIn": "%s",
+                                  "checkOut": "%s",
+                                  "room": [ { "roomId": %d, "quantity": 1 } ],
+                                  "contact": {
+                                    "fullName": "Reconcile Customer",
+                                    "email": "customer-reconcile@test.com",
+                                    "phone": "0123456789"
+                                  }
+                                }
+                                """.formatted(checkIn, checkOut, room.getId())))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        long bookingId = readBookingId(createResult);
+
+        mockMvc.perform(post("/api/bookings/{bookingId}/payment-session", bookingId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(customerToken)))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/bookings/{bookingId}/payment-session/reconcile", bookingId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(customerToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.matched").value(false))
+                .andExpect(jsonPath("$.data.bookingStatus").value("PENDING_PAYMENT"));
+
+        var booking = bookingRepository.findById(bookingId).orElseThrow();
+        assertThat(booking.getStatus().name()).isEqualTo("PENDING_PAYMENT");
+    }
+
+    @Test
     void bookingShouldRejectRoomThatIsClosedForStay() throws Exception {
         String customerToken = createToken("customer-closed@test.com", UserType.CUSTOMER);
         User owner = createUser("partner-closed@test.com", UserType.PARTNER);

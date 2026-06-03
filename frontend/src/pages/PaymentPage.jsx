@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import MainNavbar from "../components/MainNavbar";
 import Footer from "../components/Footer";
 import BookingStepper from "../components/ui/BookingStepper";
-import { useBookingDetail, useCreatePaymentSession } from "../hooks/useBookingQueries";
+import { useBookingDetail, useCreatePaymentSession, useReconcilePayment } from "../hooks/useBookingQueries";
 import { useLang } from "../contexts/LanguageContext";
 import { C } from "../lib/constants";
 import {
@@ -78,6 +78,7 @@ export default function PaymentPage({ navigate, user, params = {}, onLogout }) {
   }, [bookingError]);
 
   const createPaymentSession = useCreatePaymentSession();
+  const reconcilePayment = useReconcilePayment();
 
   useEffect(() => {
     if (!booking || !isPending(booking) || paymentSession || sessionLoading) return;
@@ -106,6 +107,17 @@ export default function PaymentPage({ navigate, user, params = {}, onLogout }) {
   const handlePay = async () => {
     setPaying(true); setError(""); setStatusMessage("");
     try {
+      // Chủ động đối soát với SePay trước, không chỉ chờ webhook.
+      // Lỗi reconcile (vd chưa cấu hình API token) không chặn luồng — vẫn fallback về refetch.
+      try {
+        const result = await reconcilePayment.mutateAsync(bookingId);
+        if (result?.matched || result?.bookingStatus === "CONFIRMED") {
+          const { data: confirmed } = await refetchBooking();
+          navigate("payment-success", { bookingId, amount: confirmed?.totalPrice ?? booking?.totalPrice, hotelName: confirmed?.hotelName ?? booking?.hotelName, cancellationPolicy: confirmed?.cancellationPolicy ?? booking?.cancellationPolicy });
+          return;
+        }
+      } catch { /* bỏ qua, fallback refetch bên dưới */ }
+
       const { data: latest } = await refetchBooking();
       if (latest?.status === "CONFIRMED") {
         navigate("payment-success", { bookingId, amount: latest.totalPrice, hotelName: latest.hotelName, cancellationPolicy: latest.cancellationPolicy });

@@ -10,6 +10,7 @@ import com.hotel.hotel_backend.dto.request.CreateRefundRequest;
 import com.hotel.hotel_backend.dto.response.BookingQuoteResponse;
 import com.hotel.hotel_backend.dto.request.CreateBookingRequest;
 import com.hotel.hotel_backend.dto.response.BookingResponse;
+import com.hotel.hotel_backend.dto.response.PaymentReconcileResponse;
 import com.hotel.hotel_backend.dto.response.PaymentSessionResponse;
 import com.hotel.hotel_backend.dto.response.RefundRequestResponse;
 import com.hotel.hotel_backend.exception.ApiException;
@@ -121,6 +122,20 @@ public class BookingController {
             @AuthenticationPrincipal JwtPrincipal principal
     ) {
         return ApiResponse.ok(bookingPaymentGatewayService.createPaymentSession(requireUserId(principal), bookingId));
+    }
+
+    /*
+     * Customer bấm "Tôi đã chuyển khoản" -> backend chủ động đối soát với SePay
+     * Transaction API thay vì chỉ chờ webhook. Nếu tìm thấy giao dịch khớp
+     * paymentCode + số tiền thì confirm booking ngay (idempotent).
+     */
+    @PostMapping("/{bookingId}/payment-session/reconcile")
+    @PreAuthorize("hasRole('CUSTOMER')")
+    public ApiResponse<PaymentReconcileResponse> reconcilePayment(
+            @PathVariable Long bookingId,
+            @AuthenticationPrincipal JwtPrincipal principal
+    ) {
+        return ApiResponse.ok(bookingPaymentGatewayService.reconcilePayment(requireUserId(principal), bookingId));
     }
 
     private Long requireUserId(JwtPrincipal principal) {

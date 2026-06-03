@@ -2,7 +2,9 @@ package com.hotel.hotel_backend.service;
 
 import com.hotel.hotel_backend.config.PaymentProperties;
 import com.hotel.hotel_backend.dto.request.SepayWebhookRequest;
+import com.hotel.hotel_backend.dto.response.PaymentReconcileResponse;
 import com.hotel.hotel_backend.dto.response.PaymentSessionResponse;
+import com.hotel.hotel_backend.dto.response.SepayTransactionListResponse.SepayTransaction;
 import com.hotel.hotel_backend.dto.response.SepayWebhookResponse;
 import com.hotel.hotel_backend.entity.Booking;
 import com.hotel.hotel_backend.entity.BookingStatus;
@@ -52,6 +54,7 @@ public class BookingPaymentGatewayService {
     private final PaymentTransactionRepository paymentTransactionRepository;
     private final BookingExpirationService bookingExpirationService;
     private final PaymentProperties paymentProperties;
+    private final SepayTransactionClient sepayTransactionClient;
     private final ObjectMapper objectMapper;
 
     /*
@@ -172,54 +175,165 @@ public class BookingPaymentGatewayService {
         }
 
         transaction.setRawPayload(rawPayload);
-        transaction.setGateway(GATEWAY_SEPAY);
         transaction.setGatewayReferenceCode(request.referenceCode());
+
+        confirmFromGateway(
+                transaction,
+                gatewayTransactionId,
+                request.transferAmount(),
+                request.transactionDate(),
+                "SePay webhook"
+        );
+        return new SepayWebhookResponse(true);
+    }
+
+    /*
+     * Đối soát chủ động khi customer bấm "Tôi đã chuyển khoản".
+     *
+     * Thay vì chỉ chờ webhook, backend hỏi thẳng SePay Transaction API xem đã có
+     * giao dịch tiền vào khớp paymentCode + số tiền chưa. Nếu có thì confirm booking
+     * ngay bằng cùng logic với webhook (idempotent). Đây là fallback khi webhook miss.
+     */
+    @Transactional
+    public PaymentReconcileResponse reconcilePayment(Long userId, Long bookingId) {
+        Booking booking = loadOwnedBooking(userId, bookingId);
+        booking = bookingExpirationService.expirePendingBookingIfNeeded(booking);
+
+        if (booking.getStatus() == BookingStatus.CONFIRMED) {
+            return new PaymentReconcileResponse(booking.getStatus().name(), true);
+        }
+        if (booking.getStatus() != BookingStatus.PENDING_PAYMENT) {
+            return new PaymentReconcileResponse(booking.getStatus().name(), false);
+        }
+
+        PaymentTransaction transaction = paymentTransactionRepository
+                .findTopByBookingIdAndMethodAndStatusOrderByCreatedAtDesc(
+                        bookingId,
+                        PaymentMethod.VIETQR_SEPAY,
+                        PaymentTransactionStatus.PENDING
+                )
+                .filter(t -> StringUtils.hasText(t.getPaymentCode()))
+                .orElse(null);
+        if (transaction == null) {
+            log.warn("Reconcile skipped: no pending VIETQR transaction for booking={}", bookingId);
+            return new PaymentReconcileResponse(booking.getStatus().name(), false);
+        }
+
+        String paymentCode = transaction.getPaymentCode().toUpperCase(Locale.ROOT);
+        String accountNo = paymentProperties.getBank().getAccountNo();
+        long expectedAmount = transaction.getAmount() == null ? 0L : transaction.getAmount();
+
+        SepayTransaction matched = sepayTransactionClient
+                .findIncomingTransactions(accountNo, expectedAmount)
+                .stream()
+                .filter(t -> containsPaymentCode(t, paymentCode))
+                .filter(t -> amountMatches(parseAmount(t.amountIn()), transaction.getAmount()))
+                .findFirst()
+                .orElse(null);
+
+        if (matched == null) {
+            return new PaymentReconcileResponse(booking.getStatus().name(), false);
+        }
+
+        transaction.setRawPayload(matched.toString());
+        transaction.setGatewayReferenceCode(matched.referenceNumber());
+        confirmFromGateway(
+                transaction,
+                matched.id(),
+                parseAmount(matched.amountIn()),
+                matched.transactionDate(),
+                "SePay reconcile"
+        );
+
+        boolean confirmed = booking.getStatus() == BookingStatus.CONFIRMED
+                || transaction.getStatus() == PaymentTransactionStatus.SUCCESS;
+        return new PaymentReconcileResponse(transaction.getBooking().getStatus().name(), confirmed);
+    }
+
+    /*
+     * Logic xác nhận dùng chung cho cả webhook và reconcile.
+     *
+     * Đảm bảo idempotent và an toàn: đã SUCCESS thì không xử lý lại, số tiền lệch
+     * hoặc booking không còn payable thì không confirm. Chỉ khi đủ điều kiện mới
+     * chuyển transaction -> SUCCESS và booking -> CONFIRMED.
+     */
+    private void confirmFromGateway(
+            PaymentTransaction transaction,
+            String gatewayTransactionId,
+            Double actualAmount,
+            String transactionDate,
+            String source
+    ) {
+        transaction.setGateway(GATEWAY_SEPAY);
 
         if (transaction.getStatus() == PaymentTransactionStatus.SUCCESS) {
             attachGatewayTransactionId(transaction, gatewayTransactionId);
-            return new SepayWebhookResponse(true);
+            return;
         }
 
         /*
          * Không confirm nếu số tiền lệch. Case chuyển thiếu/dư cần xử lý thủ công,
          * vì tự động confirm sẽ làm sai doanh thu và có thể giữ phòng không đúng.
          */
-        if (!amountMatches(request.transferAmount(), transaction.getAmount())) {
+        if (!amountMatches(actualAmount, transaction.getAmount())) {
             transaction.setFailureReason("Payment amount mismatch");
             log.warn(
-                    "SePay amount mismatch for code={}, expected={}, actual={}",
-                    paymentCode,
+                    "{} amount mismatch for code={}, expected={}, actual={}",
+                    source,
+                    transaction.getPaymentCode(),
                     transaction.getAmount(),
-                    request.transferAmount()
+                    actualAmount
             );
-            return new SepayWebhookResponse(true);
+            return;
         }
 
         Booking booking = bookingExpirationService.expirePendingBookingIfNeeded(transaction.getBooking());
         /*
          * Nếu booking đã hết hạn, inventory có thể đã được nhả cho người khác.
-         * Vì vậy webhook đến muộn không được tự xác nhận booking; giao dịch đó
-         * cần được xem như case đối soát/manual review.
+         * Vì vậy giao dịch đến muộn không được tự xác nhận booking; cần manual review.
          */
         if (booking.getStatus() != BookingStatus.PENDING_PAYMENT) {
             transaction.setStatus(PaymentTransactionStatus.FAILED);
             transaction.setFailureReason("Booking is not waiting for payment");
             attachGatewayTransactionId(transaction, gatewayTransactionId);
-            log.warn("SePay payment arrived for non-payable booking={}, status={}", booking.getId(), booking.getStatus());
-            return new SepayWebhookResponse(true);
+            log.warn("{} arrived for non-payable booking={}, status={}", source, booking.getId(), booking.getStatus());
+            return;
         }
 
         transaction.setStatus(PaymentTransactionStatus.SUCCESS);
         transaction.setFailureReason(null);
-        transaction.setPaidAt(resolvePaidAt(request.transactionDate()));
+        transaction.setPaidAt(resolvePaidAt(transactionDate));
         attachGatewayTransactionId(transaction, gatewayTransactionId);
 
         booking.setStatus(BookingStatus.CONFIRMED);
         booking.setExpiresAt(null);
         bookingRepository.save(booking);
 
-        log.info("Confirmed booking {} from SePay payment code={}", booking.getId(), paymentCode);
-        return new SepayWebhookResponse(true);
+        log.info("Confirmed booking {} from {} payment code={}", booking.getId(), source, transaction.getPaymentCode());
+    }
+
+    /*
+     * Khớp paymentCode trong giao dịch SePay: ưu tiên field code (đã parse),
+     * fallback parse trong transaction_content. Tái dùng cùng quy tắc với webhook.
+     */
+    private boolean containsPaymentCode(SepayTransaction transaction, String paymentCode) {
+        String fromCode = normalizePaymentCode(transaction.code());
+        if (paymentCode.equals(fromCode)) {
+            return true;
+        }
+        return paymentCode.equals(findPaymentCode(transaction.transactionContent()));
+    }
+
+    private Double parseAmount(String value) {
+        if (!StringUtils.hasText(value)) {
+            return null;
+        }
+        try {
+            return Double.parseDouble(value.trim());
+        } catch (NumberFormatException exception) {
+            log.warn("Unable to parse SePay amount={}", value);
+            return null;
+        }
     }
 
     private Booking loadOwnedBooking(Long userId, Long bookingId) {

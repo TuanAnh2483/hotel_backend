@@ -53,5 +53,13 @@ public class PaymentProperties {
     @Setter
     public static class Sepay {
         private String webhookApiKey = "hhb_sepay_webhook_2026";
+
+        /*
+         * Token gọi SePay Transaction API (Bearer) để đối soát chủ động.
+         * Lấy ở dashboard SePay: Company -> API Access. Khác với webhookApiKey.
+         * Nếu để rỗng thì tính năng reconcile sẽ no-op (chỉ dựa vào webhook).
+         */
+        private String apiToken = "";
+        private String apiBaseUrl = "https://my.sepay.vn";
     }
 }

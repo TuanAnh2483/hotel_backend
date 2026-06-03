@@ -25,6 +25,10 @@ export const bookingService = {
     return apiClient.post(`/api/bookings/${bookingId}/payment-session`);
   },
 
+  reconcilePayment(bookingId) {
+    return apiClient.post(`/api/bookings/${bookingId}/payment-session/reconcile`);
+  },
+
   getPaymentHistory(bookingId) {
     return apiClient.get(`/api/bookings/${bookingId}/payments`);
   },
