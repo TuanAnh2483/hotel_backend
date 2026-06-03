@@ -7,7 +7,7 @@ import com.hotel.hotel_backend.entity.BookingMode;
 import com.hotel.hotel_backend.entity.Hotel;
 import com.hotel.hotel_backend.entity.Room;
 import com.hotel.hotel_backend.entity.RoomStatus;
-import com.hotel.hotel_backend.entity.RoomUnitStatus;
+
 import com.hotel.hotel_backend.exception.ApiException;
 import com.hotel.hotel_backend.exception.ErrorCode;
 import com.hotel.hotel_backend.repository.BookingItemRepository;
@@ -224,7 +224,7 @@ public class RoomService {
     }
 
     private Room findOwnedRoom(Long roomId) {
-        Room room = roomRepository.findById(roomId)
+        Room room = roomRepository.findByIdWithCollections(roomId)
                 .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND));
 
         if (!room.getHotel().getOwner().getId()
@@ -240,13 +240,19 @@ public class RoomService {
     }
 
     private RoomResponse mapToResponse(Room room) {
-        long total       = roomUnitRepository.countByRoomId(room.getId());
-        long available   = roomUnitRepository.countByRoomIdAndStatus(room.getId(), RoomUnitStatus.AVAILABLE);
-        long occupied    = roomUnitRepository.countByRoomIdAndStatus(room.getId(), RoomUnitStatus.OCCUPIED);
-        long maintenance = roomUnitRepository.countByRoomIdAndStatus(room.getId(), RoomUnitStatus.MAINTENANCE);
-        long cleaning    = roomUnitRepository.countByRoomIdAndStatus(room.getId(), RoomUnitStatus.CLEANING);
-        return mapToResponseWithSummary(room,
-                new RoomUnitSummaryResponse(total, available, occupied, maintenance, cleaning));
+        List<RoomUnitRepository.RoomUnitSummaryRow> rows =
+                roomUnitRepository.summarizeByRoomIds(List.of(room.getId()));
+        RoomUnitSummaryResponse summary;
+        if (rows.isEmpty()) {
+            summary = new RoomUnitSummaryResponse(0, 0, 0, 0, 0);
+        } else {
+            RoomUnitRepository.RoomUnitSummaryRow row = rows.get(0);
+            summary = new RoomUnitSummaryResponse(
+                    row.getTotalCount(), row.getAvailableCount(),
+                    row.getOccupiedCount(), row.getMaintenanceCount(),
+                    row.getCleaningCount());
+        }
+        return mapToResponseWithSummary(room, summary);
     }
 
     private RoomResponse mapToResponseWithSummary(Room room, RoomUnitSummaryResponse unitSummary) {

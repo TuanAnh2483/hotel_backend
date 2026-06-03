@@ -29,11 +29,16 @@ public interface RoomRepository extends JpaRepository<Room, Long> {
     @Query("SELECT r FROM Room r JOIN FETCH r.hotel h WHERE r.id = :roomId AND h.owner.id = :ownerId")
     Optional<Room> findByIdAndHotelOwnerIdWithHotel(@Param("roomId") Long roomId, @Param("ownerId") Long ownerId);
 
+    /** Load room với đầy đủ collections — dùng cho update/image operations */
+    @EntityGraph(attributePaths = {"amenities", "customAmenities", "imageUrls"})
+    @Query("SELECT r FROM Room r WHERE r.id = :id")
+    Optional<Room> findByIdWithCollections(@Param("id") Long id);
+
     boolean existsByHotelId(Long hotelId);
 
     boolean existsByHotelIdAndStatus(Long hotelId, RoomStatus  roomStatus);
 
-    @EntityGraph(attributePaths = {"amenities", "hotel"})
+    @EntityGraph(attributePaths = {"amenities", "customAmenities", "imageUrls", "hotel"})
     List<Room> findByHotelIdInAndStatus(List<Long> hotelIds, RoomStatus roomStatus);
 
 }

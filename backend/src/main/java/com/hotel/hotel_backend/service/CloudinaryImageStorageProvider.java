@@ -19,6 +19,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
 @Service
 @Slf4j
@@ -110,64 +112,63 @@ public class CloudinaryImageStorageProvider implements ImageStorageProvider {
             throw new ApiException(ErrorCode.VALIDATION_ERROR, "At least one image file is required");
         }
 
-        List<String> publicUrls = new ArrayList<>();
-        for (MultipartFile file : files) {
-            validateImage(file);
-            String publicId = buildPublicId(scope, ownerId);
+        // Validate tất cả trước khi upload để fail-fast
+        files.forEach(this::validateImage);
 
-            try {
-                // Upload xong lấy secure_url để lưu vào DB.
-                Map<?, ?> uploadResult = cloudinary.uploader().upload(
-                        file.getBytes(),
-                        ObjectUtils.asMap(
-                                "public_id", publicId,
-                                "resource_type", "image",
-                                "overwrite", false
-                        )
-                );
-                Object secureUrl = uploadResult.get("secure_url");
-                Object fallbackUrl = uploadResult.get("url");
-                String publicUrl = secureUrl != null ? secureUrl.toString() : fallbackUrl != null ? fallbackUrl.toString() : null;
-                if (!StringUtils.hasText(publicUrl)) {
-                    throw new ApiException(ErrorCode.INTERNAL_ERROR, "Cloudinary upload returned no public URL");
-                }
-                publicUrls.add(publicUrl);
-            } catch (IOException ex) {
-                log.error(
-                        "Failed to read image bytes before Cloudinary upload. scope={}, ownerId={}, fileName={}, contentType={}, size={}",
-                        scope,
-                        ownerId,
-                        file.getOriginalFilename(),
-                        file.getContentType(),
-                        file.getSize(),
-                        ex
-                );
-                throw new ApiException(
-                        ErrorCode.INTERNAL_ERROR,
-                        "Failed to read image file before Cloudinary upload",
-                        ex
-                );
-            } catch (Exception ex) {
-                log.error(
-                        "Cloudinary upload failed. scope={}, ownerId={}, cloudName={}, folderPrefix={}, fileName={}, contentType={}, size={}",
-                        scope,
-                        ownerId,
-                        uploadStorageProperties.getCloudinary().getCloudName(),
-                        uploadStorageProperties.getCloudinary().getFolderPrefix(),
-                        file.getOriginalFilename(),
-                        file.getContentType(),
-                        file.getSize(),
-                        ex
-                );
-                throw new ApiException(
-                        ErrorCode.INTERNAL_ERROR,
-                        "Failed to upload image to Cloudinary: " + resolveFailureDetail(ex),
-                        ex
-                );
+        // Upload song song — 3 ảnh chạy cùng lúc thay vì nối tiếp
+        List<CompletableFuture<String>> futures = files.stream()
+                .map(file -> CompletableFuture.supplyAsync(() -> uploadSingleImage(scope, ownerId, file)))
+                .toList();
+
+        try {
+            // Đợi tất cả hoàn thành, giữ đúng thứ tự
+            CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new)).join();
+            List<String> publicUrls = new ArrayList<>(futures.size());
+            for (CompletableFuture<String> future : futures) {
+                publicUrls.add(future.get());
             }
+            return publicUrls;
+        } catch (ExecutionException ex) {
+            Throwable cause = ex.getCause();
+            if (cause instanceof ApiException apiEx) throw apiEx;
+            throw new ApiException(ErrorCode.INTERNAL_ERROR, "Failed to upload images to Cloudinary", cause);
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+            throw new ApiException(ErrorCode.INTERNAL_ERROR, "Image upload interrupted");
         }
+    }
 
-        return publicUrls;
+    private String uploadSingleImage(String scope, Long ownerId, MultipartFile file) {
+        String publicId = buildPublicId(scope, ownerId);
+        try {
+            Map<?, ?> uploadResult = cloudinary.uploader().upload(
+                    file.getBytes(),
+                    ObjectUtils.asMap(
+                            "public_id", publicId,
+                            "resource_type", "image",
+                            "overwrite", false
+                    )
+            );
+            Object secureUrl = uploadResult.get("secure_url");
+            Object fallbackUrl = uploadResult.get("url");
+            String publicUrl = secureUrl != null ? secureUrl.toString()
+                    : fallbackUrl != null ? fallbackUrl.toString() : null;
+            if (!StringUtils.hasText(publicUrl)) {
+                throw new ApiException(ErrorCode.INTERNAL_ERROR, "Cloudinary upload returned no public URL");
+            }
+            return publicUrl;
+        } catch (IOException ex) {
+            log.error("Failed to read image bytes before Cloudinary upload. scope={}, ownerId={}, fileName={}",
+                    scope, ownerId, file.getOriginalFilename(), ex);
+            throw new ApiException(ErrorCode.INTERNAL_ERROR, "Failed to read image file before Cloudinary upload", ex);
+        } catch (ApiException ex) {
+            throw ex;
+        } catch (Exception ex) {
+            log.error("Cloudinary upload failed. scope={}, ownerId={}, fileName={}",
+                    scope, ownerId, file.getOriginalFilename(), ex);
+            throw new ApiException(ErrorCode.INTERNAL_ERROR,
+                    "Failed to upload image to Cloudinary: " + resolveFailureDetail(ex), ex);
+        }
     }
 
     private String resolveFailureDetail(Exception ex) {

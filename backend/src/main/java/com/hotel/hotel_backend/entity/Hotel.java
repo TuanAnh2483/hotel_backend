@@ -13,7 +13,12 @@ import java.util.List;
 import java.util.Set;
 
 @Entity
-@Table(name = "hotels")
+@Table(name = "hotels", indexes = {
+        @Index(name = "idx_hotels_status", columnList = "status"),
+        @Index(name = "idx_hotels_status_province", columnList = "status, province"),
+        @Index(name = "idx_hotels_status_province_district", columnList = "status, province, district"),
+        @Index(name = "idx_hotels_owner_id", columnList = "owner_id")
+})
 @Getter
 @Setter
 public class  Hotel {
@@ -47,18 +52,18 @@ public class  Hotel {
     @Column(nullable = false, columnDefinition = "varchar(255) not null default 'BY_ROOM'")
     private BookingMode bookingMode = BookingMode.BY_ROOM;
 
-    @ElementCollection(targetClass = HotelAmenity.class, fetch = FetchType.EAGER)
+    @ElementCollection(targetClass = HotelAmenity.class, fetch = FetchType.LAZY)
     @CollectionTable(name = "hotel_amenities", joinColumns = @JoinColumn(name = "hotel_id"))
     @Column(name = "amenity", nullable = false)
     @Enumerated(EnumType.STRING)
     private Set<HotelAmenity> amenities = new HashSet<>();
 
-    @ElementCollection(fetch = FetchType.EAGER)
+    @ElementCollection(fetch = FetchType.LAZY)
     @CollectionTable(name = "hotel_custom_amenities", joinColumns = @JoinColumn(name = "hotel_id"))
     @Column(name = "amenity", nullable = false, length = 100)
     private Set<String> customAmenities = new HashSet<>();
 
-    @ElementCollection(fetch = FetchType.EAGER)
+    @ElementCollection(fetch = FetchType.LAZY)
     @CollectionTable(name = "hotel_images", joinColumns = @JoinColumn(name = "hotel_id"))
     @OrderColumn(name = "sort_order")
     @Column(name = "image_url", nullable = false, length = 1000)

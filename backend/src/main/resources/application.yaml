@@ -34,6 +34,7 @@ spring:
       hibernate:
         format_sql: true
         dialect: org.hibernate.dialect.PostgreSQLDialect
+        default_batch_fetch_size: 16
         boot:
           allow_jdbc_metadata_access: false
 

@@ -225,4 +225,10 @@ public class InventoryServiceImpl implements InventoryService {
         if (!isCompleteRange(nights, inventories))
             throw new ApiException(ErrorCode.CONFLICT, "Inventory data incomplete for given range");
     }
+
+    @Override
+    @Transactional
+    public void capInventory(Long roomId, int newQuantity) {
+        dailyInventoryRepository.capAvailableRooms(roomId, LocalDate.now(), newQuantity);
+    }
 }

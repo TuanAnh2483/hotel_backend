@@ -118,10 +118,8 @@ public class RoomUnitService {
         room.setQuantity(newQuantity);
 
         // FIX BUG-003: Re-sync DailyInventory after quantity drops.
-        // Without this, availableRooms stays at the old higher value, enabling overbooking.
-        // generateInventory uses room.getQuantity() which now holds newQuantity (dirty entity,
-        // same transaction — JPA will flush the updated value before the inventory queries run).
-        inventoryService.generateInventory(room);
+        // capInventory dùng 1 query UPDATE duy nhất thay vì load 365 dòng rồi so sánh từng ngày.
+        inventoryService.capInventory(room.getId(), newQuantity);
     }
 
     public RoomUnitResponse setCoverImage(Long roomId, Long unitId, String imageUrl) {
@@ -135,12 +133,16 @@ public class RoomUnitService {
 
     @Transactional(readOnly = true)
     public RoomUnitSummaryResponse getSummary(Long roomId) {
-        long total       = roomUnitRepository.countByRoomId(roomId);
-        long available   = roomUnitRepository.countByRoomIdAndStatus(roomId, RoomUnitStatus.AVAILABLE);
-        long occupied    = roomUnitRepository.countByRoomIdAndStatus(roomId, RoomUnitStatus.OCCUPIED);
-        long maintenance = roomUnitRepository.countByRoomIdAndStatus(roomId, RoomUnitStatus.MAINTENANCE);
-        long cleaning    = roomUnitRepository.countByRoomIdAndStatus(roomId, RoomUnitStatus.CLEANING);
-        return new RoomUnitSummaryResponse(total, available, occupied, maintenance, cleaning);
+        List<RoomUnitRepository.RoomUnitSummaryRow> rows =
+                roomUnitRepository.summarizeByRoomIds(List.of(roomId));
+        if (rows.isEmpty()) {
+            return new RoomUnitSummaryResponse(0, 0, 0, 0, 0);
+        }
+        RoomUnitRepository.RoomUnitSummaryRow row = rows.get(0);
+        return new RoomUnitSummaryResponse(
+                row.getTotalCount(), row.getAvailableCount(),
+                row.getOccupiedCount(), row.getMaintenanceCount(),
+                row.getCleaningCount());
     }
 
     @Transactional(readOnly = true)

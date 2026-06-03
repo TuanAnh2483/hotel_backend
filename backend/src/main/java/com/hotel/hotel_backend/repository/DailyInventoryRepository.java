@@ -4,7 +4,9 @@ import com.hotel.hotel_backend.entity.DailyInventory;
 import com.hotel.hotel_backend.entity.DailyInventoryId;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -35,5 +37,19 @@ public interface DailyInventoryRepository
 
     @Query("SELECT COUNT(di) FROM DailyInventory di WHERE di.availableRooms > di.room.quantity")
     long countStaleRows();
+
+    /**
+     * Cap availableRooms xuống newQuantity cho tất cả ngày từ hôm nay trở đi
+     * mà availableRooms đang vượt quá newQuantity.
+     * Dùng GREATEST(blocked_rooms, :newQty) để không vi phạm invariant blocked <= available.
+     */
+    @Modifying
+    @Query("UPDATE DailyInventory di SET di.availableRooms = " +
+           "CASE WHEN di.blockedRooms > :newQty THEN di.blockedRooms ELSE :newQty END " +
+           "WHERE di.id.roomId = :roomId AND di.id.date >= :fromDate " +
+           "AND di.availableRooms > :newQty")
+    int capAvailableRooms(@Param("roomId") Long roomId,
+                          @Param("fromDate") LocalDate fromDate,
+                          @Param("newQty") int newQty);
 }
 

@@ -32,6 +32,7 @@ import com.hotel.hotel_backend.repository.RefundRequestRepository;
 import com.hotel.hotel_backend.repository.RoomRepository;
 import com.hotel.hotel_backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -151,8 +152,9 @@ public class AdminOperationsService {
                 .toList();
     }
 
+    @CacheEvict(value = "locationOptions", allEntries = true)
     public AdminHotelResponse updateHotel(Long hotelId, AdminUpdateHotelRequest request) {
-        Hotel hotel = hotelRepository.findById(hotelId)
+        Hotel hotel = hotelRepository.findByIdWithCollections(hotelId)
                 .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND, "Hotel not found"));
 
         hotel.setName(request.name());
@@ -165,6 +167,7 @@ public class AdminOperationsService {
         return toHotelResponse(hotelRepository.save(hotel));
     }
 
+    @CacheEvict(value = "locationOptions", allEntries = true)
     public void deleteHotel(Long hotelId) {
         Hotel hotel = hotelRepository.findById(hotelId)
                 .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND, "Hotel not found"));

@@ -30,4 +30,10 @@ public interface InventoryService {
                           LocalDate checkIn,
                           LocalDate checkOut,
                           int quantity);
+
+    /**
+     * Cap availableRooms xuống newQuantity (1 query UPDATE duy nhất).
+     * Dùng khi giảm quantity thay vì gọi generateInventory().
+     */
+    void capInventory(Long roomId, int newQuantity);
 }

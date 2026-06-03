@@ -30,8 +30,13 @@ public class HotelDetailService {
                 .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND));
     }
 
+    private Hotel findHotelWithCollections(Long hotelId) {
+        return hotelRepository.findByIdWithCollections(hotelId)
+                .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND));
+    }
+
     public HotelDetailResponse getHotelDetail(Long hotelId) {
-        Hotel hotel = findHotel(hotelId);
+        Hotel hotel = findHotelWithCollections(hotelId);
         return toDetailResponse(hotel);
     }
 

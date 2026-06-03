@@ -56,7 +56,6 @@ public class BookingPaymentGatewayService {
 
     /*
      * Tạo phiên thanh toán cho booking đang PENDING_PAYMENT.
-     *
      * Hàm này không confirm booking và không gọi SePay. Nó chỉ tạo dữ liệu để
      * frontend hiển thị cho customer: số tiền, QR, tài khoản nhận tiền và
      * paymentCode cần ghi trong nội dung chuyển khoản.

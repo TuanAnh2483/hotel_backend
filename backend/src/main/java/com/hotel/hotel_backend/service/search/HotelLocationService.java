@@ -1,10 +1,10 @@
 package com.hotel.hotel_backend.service.search;
 
 import com.hotel.hotel_backend.dto.response.HotelLocationOptionResponse;
-import com.hotel.hotel_backend.entity.Hotel;
 import com.hotel.hotel_backend.entity.HotelStatus;
 import com.hotel.hotel_backend.repository.HotelRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,16 +24,14 @@ public class HotelLocationService {
 
     private final HotelRepository hotelRepository;
 
+    @Cacheable("locationOptions")
     public List<HotelLocationOptionResponse> getActiveLocationOptions() {
         Map<String, Set<String>> districtsByProvince = new LinkedHashMap<>();
 
-        for (Hotel hotel : hotelRepository.findByStatus(HotelStatus.ACTIVE)) {
-            String province = clean(hotel.getProvince());
-            if (province.isBlank()) {
-                continue;
-            }
-
-            String district = clean(hotel.getDistrict());
+        for (Object[] row : hotelRepository.findDistinctLocationsByStatus(HotelStatus.ACTIVE)) {
+            String province = clean((String) row[0]);
+            if (province.isBlank()) continue;
+            String district = clean((String) row[1]);
             districtsByProvince
                     .computeIfAbsent(province, key -> new LinkedHashSet<>())
                     .add(district);

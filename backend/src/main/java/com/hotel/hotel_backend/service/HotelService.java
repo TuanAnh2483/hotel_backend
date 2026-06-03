@@ -20,6 +20,7 @@ import com.hotel.hotel_backend.repository.RoomUnitRepository;
 import com.hotel.hotel_backend.repository.UserRepository;
 import com.hotel.hotel_backend.security.JwtPrincipal;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -43,6 +44,7 @@ public class HotelService {
     private final DailyRateRepository dailyRateRepository;
     private final SecurityService securityService;
 
+    @CacheEvict(value = "locationOptions", allEntries = true)
     public HotelResponse create(CreateHotelRequest request) {
         // Tạo khách sạn mới cho partner hiện tại.
         User owner = getCurrentUser();
@@ -83,6 +85,7 @@ public class HotelService {
                 .toList();
     }
 
+    @CacheEvict(value = "locationOptions", allEntries = true)
     public HotelResponse update(Long id, UpdateHotelRequest request) {
         // Cập nhật thông tin khách sạn thuộc sở hữu hiện tại.
         Hotel hotel = findOwnedHotel(id);
@@ -163,6 +166,7 @@ public class HotelService {
         return mapToResponse(hotel);
     }
 
+    @CacheEvict(value = "locationOptions", allEntries = true)
     @Transactional
     public void delete(Long id) {
         Hotel hotel = findOwnedHotel(id);
@@ -189,7 +193,7 @@ public class HotelService {
     // ---------------- Helper methods ----------------
 
     private Hotel findOwnedHotel(Long id) {
-        Hotel hotel = hotelRepository.findById(id)
+        Hotel hotel = hotelRepository.findByIdWithCollections(id)
                 .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND));
 
         if (!hotel.getOwner().getId().equals(getPrincipal().userId())) {
