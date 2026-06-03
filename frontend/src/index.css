@@ -59,6 +59,24 @@
     /* ── Font ───────────────────────────────────────────── */
     --font-sans:            'Be Vietnam Pro', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
 
+    /* ── Typography scale ───────────────────────────────── */
+    --text-xs:   11px;
+    --text-sm:   12px;
+    --text-base: 14px;
+    --text-md:   15px;
+    --text-lg:   18px;
+    --text-xl:   22px;
+    --text-2xl:  28px;
+    --text-3xl:  32px;
+
+    /* ── Font weight ────────────────────────────────────── */
+    --fw-normal:  400;
+    --fw-medium:  500;
+    --fw-semibold:600;
+    --fw-bold:    700;
+    --fw-heavy:   800;
+    --fw-black:   900;
+
     /* ── Admin sidebar (brand-derived) ──────────────────── */
     --sidebar-bg:           #EFD6D6;
     --sidebar-text:         #5a1a22;

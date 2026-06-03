@@ -5,8 +5,9 @@ import MainNavbar from "../components/MainNavbar";
 import Footer from "../components/Footer";
 import { useCreateBooking } from "../hooks/useBookingQueries";
 import { useLang } from "../contexts/LanguageContext";
+import BookingStepper from "../components/ui/BookingStepper";
 import {
-  Bed, Calendar, Check, ChevronLeft, Info, Mail, Moon,
+  Bed, Calendar, ChevronLeft, Info, Mail, Moon,
   Phone, Shield, User, Users,
 } from "lucide-react";
 import "../styles/pages/BookingPage.css";
@@ -21,7 +22,6 @@ const ICONS = {
   phone:    Phone,
   email:    Mail,
   shield:   Shield,
-  check:    Check,
   info:     Info,
 };
 
@@ -36,44 +36,6 @@ function fmtDate(s) {
   if (!s) return "—";
   const d = new Date(s);
   return isNaN(d) ? s : d.toLocaleDateString("vi-VN", { weekday: "short", day: "2-digit", month: "2-digit", year: "numeric" });
-}
-
-// ── Stepper ─────────────────────────────────────────────────────────
-function Stepper({ current }) {
-  const { t } = useLang();
-  const steps = [t("step_room"), t("step_confirm"), t("step_payment"), t("step_done")];
-  return (
-    <div className="bkp-stepper">
-      {steps.map((s, i) => {
-        const done   = i < current;
-        const active = i === current;
-        return (
-          <div key={s} className="bkp-step">
-            <div className="bkp-step-col">
-              <div
-                className="bkp-step-circle"
-                style={{ background: done || active ? C.primary: "#e8e8e8" }}
-              >
-                {done
-                  ? <SvgIcon k="check" size={16} color="#fff" />
-                  : <span className="bkp-step-num" style={{ color: active ? "#fff" : "#bbb" }}>{i + 1}</span>
-                }
-              </div>
-              <span
-                className="bkp-step-label"
-                style={{ fontWeight: active ? 700 : 400, color: active ? C.primary: done ? "#555" : "#bbb" }}
-              >
-                {s}
-              </span>
-            </div>
-            {i < steps.length - 1 && (
-              <div className="bkp-step-connector" style={{ background: done ? C.primary: "#e8e8e8" }} />
-            )}
-          </div>
-        );
-      })}
-    </div>
-  );
 }
 
 // ── Info row ─────────────────────────────────────────────────────────
@@ -136,8 +98,8 @@ export default function BookingPage({ navigate, user, params = {}, onLogout }) {
   const hasContact = contact.fullName.trim() && contact.email.trim() && contact.phone.trim();
 
   const handleConfirm = async () => {
-    if (!hasContact)     { setError("Vui lòng điền đầy đủ thông tin liên hệ."); return; }
-    if (rooms.length === 0) { setError("Thiếu thông tin phòng. Vui lòng quay lại và chọn phòng."); return; }
+    if (!hasContact)     { setError(t("booking_err_contact")); return; }
+    if (rooms.length === 0) { setError(t("booking_err_no_rooms")); return; }
     setError("");
     createBooking.mutate(
       {
@@ -148,7 +110,7 @@ export default function BookingPage({ navigate, user, params = {}, onLogout }) {
       },
       {
         onSuccess: (res) => navigate("booking-detail", { bookingId: res.bookingId, hotelName }),
-        onError:   (err) => setError(err.message || "Đặt phòng thất bại. Vui lòng thử lại."),
+        onError:   (err) => setError(err.message || t("booking_err_failed")),
       }
     );
   };
@@ -176,6 +138,28 @@ export default function BookingPage({ navigate, user, params = {}, onLogout }) {
     );
   }
 
+  if (!hotelId || rooms.length === 0) {
+    return (
+      <div className="bkp-root">
+        <MainNavbar active="search" navigate={navigate} user={user} onLogout={onLogout} />
+        <div className="bkp-login-center">
+          <div className="bkp-login-content">
+            <div className="bkp-login-avatar">
+              <SvgIcon k="info" size={32} color={C.primary} />
+            </div>
+            <p className="bkp-login-text">{t("booking_err_expired")}</p>
+            <ActionBtn
+              onClick={() => hotelId ? navigate("hotel", { hotelId }) : navigate("home")}
+              style={{ padding: "12px 36px" }}
+            >
+              {t("booking_back_select")}
+            </ActionBtn>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="bkp-root">
       <MainNavbar active="search" navigate={navigate} user={user} onLogout={onLogout} />
@@ -183,7 +167,7 @@ export default function BookingPage({ navigate, user, params = {}, onLogout }) {
       {/* Stepper bar */}
       <div className="bkp-stepper-bar">
         <div className="bkp-stepper-bar-inner">
-          <Stepper current={1} />
+          <BookingStepper current={1} />
         </div>
       </div>
 
@@ -314,9 +298,7 @@ export default function BookingPage({ navigate, user, params = {}, onLogout }) {
             {loading ? t("booking_processing") : `${t("booking_confirm_btn")} →`}
           </ActionBtn>
 
-          <p className="bkp-terms">
-            Bằng cách xác nhận, bạn đồng ý với<br />Điều khoản &amp; Chính sách của VLU HotelHub.
-          </p>
+          <p className="bkp-terms">{t("booking_terms_agree")}</p>
         </div>
       </div>
 

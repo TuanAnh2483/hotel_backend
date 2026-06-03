@@ -26,13 +26,43 @@ import {
 } from "lucide-react";
 import "../styles/pages/BookingDetailPage.css";
 
+function ConfirmDialog({ title, message, confirmLabel = "Xác nhận", onConfirm, onCancel, loading }) {
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="confirm-dialog-title"
+      className="fixed inset-0 flex items-center justify-center p-4"
+      style={{ background: "rgba(0,0,0,0.45)", zIndex: "var(--z-modal)" }}
+    >
+      <div className="bg-white rounded-2xl p-8 w-full max-w-sm" style={{ boxShadow: "var(--shadow-xl)" }}>
+        <h3 id="confirm-dialog-title" className="text-[17px] font-[800] text-[var(--text-main)] mt-0 mb-2.5">{title}</h3>
+        <p className="text-[14px] text-[var(--text-muted)] leading-relaxed mt-0 mb-6">{message}</p>
+        <div className="flex gap-3">
+          <button onClick={onCancel} disabled={loading} className="btn btn-secondary flex-1">
+            Hủy bỏ
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={loading}
+            className="btn flex-1 text-white font-[800]"
+            style={{ background: "#ef4444" }}
+          >
+            {loading ? <><span className="spinner-sm" aria-hidden="true" /> Đang xử lý...</> : confirmLabel}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function useStatusMap() {
   const { t } = useLang();
   return {
     PENDING_PAYMENT: { label: t("status_pending_payment"), color: "#f59e0b", bg: "#fffbeb", icon: Clock },
     CONFIRMED:       { label: t("status_confirmed"),       color: "#10b981", bg: "#ecfdf5", icon: CheckCircle2 },
-    CANCELLED:       { label: t("status_cancelled"),       color: "#ef4444", bg: "#fef2f2", icon: XCircle },
-    COMPLETED:       { label: t("status_completed"),       color: "#3b82f6", bg: "#eff6ff", icon: ShieldCheck },
+    CANCELLED:       { label: t("status_cancelled"),       color: "#64748b", bg: "#f8fafc", icon: XCircle },
+    COMPLETED:       { label: t("status_completed"),       color: "#BE1E2E", bg: "#FFF1F2", icon: ShieldCheck },
     REFUNDED:        { label: t("status_refunded"),        color: "#7c3aed", bg: "#f5f3ff", icon: RefreshCcw },
   };
 }
@@ -132,10 +162,10 @@ function ReviewCard({ bookingId, hotelName, hasReview, canWrite, createReview, t
       <Card>
         <div style={{ alignItems: "center", display: "flex", gap: 10, marginBottom: 8 }}>
           <Star size={20} fill="#f59e0b" color="#f59e0b" />
-          <span style={{ fontSize: 16, fontWeight: 800, color: "#0f172a" }}>Đánh giá của bạn</span>
+          <span style={{ fontSize: 16, fontWeight: 800, color: "#0f172a" }}>{t("review_your_label")}</span>
         </div>
-        <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 12, color: "#047857", fontSize: 13, fontWeight: 700, padding: "10px 14px" }}>
-          ✓ Bạn đã gửi đánh giá cho chuyến lưu trú này.
+        <div className="alert alert-success">
+          ✓ {t("review_submitted")}
         </div>
       </Card>
     );
@@ -159,42 +189,44 @@ function ReviewCard({ bookingId, hotelName, hasReview, canWrite, createReview, t
     <Card>
       <div style={{ alignItems: "center", display: "flex", gap: 10, marginBottom: 16 }}>
         <Star size={20} fill="#f59e0b" color="#f59e0b" />
-        <h2 style={{ fontSize: 18, fontWeight: 800, color: "#0f172a", margin: 0 }}>Đánh giá chuyến lưu trú</h2>
+        <h2 style={{ fontSize: 18, fontWeight: 800, color: "#0f172a", margin: 0 }}>{t("review_title")}</h2>
       </div>
       <p style={{ color: "#64748b", fontSize: 13, lineHeight: 1.6, margin: "0 0 16px" }}>
         Chia sẻ trải nghiệm của bạn tại <strong>{hotelName}</strong> để giúp khách hàng khác.
       </p>
 
       <div style={{ marginBottom: 14 }}>
-        <div style={{ fontSize: 12, fontWeight: 700, color: "#64748b", marginBottom: 8 }}>XẾP HẠNG</div>
+        <div style={{ fontSize: 12, fontWeight: 700, color: "#64748b", marginBottom: 8 }}>{t("review_rating_lbl")}</div>
         <StarPicker value={rating} onChange={setRating} />
       </div>
 
       <div style={{ marginBottom: 14 }}>
-        <div style={{ fontSize: 12, fontWeight: 700, color: "#64748b", marginBottom: 8 }}>NHẬN XÉT <span style={{ fontWeight: 400 }}>(tuỳ chọn)</span></div>
+        <div style={{ fontSize: 12, fontWeight: 700, color: "#64748b", marginBottom: 8 }}>
+          {t("review_comment_lbl")} <span style={{ fontWeight: 400 }}>{t("review_comment_opt")}</span>
+        </div>
         <textarea
           value={comment}
           onChange={e => setComment(e.target.value)}
-          placeholder="Phòng sạch sẽ, nhân viên thân thiện..."
+          placeholder={t("review_comment_ph")}
           maxLength={500}
+          aria-label={t("review_comment_lbl")}
           style={{ width: "100%", minHeight: 90, padding: "10px 12px", border: "1.5px solid #e2e8f0", borderRadius: 12, fontSize: 13, resize: "vertical", fontFamily: "inherit", boxSizing: "border-box", outline: "none" }}
         />
         <div style={{ fontSize: 11, color: "#94a3b8", textAlign: "right" }}>{comment.length}/500</div>
       </div>
 
-      {err && (
-        <div style={{ background: "#fff1f2", border: "1px solid #fecdd3", borderRadius: 10, color: "#be123c", fontSize: 12, fontWeight: 700, marginBottom: 12, padding: "8px 12px" }}>
-          {err}
-        </div>
-      )}
+      {err && <div className="alert alert-error" style={{ marginBottom: 12 }}>{err}</div>}
 
       <button
         onClick={handleSubmit}
         disabled={createReview.isPending}
-        style={{ alignItems: "center", background: C.primary, border: "none", borderRadius: 14, color: "#fff", cursor: createReview.isPending ? "not-allowed" : "pointer", display: "flex", fontSize: 14, fontWeight: 800, gap: 8, justifyContent: "center", opacity: createReview.isPending ? 0.7 : 1, padding: "13px 16px", width: "100%" }}
+        className="btn btn-primary btn-full"
       >
-        <Star size={16} fill="#fff" color="#fff" />
-        {createReview.isPending ? "Đang gửi..." : "Gửi đánh giá"}
+        <Star size={16} fill="#fff" color="#fff" aria-hidden="true" />
+        {createReview.isPending
+          ? <><span className="spinner-sm" aria-hidden="true" /> {t("review_submitting")}</>
+          : t("review_submit_btn")
+        }
       </button>
     </Card>
   );
@@ -207,7 +239,8 @@ export default function BookingDetailPage({ navigate, user, params = {}, onLogou
   const refundStatusMap  = useRefundStatusMap();
 
   const { bookingId } = params;
-  const [cancelError, setCancelError] = useState("");
+  const [cancelError, setCancelError]         = useState("");
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
 
   const { data: booking,       isLoading: loading,         error: bookingError    } = useBookingDetail(bookingId);
   const { data: rawPayments,   isLoading: paymentsLoading, error: paymentsErr     } = usePaymentHistory(bookingId);
@@ -222,10 +255,18 @@ export default function BookingDetailPage({ navigate, user, params = {}, onLogou
   const cancelling   = cancelBooking.isPending;
 
   const handleCancel = () => {
-    if (!booking || !window.confirm(t("bkd_confirm_cancel"))) return;
+    if (!booking) return;
+    setShowCancelDialog(true);
+  };
+
+  const confirmCancel = () => {
     setCancelError("");
     cancelBooking.mutate(booking.bookingId, {
-      onError: (err) => setCancelError(err.message || t("bkd_load_error")),
+      onSuccess: () => setShowCancelDialog(false),
+      onError: (err) => {
+        setCancelError(err.message || t("bkd_load_error"));
+        setShowCancelDialog(false);
+      },
     });
   };
 
@@ -260,8 +301,7 @@ export default function BookingDetailPage({ navigate, user, params = {}, onLogou
 
   const allowsRefund = booking?.cancellationPolicy !== "STRICT";
   const canRequestRefund = booking
-    && ["CONFIRMED", "COMPLETED", "CANCELLED"].includes(booking.status)
-    && booking.status !== "REFUNDED"
+    && ["CONFIRMED", "CANCELLED"].includes(booking.status)
     && !refundRequest
     && hasPaid
     && allowsRefund;
@@ -292,7 +332,7 @@ export default function BookingDetailPage({ navigate, user, params = {}, onLogou
         )}
 
         {!loading && booking && (
-          <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 360px", gap: 24, alignItems: "start" }}>
+          <div className="bkd-grid">
             <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
               <Card>
                 <div style={{ display: "flex", justifyContent: "space-between", gap: 16, marginBottom: 20 }}>
@@ -442,12 +482,10 @@ export default function BookingDetailPage({ navigate, user, params = {}, onLogou
                 )}
 
                 {(booking.status === "PENDING_PAYMENT" || booking.status === "CONFIRMED") && (
-                  <button
-                    onClick={handleCancel}
-                    disabled={cancelling}
-                    style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 16, color: "#64748b", cursor: cancelling ? "not-allowed" : "pointer", fontSize: 14, fontWeight: 700, opacity: cancelling ? 0.7 : 1, padding: "14px 18px", width: "100%" }}
-                  >
-                    {cancelling ? t("bkd_cancelling") : t("bkd_cancel")}
+                  <button onClick={handleCancel} disabled={cancelling} className="bkd-cancel-btn">
+                    {cancelling
+                      ? <><span className="spinner-sm dark" aria-hidden="true" style={{ display: "inline-block" }} /> {t("bkd_cancelling")}</>
+                      : t("bkd_cancel")}
                   </button>
                 )}
               </Card>
@@ -522,6 +560,17 @@ export default function BookingDetailPage({ navigate, user, params = {}, onLogou
           </div>
         )}
       </div>
+
+      {showCancelDialog && (
+        <ConfirmDialog
+          title={t("bkd_confirm_cancel_title")}
+          message={t("bkd_confirm_cancel")}
+          confirmLabel={t("bkd_confirm_cancel_btn")}
+          loading={cancelling}
+          onConfirm={confirmCancel}
+          onCancel={() => setShowCancelDialog(false)}
+        />
+      )}
 
       <Footer navigate={navigate} />
     </div>
