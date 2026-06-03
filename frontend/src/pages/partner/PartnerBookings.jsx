@@ -94,6 +94,7 @@ export default function PartnerBookings() {
       onSuccess: (updated) => {
         setMessage(t("pt_bk_checkout_msg").replace("{id}", updated.bookingId));
         if (detailId === booking.bookingId) setDetailId(null);
+        setTimeout(() => setMessage(""), 5000);
       },
       onError: (e) => setError(e.message || t("pt_bk_err_checkout")),
     });
@@ -163,8 +164,8 @@ export default function PartnerBookings() {
           <div style={{ display: "flex", gap: 6, alignItems: "center", background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 10, padding: "6px 10px" }}>
             <span style={{ fontSize: 12, fontWeight: 700, color: "#047857" }}>Xác nhận?</span>
             <button onClick={() => handleCheckout(b)} disabled={isCheckingOut}
-              style={{ background: "#10b981", border: "none", borderRadius: 8, color: "#fff", cursor: "pointer", fontSize: 12, fontWeight: 800, padding: "5px 10px", opacity: isCheckingOut ? 0.7 : 1 }}>
-              {isCheckingOut ? "..." : "Xác nhận"}
+              style={{ background: "#10b981", border: "none", borderRadius: 8, color: "#fff", cursor: "pointer", fontSize: 12, fontWeight: 800, padding: "5px 10px", opacity: isCheckingOut ? 0.7 : 1, display: "flex", alignItems: "center", gap: 5 }}>
+              {isCheckingOut ? <><span className="spinner-sm" aria-hidden="true" /> Xử lý...</> : "Xác nhận"}
             </button>
             <button onClick={() => setCheckoutConfirmId(null)}
               style={{ background: "#f1f5f9", border: "none", borderRadius: 8, color: "#64748b", cursor: "pointer", fontSize: 12, fontWeight: 700, padding: "5px 10px" }}>
@@ -178,13 +179,6 @@ export default function PartnerBookings() {
             <CheckCircle2 size={13} /> {t("pt_bk_checked_out")}
           </span>
         )}
-
-        <button
-          onClick={() => navigate(`/partner/bookings/${b.bookingId}`)}
-          style={{ padding: "7px 14px", borderRadius: 10, background: "#f8fafc", color: "#64748b", border: "1px solid #e2e8f0", fontSize: 12, fontWeight: 600, cursor: "pointer" }}
-        >
-          {t("pt_bk_view_full")}
-        </button>
       </div>,
     ];
   });
@@ -277,43 +271,55 @@ export default function PartnerBookings() {
 
       <Card style={{ padding: 0, overflow: "hidden" }}>
         {(error || loadError) && (
-          <div style={{ margin: 20, padding: "12px 14px", borderRadius: 12, background: "#fef2f2", border: "1px solid #fecaca", color: "#b91c1c", fontSize: 13, fontWeight: 700 }}>
+          <div className="alert alert-error" style={{ margin: 20 }}>
             {error || loadError?.message || t("pt_bk_err_load")}
           </div>
         )}
         {message && (
-          <div style={{ margin: 20, padding: "12px 14px", borderRadius: 12, background: "#ecfdf5", border: "1px solid #bbf7d0", color: "#047857", fontSize: 13, fontWeight: 700 }}>
+          <div className="alert alert-success" style={{ margin: 20 }}>
             {message}
           </div>
         )}
         {loading
-          ? <div style={{ textAlign: "center", padding: 60, color: "#94a3b8" }}>{t("pt_bk_loading")}</div>
+          ? <div style={{ textAlign: "center", padding: 60, color: "#94a3b8", display: "flex", alignItems: "center", justifyContent: "center", gap: 10 }}>
+              <span className="spinner-sm dark" aria-hidden="true" />{t("pt_bk_loading")}
+            </div>
           : <>
               <Table
                 headers={[t("pt_bk_col_code"), t("pt_bk_col_hotel"), t("pt_bk_col_customer"), t("pt_bk_col_checkin"), t("pt_bk_col_checkout"), t("pt_bk_col_nights"), t("pt_bk_col_total"), t("pt_bk_col_status"), "", t("pt_bk_col_actions")]}
                 rows={rows}
-                empty={t("pt_all")}
+                empty={t("pt_bk_empty")}
               />
 
               {/* Pagination */}
-              {pageData?.totalPages > 1 && (
-                <div style={{ display: "flex", justifyContent: "center", gap: 8, padding: "24px", borderTop: "1px solid #f1f5f9" }}>
-                  {[...Array(pageData.totalPages)].map((_, i) => (
-                    <button
-                      key={i}
-                      onClick={() => setFilters({ ...filters, page: i + 1 })}
-                      style={{
-                        width: 36, height: 36, borderRadius: 10, border: "1px solid #e2e8f0",
-                        background: filters.page === i + 1 ? "#BE1E2E" : "#fff",
-                        color: filters.page === i + 1 ? "#fff" : "#475569",
-                        fontWeight: 700, cursor: "pointer", transition: "all 0.2s"
-                      }}
-                    >
-                      {i + 1}
-                    </button>
-                  ))}
-                </div>
-              )}
+              {pageData?.totalPages > 1 && (() => {
+                const pages = buildPageWindow(filters.page, pageData.totalPages);
+                const btnSt = (active) => ({
+                  minWidth: 36, height: 36, borderRadius: 10, border: "1px solid #e2e8f0",
+                  background: active ? "#BE1E2E" : "#fff",
+                  color: active ? "#fff" : "#475569",
+                  fontWeight: 700, cursor: "pointer", transition: "all 0.2s", padding: "0 10px",
+                });
+                const navSt = (disabled) => ({
+                  ...btnSt(false), opacity: disabled ? 0.4 : 1, cursor: disabled ? "not-allowed" : "pointer",
+                });
+                const go = (p) => setFilters({ ...filters, page: p });
+                return (
+                  <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 6, padding: "24px", borderTop: "1px solid #f1f5f9", flexWrap: "wrap" }}>
+                    <button style={navSt(filters.page === 1)} disabled={filters.page === 1} onClick={() => go(filters.page - 1)}>‹</button>
+                    {pages.map((p, idx) => {
+                      const prev = pages[idx - 1];
+                      return (
+                        <span key={p} style={{ display: "contents" }}>
+                          {prev && p - prev > 1 && <span style={{ color: "#94a3b8", padding: "0 4px" }}>…</span>}
+                          <button style={btnSt(filters.page === p)} onClick={() => go(p)}>{p}</button>
+                        </span>
+                      );
+                    })}
+                    <button style={navSt(filters.page === pageData.totalPages)} disabled={filters.page === pageData.totalPages} onClick={() => go(filters.page + 1)}>›</button>
+                  </div>
+                );
+              })()}
             </>
         }
       </Card>
@@ -362,7 +368,13 @@ export default function PartnerBookings() {
                     <CheckCircle2 size={15} /> {t("pt_bk_checkout_btn")}
                   </Btn>
                 )}
-                <Btn style={{ width: "100%" }} onClick={() => setDetailId(null)}>{t("pt_close")}</Btn>
+                <Btn
+                  style={{ width: "100%", marginBottom: 8 }}
+                  onClick={() => { setDetailId(null); navigate(`/partner/bookings/${detailId}`); }}
+                >
+                  {t("pt_bk_view_full")}
+                </Btn>
+                <Btn variant="ghost" style={{ width: "100%" }} onClick={() => setDetailId(null)}>{t("pt_close")}</Btn>
               </div>
             </div>
           )}
@@ -387,3 +399,9 @@ const selectSt = {
   width: "100%", padding: "10px 14px", borderRadius: 12, border: "1px solid #e2e8f0",
   fontSize: 14, outline: "none", background: "#f8fafc", cursor: "pointer", fontWeight: 500
 };
+
+function buildPageWindow(current, total) {
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+  const near = new Set([1, total, current, current - 1, current + 1, current - 2, current + 2]);
+  return [...near].filter(p => p >= 1 && p <= total).sort((a, b) => a - b);
+}

@@ -222,6 +222,32 @@
   color: #BE1E2E;
 }
 
+/* ── Body layout grid ─────────────────────────────────────────────── */
+.refund-body {
+  flex: 1;
+  max-width: 1140px;
+  margin: 0 auto;
+  width: 100%;
+  padding: 40px 20px;
+  box-sizing: border-box;
+}
+
+.refund-grid {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 32px;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .refund-grid {
+    grid-template-columns: 1fr;
+  }
+  .refund-info-sidebar {
+    position: static !important;
+  }
+}
+
 /* Sidebar */
 .refund-info-sidebar {
   display: flex;

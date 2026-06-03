@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { C } from "../lib/constants";
 import MainNavbar from "../components/MainNavbar";
 import Footer from "../components/Footer";
@@ -6,16 +6,17 @@ import { useMyBookings } from "../hooks/useBookingQueries";
 import { useLang } from "../contexts/LanguageContext";
 import EmptyState from "../components/ui/EmptyState";
 import { SkeletonBookingCard } from "../components/ui/Skeleton";
-import { CalendarOff, ClipboardList } from "lucide-react";
+import { CalendarDays, Moon, User, CalendarOff, ClipboardList, AlertCircle } from "lucide-react";
 
+/* ── Status badge map — centralised colours matching BookingDetailPage ── */
 function useStatusMap() {
   const { t } = useLang();
   return {
-    PENDING_PAYMENT: { label: t("status_pending_payment"), color: "#d48806", bg: "#fffbe6", border: "#ffe58f" },
-    CONFIRMED:       { label: t("status_confirmed"),       color: "#389e0d", bg: "#f6ffed", border: "#b7eb8f" },
-    CANCELLED:       { label: t("status_cancelled"),       color: "#888",    bg: "#f5f5f5", border: "#d9d9d9" },
-    COMPLETED:       { label: t("status_completed"),       color: "#1d4ed8", bg: "#eff6ff", border: "#bfdbfe" },
-    REFUNDED:        { label: t("status_refunded"),        color: "#7c3aed", bg: "#f5f3ff", border: "#ddd6fe" },
+    PENDING_PAYMENT: { label: t("status_pending_payment"), cls: "badge-pending"   },
+    CONFIRMED:       { label: t("status_confirmed"),       cls: "badge-confirmed" },
+    CANCELLED:       { label: t("status_cancelled"),       cls: "badge-cancelled" },
+    COMPLETED:       { label: t("status_completed"),       cls: "badge-completed" },
+    REFUNDED:        { label: t("status_refunded"),        cls: "badge-refunded"  },
   };
 }
 
@@ -35,12 +36,8 @@ function nightsBetween(a, b) {
 
 function StatusBadge({ status }) {
   const statusMap = useStatusMap();
-  const cfg = statusMap[status] || { label: status, color: "#555", bg: "#eee", border: "#ccc" };
-  return (
-    <span style={{ padding: "4px 12px", borderRadius: 20, fontSize: 12, fontWeight: 700, background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.border}` }}>
-      {cfg.label}
-    </span>
-  );
+  const cfg = statusMap[status] || { label: status, cls: "badge-cancelled" };
+  return <span className={`badge ${cfg.cls}`}>{cfg.label}</span>;
 }
 
 function BookingCard({ booking, onView }) {
@@ -50,33 +47,57 @@ function BookingCard({ booking, onView }) {
   const isPending = booking.status === "PENDING_PAYMENT";
 
   return (
-    <div style={{ background: "#fff", borderRadius: 14, border: "1.5px solid #eee", padding: "20px 24px", marginBottom: 16, boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
-        <div>
-          <p style={{ fontSize: 12, color: "#aaa", margin: "0 0 4px" }}>{t("mybookings_booking_id")}{booking.bookingId}</p>
-          <p style={{ fontSize: 15, fontWeight: 700, color: "#1a1a1a", margin: 0 }}>{roomNames}</p>
+    <div className="bg-white rounded-2xl border border-[var(--border)] p-5 mb-4 shadow-sm hover:shadow-md transition-shadow duration-200">
+      {/* Header row */}
+      <div className="flex justify-between items-start gap-3 mb-3">
+        <div className="min-w-0">
+          <p className="text-[var(--text-sm)] text-[var(--text-light)] mb-1">
+            {t("mybookings_booking_id")}{booking.bookingId}
+          </p>
+          {booking.hotelName && (
+            <p className="text-base font-[800] text-[var(--text-main)] mb-0.5 truncate">
+              {booking.hotelName}
+            </p>
+          )}
+          <p className="text-[13px] font-[500] text-[var(--text-muted)] truncate">{roomNames}</p>
         </div>
         <StatusBadge status={booking.status} />
       </div>
 
-      <div style={{ display: "flex", gap: 24, fontSize: 13, color: "#555", marginBottom: 12, flexWrap: "wrap" }}>
-        <span>📅 {fmtDate(booking.checkIn)} → {fmtDate(booking.checkOut)}</span>
-        {n > 0 && <span>🌙 {n}{t("night")}</span>}
-        {booking.contact?.fullName && <span>👤 {booking.contact.fullName}</span>}
+      {/* Meta row */}
+      <div className="flex flex-wrap gap-5 text-[13px] text-[var(--text-muted)] mb-3 items-center">
+        <span className="flex items-center gap-1.5">
+          <CalendarDays size={14} color="#94a3b8" aria-hidden="true" />
+          {fmtDate(booking.checkIn)} → {fmtDate(booking.checkOut)}
+        </span>
+        {n > 0 && (
+          <span className="flex items-center gap-1.5">
+            <Moon size={14} color="#94a3b8" aria-hidden="true" />
+            {n}{t("night")}
+          </span>
+        )}
+        {booking.contact?.fullName && (
+          <span className="flex items-center gap-1.5">
+            <User size={14} color="#94a3b8" aria-hidden="true" />
+            {booking.contact.fullName}
+          </span>
+        )}
       </div>
 
+      {/* Expiry warning */}
       {isPending && booking.expiresAt && (
-        <div style={{ fontSize: 12, color: "#d48806", background: "#fffbe6", borderRadius: 6, padding: "4px 10px", display: "inline-block", marginBottom: 12 }}>
-          ⏰ {t("mybookings_expires")} {new Date(booking.expiresAt).toLocaleString("vi-VN")}
+        <div className="alert alert-warning inline-flex mb-3 text-[12px] py-1 px-3">
+          <CalendarDays size={13} aria-hidden="true" />
+          {t("mybookings_expires")} {new Date(booking.expiresAt).toLocaleString("vi-VN")}
         </div>
       )}
 
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <p style={{ margin: 0, fontSize: 15, fontWeight: 800, color: C.primary }}>{fmt(booking.totalPrice)}</p>
-        <button
-          style={{ background: C.primary, color: "#fff", border: "none", borderRadius: 8, padding: "9px 20px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}
-          onClick={onView}
-        >{t("mybookings_view")}</button>
+      {/* Footer row */}
+      <div className="flex justify-between items-center">
+        <p className="text-[15px] font-[800] text-[var(--primary)] m-0">{fmt(booking.totalPrice)}</p>
+        <button className="btn btn-primary btn-sm" onClick={onView}>
+          {t("mybookings_view")}
+        </button>
       </div>
     </div>
   );
@@ -105,14 +126,15 @@ export default function MyBookingsPage({ navigate, user, onLogout }) {
 
   if (!user) {
     return (
-      <div style={{ minHeight: "100vh", background: "#f7f8fa", fontFamily: "'Segoe UI',sans-serif" }}>
+      <div className="min-h-screen bg-[var(--background)] flex flex-col">
         <MainNavbar active="my-bookings" navigate={navigate} user={user} onLogout={onLogout} />
-        <div style={{ maxWidth: 480, margin: "80px auto", textAlign: "center", padding: 24 }}>
-          <p style={{ fontSize: 16, color: "#555", marginBottom: 20 }}>{t("mybookings_login_msg")}</p>
-          <button
-            style={{ background: C.primary, color: "#fff", border: "none", borderRadius: 10, padding: "12px 32px", fontSize: 15, fontWeight: 700, cursor: "pointer" }}
-            onClick={() => navigate("login")}
-          >{t("nav_login")}</button>
+        <div className="flex-1 flex items-center justify-center p-6">
+          <div className="text-center max-w-sm">
+            <p className="text-[var(--text-muted)] mb-5">{t("mybookings_login_msg")}</p>
+            <button className="btn btn-primary btn-lg" onClick={() => navigate("login")}>
+              {t("nav_login")}
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -121,19 +143,28 @@ export default function MyBookingsPage({ navigate, user, onLogout }) {
   const filtered = tab === "ALL" ? bookings : bookings.filter(b => b.status === tab);
 
   return (
-    <div style={{ minHeight: "100vh", background: "linear-gradient(135deg, #ffffff 0%, #fdf4f5 45%, #f7ebeb 100%)", fontFamily: "'Segoe UI',sans-serif", display: "flex", flexDirection: "column" }}>
+    <div className="min-h-screen bg-[var(--gradient-brand)] flex flex-col" style={{ background: "linear-gradient(135deg,#ffffff 0%,#fdf4f5 45%,#f7ebeb 100%)" }}>
       <MainNavbar active="my-bookings" navigate={navigate} user={user} onLogout={onLogout} />
 
-      <div style={{ maxWidth: 900, margin: "0 auto", width: "100%", padding: "32px 24px", flex: 1, boxSizing: "border-box" }}>
-        <h1 style={{ fontSize: 24, fontWeight: 800, color: "#1a1a1a", marginBottom: 24 }}>{t("mybookings_title")}</h1>
+      <div className="max-w-[900px] mx-auto w-full px-6 py-8 flex-1 box-border">
+        <h1 className="text-[var(--text-2xl)] font-[800] text-[var(--text-main)] mb-6">
+          {t("mybookings_title")}
+        </h1>
 
         {/* Status tabs */}
-        <div style={{ display: "flex", gap: 8, marginBottom: 24, flexWrap: "wrap" }}>
+        <div className="flex flex-wrap gap-2 mb-6">
           {tabs.map(tb => (
-            <button key={tb.key}
-              style={{ padding: "8px 18px", borderRadius: 20, border: "1.5px solid", borderColor: tab === tb.key ? C.primary : "#ddd", background: tab === tb.key ? C.primary : "#fff", color: tab === tb.key ? "#fff" : "#555", fontSize: 13, fontWeight: 600, cursor: "pointer" }}
+            <button
+              key={tb.key}
+              className={`btn btn-sm transition-all ${
+                tab === tb.key
+                  ? "btn-primary"
+                  : "btn-secondary"
+              }`}
               onClick={() => setTab(tb.key)}
-            >{tb.label}</button>
+            >
+              {tb.label}
+            </button>
           ))}
         </div>
 
@@ -146,7 +177,8 @@ export default function MyBookingsPage({ navigate, user, onLogout }) {
         )}
 
         {error && (
-          <div style={{ background: "#fff5f5", border: "1px solid #ffa39e", borderRadius: 10, padding: "12px 16px", color: "#cf1322", marginBottom: 16 }}>
+          <div className="alert alert-error mb-4">
+            <AlertCircle size={16} aria-hidden="true" />
             {error}
           </div>
         )}

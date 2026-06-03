@@ -402,3 +402,36 @@
   margin-top: 12px;
   line-height: 1.7;
 }
+
+/* ── Responsive ─────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .bkp-layout {
+    flex-direction: column;
+    padding: 20px 16px;
+    gap: 16px;
+  }
+
+  /* Right panel (price box) becomes full width below form */
+  .bkp-right {
+    width: 100%;
+    position: static !important;
+  }
+
+  .bkp-contact-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .bkp-page-title {
+    font-size: 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .bkp-card {
+    padding: 16px;
+  }
+
+  .bkp-stepper-bar-inner {
+    padding: 0 12px;
+  }
+}

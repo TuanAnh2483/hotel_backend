@@ -66,13 +66,14 @@ function AssignRoomModal({ booking, allUnits, customerName, mode, onConfirm, onC
   const targetLabel = isCheckin ? "Có khách" : "Đã đặt";
   const targetColor = isCheckin ? "#3b82f6"  : "#8b5cf6";
 
+  const bookingBkTag = `bk:${booking?.bookingId}`;
   const [selected, setSelected] = useState(() => {
     const init = {};
     items.forEach(item => {
-      const key  = item.roomTypeName || "";
-      // Pre-select units already reserved for this guest
-      const pre  = allUnits
-        .filter(u => u.roomName === key && u.guestName === customerName && u.status === "RESERVED")
+      const key = item.roomTypeName || "";
+      // Pre-select units already reserved for this booking
+      const pre = allUnits
+        .filter(u => u.roomName === key && u.notes?.startsWith(bookingBkTag) && u.status === "RESERVED")
         .map(u => u.id);
       init[key] = new Set(pre);
     });
@@ -111,7 +112,7 @@ function AssignRoomModal({ booking, allUnits, customerName, mode, onConfirm, onC
           const available = allUnits.filter(u =>
             u.roomName === typeName &&
             (u.status === "AVAILABLE" ||
-             (u.status === "RESERVED" && (!u.guestName || u.guestName === customerName)))
+             (u.status === "RESERVED" && u.notes?.startsWith(bookingBkTag)))
           );
           const sel      = selected[typeName] || new Set();
           const needed   = item.quantity;
@@ -189,9 +190,10 @@ function RoomPhysicalSection({ booking, allUnits, customerName, onAssign, onChec
       <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
         {items.map((item, idx) => {
           const typeName   = item.roomTypeName || item.roomName || "";
+          const bookingTag = `bk:${booking?.bookingId}`;
           const matchUnits = allUnits.filter(u => u.roomName === typeName);
           const assigned   = matchUnits.filter(
-            u => u.guestName === customerName &&
+            u => u.notes?.startsWith(bookingTag) &&
                  (u.status === "OCCUPIED" || u.status === "RESERVED")
           );
 
@@ -234,7 +236,7 @@ function RoomPhysicalSection({ booking, allUnits, customerName, onAssign, onChec
           {/* Gán phòng — luôn hiện khi CONFIRMED */}
           <button className="pbd-assign-btn" onClick={onAssign}>
             <Pencil size={14} />
-            {allUnits.some(u => u.guestName === customerName && u.status === "RESERVED")
+            {allUnits.some(u => u.notes?.startsWith(`bk:${booking?.bookingId}`) && u.status === "RESERVED")
               ? "Thay đổi phòng"
               : "Gán phòng"}
           </button>
@@ -266,7 +268,7 @@ export default function PartnerBookingDetailPage() {
 
   const [actionError,   setActionError]   = useState("");
   const [actionMessage, setActionMessage] = useState("");
-  // modal: null | "assign" | "checkin"
+  // modal: null | "assign" | "checkin" | "confirmCheckout"
   const [modalMode, setModalMode] = useState(null);
 
   const { data: booking, isLoading: loading, error } = usePartnerBookingDetail(bookingId);
@@ -283,9 +285,10 @@ export default function PartnerBookingDetailPage() {
     || booking?.contact?.email
     || "khách hàng";
 
-  // Units reserved/occupied by this guest
+  // Dùng notes "bk:<bookingId>" để khớp phòng theo booking, không phải tên khách
+  const bkTag = `bk:${booking?.bookingId}`;
   const assignedUnits = allUnits.filter(
-    u => u.guestName === customerName &&
+    u => u.notes?.startsWith(bkTag) &&
          (u.status === "OCCUPIED" || u.status === "RESERVED")
   );
 
@@ -294,7 +297,7 @@ export default function PartnerBookingDetailPage() {
     const updates = buildUpdates(selected, "RESERVED");
     // Clear previously assigned units not in new selection
     const prevReserved = allUnits.filter(
-      u => u.guestName === customerName && u.status === "RESERVED"
+      u => u.notes?.startsWith(bkTag) && u.status === "RESERVED"
     );
     const newIds = new Set(updates.map(u => u.unitId));
     const toRelease = prevReserved.filter(u => !newIds.has(u.id));
@@ -305,7 +308,7 @@ export default function PartnerBookingDetailPage() {
         ...toRelease.map(u => updateUnit.mutateAsync({
           roomId: u.roomId, unitId: u.id, hotelId: booking.hotelId,
           status: "AVAILABLE", guestName: null,
-          notes: u.notes ?? null, roomNumber: u.roomNumber ?? null,
+          notes: null, roomNumber: u.roomNumber ?? null,
           floor: u.floor ?? null, coverImageUrl: u.coverImageUrl ?? null,
         })),
       ]);
@@ -321,16 +324,16 @@ export default function PartnerBookingDetailPage() {
   async function handleCheckin(selected) {
     // Nếu đã có phòng RESERVED → flip luôn, không cần chọn lại
     const reservedUnits = allUnits.filter(
-      u => u.guestName === customerName && u.status === "RESERVED"
+      u => u.notes?.startsWith(bkTag) && u.status === "RESERVED"
     );
 
     let updates;
     if (reservedUnits.length > 0) {
-      // Flip toàn bộ RESERVED → OCCUPIED
+      // Flip toàn bộ RESERVED → OCCUPIED, giữ nguyên bkTag trong notes
       updates = reservedUnits.map(u => ({
         roomId: u.roomId, unitId: u.id, hotelId: booking.hotelId,
         status: "OCCUPIED", guestName: customerName,
-        notes: u.notes ?? null, roomNumber: u.roomNumber ?? null,
+        notes: u.notes, roomNumber: u.roomNumber ?? null,
         floor: u.floor ?? null, coverImageUrl: u.coverImageUrl ?? null,
       }));
     } else {
@@ -350,7 +353,12 @@ export default function PartnerBookingDetailPage() {
 
   // ── complete (checkout + CLEANING) ────────────────────────────────────────
   async function handleComplete() {
-    if (!booking || !window.confirm(t("pt_bk_confirm_checkout"))) return;
+    if (!booking) return;
+    setModalMode("confirmCheckout");
+  }
+
+  async function executeComplete() {
+    setModalMode(null);
     setActionError(""); setActionMessage("");
     try {
       await completeBooking.mutateAsync(booking.bookingId);
@@ -359,7 +367,7 @@ export default function PartnerBookingDetailPage() {
           updateUnit.mutateAsync({
             roomId: u.roomId, unitId: u.id, hotelId: booking.hotelId,
             status: "CLEANING", guestName: null,
-            notes: u.notes ?? null, roomNumber: u.roomNumber ?? null,
+            notes: null, roomNumber: u.roomNumber ?? null,
             floor: u.floor ?? null, coverImageUrl: u.coverImageUrl ?? null,
           })
         )
@@ -385,7 +393,7 @@ export default function PartnerBookingDetailPage() {
         updates.push({
           roomId: unit.roomId, unitId: unit.id, hotelId: booking.hotelId,
           status, guestName: customerName,
-          notes: unit.notes ?? null, roomNumber: unit.roomNumber ?? null,
+          notes: bkTag, roomNumber: unit.roomNumber ?? null,
           floor: unit.floor ?? null, coverImageUrl: unit.coverImageUrl ?? null,
         });
       }
@@ -396,7 +404,7 @@ export default function PartnerBookingDetailPage() {
   // ── open check-in: if rooms already reserved, no modal needed ────────────
   function openCheckin() {
     const hasReserved = allUnits.some(
-      u => u.guestName === customerName && u.status === "RESERVED"
+      u => u.notes?.startsWith(bkTag) && u.status === "RESERVED"
     );
     if (hasReserved) {
       handleCheckin(null); // flip directly, no modal
@@ -415,12 +423,26 @@ export default function PartnerBookingDetailPage() {
     </div>
   );
 
-  const checkinDay   = isCheckinDay(booking);
   const showCheckout = canCheckoutBooking(booking);
+  // Chỉ hiện Check-in khi đến ngày nhận phòng VÀ chưa đến ngày trả phòng,
+  // tránh trường hợp cả 2 nút cùng hiện vào ngày checkout.
+  const checkinDay   = isCheckinDay(booking) && !showCheckout;
 
   return (
     <div>
-      <div style={{ marginBottom: 32 }}>
+      {/* Breadcrumb */}
+      <nav aria-label="breadcrumb" style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "#94a3b8", marginBottom: 16, flexWrap: "wrap" }}>
+        <button
+          onClick={() => navigate("/partner/bookings")}
+          style={{ background: "none", border: "none", color: "#64748b", fontWeight: 600, fontSize: 13, cursor: "pointer", padding: 0 }}
+        >
+          {t("pt_bk_title")}
+        </button>
+        <span aria-hidden="true">/</span>
+        <span style={{ color: "#1e293b", fontWeight: 700 }}>#{booking.bookingId}</span>
+      </nav>
+
+      <div style={{ marginBottom: 24 }}>
         <button onClick={() => navigate("/partner/bookings")} className="partner-booking-detail-back-btn">
           <ArrowLeft size={18} /> {t("pt_bk_back")}
         </button>
@@ -432,7 +454,7 @@ export default function PartnerBookingDetailPage() {
         action={<Badge status={booking.status} />}
       />
 
-      <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 24 }}>
+      <div className="pbd-grid">
 
         {/* ── Left ── */}
         <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
@@ -577,7 +599,7 @@ export default function PartnerBookingDetailPage() {
       </div>
 
       {/* Modal */}
-      {modalMode && (
+      {(modalMode === "assign" || modalMode === "checkin") && (
         <AssignRoomModal
           booking={booking}
           allUnits={allUnits}
@@ -587,6 +609,22 @@ export default function PartnerBookingDetailPage() {
           onConfirm={modalMode === "assign" ? handleAssign : handleCheckin}
           onClose={() => setModalMode(null)}
         />
+      )}
+
+      {modalMode === "confirmCheckout" && (
+        <Modal title={t("pt_bk_confirm_checkout_title") || "Xác nhận hoàn tất"} onClose={() => setModalMode(null)} width={400}>
+          <p style={{ fontSize: 14, color: "#475569", lineHeight: 1.65, margin: "0 0 24px" }}>
+            {t("pt_bk_confirm_checkout") || `Xác nhận checkout cho khách ${customerName}? Các phòng đã gán sẽ chuyển sang trạng thái Dọn phòng.`}
+          </p>
+          <div style={{ display: "flex", gap: 12 }}>
+            <Btn variant="ghost" style={{ flex: 1 }} onClick={() => setModalMode(null)} disabled={completing}>
+              {t("pt_cancel") || "Hủy"}
+            </Btn>
+            <Btn style={{ flex: 1, background: "#10b981" }} onClick={executeComplete} loading={completing}>
+              <CheckCircle2 size={15} /> {t("pt_bk_checkout_btn")}
+            </Btn>
+          </div>
+        </Modal>
       )}
     </div>
   );

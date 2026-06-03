@@ -124,6 +124,57 @@
   align-items: start;
 }
 
+@media (max-width: 768px) {
+  .bkd-grid {
+    grid-template-columns: 1fr;
+  }
+  .bkd-right {
+    position: static;
+  }
+}
+
+@media (max-width: 560px) {
+  .bkd-schedule-grid {
+    grid-template-columns: 1fr;
+  }
+  .bkd-schedule-divider { display: none; }
+  .bkd-contact-grid { grid-template-columns: 1fr 1fr; }
+}
+
+/* Hover states */
+.bkd-primary-btn:hover:not(:disabled) {
+  background: var(--primary-hover);
+}
+
+.bkd-outline-btn:hover:not(:disabled) {
+  background: var(--secondary);
+  border-color: #cbd5e1;
+}
+
+/* Cancel button — danger variant */
+.bkd-cancel-btn {
+  width: 100%;
+  padding: 14px 18px;
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  border: 2px solid var(--danger);
+  color: var(--danger);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.18s;
+}
+
+.bkd-cancel-btn:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.05);
+}
+
+.bkd-cancel-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .bkd-left {
   display: flex;
   flex-direction: column;
