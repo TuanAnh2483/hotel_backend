@@ -94,13 +94,14 @@ export default function PartnerDashboard() {
 
   const sharedParam     = selectedHotelId ? { hotelId: selectedHotelId } : {};
   const analyticsParams = { checkInFrom: startOfCurrentMonth(), checkInTo: endOfCurrentMonth(), ...sharedParam };
-  const todayParams     = { checkInFrom: today, checkInTo: today, ...sharedParam };
   const bookingsParams  = { size: 10, page: 1, ...sharedParam };
+  // Đếm chính xác booking CONFIRMED check-in hôm nay (loại bỏ CANCELLED / PENDING)
+  const confirmedTodayParams = { checkInFrom: today, checkInTo: today, status: "CONFIRMED", size: 100, page: 1, ...sharedParam };
 
-  const { data: hotelData,     isLoading: hotelsLoading    } = useMyHotels();
-  const { data: bookingData,   isLoading: bookingsLoading  } = usePartnerBookings(bookingsParams);
-  const { data: analyticsData, isLoading: analyticsLoading } = useAnalyticsSummary(analyticsParams);
-  const { data: todayData,     isLoading: todayLoading     } = useAnalyticsSummary(todayParams);
+  const { data: hotelData,         isLoading: hotelsLoading    } = useMyHotels();
+  const { data: bookingData,       isLoading: bookingsLoading  } = usePartnerBookings(bookingsParams);
+  const { data: analyticsData,     isLoading: analyticsLoading } = useAnalyticsSummary(analyticsParams);
+  const { data: confirmedTodayData, isLoading: todayLoading    } = usePartnerBookings(confirmedTodayParams);
 
   const hotelList     = Array.isArray(hotelData) ? hotelData : [];
   const selectedHotel = hotelList.find(h => h.id === selectedHotelId) || hotelList[0] || null;
@@ -115,8 +116,8 @@ export default function PartnerDashboard() {
   const monthlyRevenue = Number(analyticsData?.netRevenue ?? analyticsData?.grossRevenue ?? 0);
 
   const totalPhysicalRooms = rooms.reduce((sum, r) => sum + Number(r.quantity || 0), 0);
-  const checkInToday       = Number(todayData?.totalBookings ?? 0);
-  const availableToday     = Math.max(0, totalPhysicalRooms - checkInToday);
+  const checkInToday   = Number(confirmedTodayData?.totalItems ?? 0);
+  const availableToday = Math.max(0, totalPhysicalRooms - checkInToday);
 
   const loading   = hotelsLoading || bookingsLoading || analyticsLoading;
   const opLoading = loading || todayLoading;
@@ -133,9 +134,9 @@ export default function PartnerDashboard() {
 
   function statusConfig(status) {
     const MAP = {
-      CONFIRMED:       { label: t("pt_status_confirmed"),       color: "#10b981", bg: "#ecfdf5" },
-      PENDING_PAYMENT: { label: t("pt_status_pending_payment"), color: "#f59e0b", bg: "#fffbeb" },
-      CANCELLED:       { label: t("pt_status_cancelled"),       color: "#94a3b8", bg: "#f8fafc" },
+      CONFIRMED:       { label: t("pt_status_confirmed"),       color: "#059669", bg: "#ecfdf5" },
+      PENDING_PAYMENT: { label: t("pt_status_pending_payment"), color: "#b45309", bg: "#fffbeb" },
+      CANCELLED:       { label: t("pt_status_cancelled"),       color: "#64748b", bg: "#f8fafc" },
       COMPLETED:       { label: t("pt_status_completed"),       color: "#BE1E2E", bg: "#FFF1F2" },
     };
     return MAP[status] || { label: status || t("pt_status_unknown"), color: "#475569", bg: "#f8fafc" };

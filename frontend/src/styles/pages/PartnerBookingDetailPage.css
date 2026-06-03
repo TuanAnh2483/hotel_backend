@@ -1,5 +1,18 @@
 /* ── Partner Booking Detail Page ─────────────────────────────────────── */
 
+.pbd-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+@media (max-width: 768px) {
+  .pbd-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 .partner-booking-detail-back-btn {
   display: flex;
   align-items: center;

@@ -74,7 +74,8 @@ export default function RefundRequestPage({ navigate, user, onLogout }) {
     return (
       <div className="refund-page-container">
         <MainNavbar active="my-bookings" navigate={navigate} user={user} onLogout={onLogout} />
-        <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: "#64748b", fontWeight: 700 }}>
+        <div className="flex-1 flex items-center justify-center gap-2 text-[var(--text-muted)] font-[700]">
+          <span className="spinner-sm dark" aria-hidden="true" />
           Đang tải dữ liệu đặt phòng...
         </div>
         <Footer navigate={navigate} />
@@ -86,7 +87,7 @@ export default function RefundRequestPage({ navigate, user, onLogout }) {
     return (
       <div className="refund-page-container">
         <MainNavbar active="my-bookings" navigate={navigate} user={user} onLogout={onLogout} />
-        <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+        <div className="flex-1 flex items-center justify-center p-5">
           <div className="refund-success-card">
             <div className="refund-success-icon-box">
                <CheckCircle2 size={56} color="#10b981" />
@@ -111,18 +112,16 @@ export default function RefundRequestPage({ navigate, user, onLogout }) {
       <div className="refund-page-container">
         <MainNavbar active="my-bookings" navigate={navigate} user={user} onLogout={onLogout} />
 
-      <div style={{ flex: 1, maxWidth: 1140, margin: "0 auto", width: "100%", padding: "40px 20px" }}>
-        
-        {/* New Back Button Design */}
+      <div className="refund-body">
         <div style={{ marginBottom: 32 }}>
-          <button 
-            onClick={() => navigate("booking-detail", { bookingId })} 
+          <button
+            onClick={() => navigate("booking-detail", { bookingId })}
             className="refund-request-back-btn"
           >
-            <ChevronLeft size={18} /> Quay lại chi tiết đặt phòng
+            <ChevronLeft size={18} aria-hidden="true" /> Quay lại chi tiết đặt phòng
           </button>
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 380px", gap: 32, alignItems: "start" }}>
+        <div className="refund-grid">
           
           {/* Form Side */}
           <div className="refund-form-card">
