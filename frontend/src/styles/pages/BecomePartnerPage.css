@@ -153,6 +153,22 @@
   border-color: #BE1E2E;
 }
 
+.bp-input-error {
+  border-color: #ef4444;
+  background: #fef2f2;
+}
+
+.bp-input-error:focus {
+  border-color: #dc2626;
+}
+
+.bp-field-error {
+  font-size: 12px;
+  color: #dc2626;
+  margin-top: 4px;
+  font-weight: 500;
+}
+
 /* Error alert */
 .bp-error-alert {
   background: #fff5f5;

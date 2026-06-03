@@ -5,6 +5,7 @@ import Footer from "../components/Footer";
 import { useStartOnboarding, useSubmitOnboarding, useMyApplication } from "../hooks/usePartnerQueries";
 import { useAuth } from "../contexts/AuthContext";
 import { useLang } from "../contexts/LanguageContext";
+import { Building2, BarChart3, Globe, CircleDollarSign, ShieldCheck, CheckCircle2, XCircle, Clock } from "lucide-react";
 import "../styles/pages/BecomePartnerPage.css";
 
 const APP_ID_KEY = "partner_application_id";
@@ -59,12 +60,13 @@ function StepIndicator({ current }) {
   );
 }
 
-function Field({ label, required, children, hint }) {
+function Field({ label, required, children, hint, error }) {
   return (
     <div className="bp-field">
       <label className="bp-field-label">{label}{required && " *"}</label>
       {children}
-      {hint && <div className="bp-field-hint">{hint}</div>}
+      {error && <div className="bp-field-error">{error}</div>}
+      {hint && !error && <div className="bp-field-hint">{hint}</div>}
     </div>
   );
 }
@@ -77,6 +79,8 @@ export default function BecomePartnerPage({ navigate, user, onLogout }) {
   const [step, setStep]   = useState(savedAppId ? 2 : 0);
   const [form, setForm]   = useState({ businessName: "", email: user?.email || "", phone: "", taxCode: "", propertyType: "" });
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
+  const [touched, setTouched] = useState({});
   const [appId, setAppId] = useState(savedAppId);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -85,7 +89,96 @@ export default function BecomePartnerPage({ navigate, user, onLogout }) {
   const { data: application, refetch: refetchApp } = useMyApplication({ enabled: Boolean(savedAppId || appId) });
   const loading = startOnboarding.isPending || submitOnboarding.isPending;
 
-  const upd = k => e => setForm(f => ({ ...f, [k]: e.target.value }));
+  const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+  function validateField(key, value) {
+    const v = typeof value === "string" ? value.trim() : value;
+    switch (key) {
+      case "businessName":
+        if (!v) return t("bp_err_biz_name_required");
+        if (v.length < 2) return t("bp_err_biz_name_min");
+        if (v.length > 100) return t("bp_err_biz_name_max");
+        return "";
+      case "email":
+        if (!v) return t("bp_err_email_required");
+        if (!EMAIL_RE.test(v)) return t("bp_err_email_invalid");
+        return "";
+      case "phone":
+        if (!v) return t("bp_err_phone_required");
+        if (!/^\d+$/.test(v)) return t("bp_err_phone_digits");
+        if (!/^0\d{9}$/.test(v)) return t("bp_err_phone_format");
+        return "";
+      case "taxCode":
+        if (!v) return t("bp_err_tax_code_required");
+        if (!/^\d{10}$/.test(v)) return t("bp_err_tax_code");
+        return "";
+      case "propertyType":
+        if (!v) return t("bp_err_property_type");
+        return "";
+      default:
+        return "";
+    }
+  }
+
+  function validateAll() {
+    const errs = {};
+    for (const key of Object.keys(form)) {
+      const msg = validateField(key, form[key]);
+      if (msg) errs[key] = msg;
+    }
+    setFieldErrors(errs);
+    setTouched({ businessName: true, email: true, phone: true, taxCode: true, propertyType: true });
+    return Object.keys(errs).length === 0;
+  }
+
+  const upd = k => e => {
+    const val = e.target.value;
+    setForm(f => ({ ...f, [k]: val }));
+    if (touched[k]) {
+      setFieldErrors(prev => {
+        const msg = validateField(k, val);
+        if (msg) return { ...prev, [k]: msg };
+        const { [k]: _, ...rest } = prev;
+        return rest;
+      });
+    }
+  };
+
+  const onBlur = k => () => {
+    setTouched(prev => ({ ...prev, [k]: true }));
+    const msg = validateField(k, form[k]);
+    setFieldErrors(prev => {
+      if (msg) return { ...prev, [k]: msg };
+      const { [k]: _, ...rest } = prev;
+      return rest;
+    });
+  };
+
+  const onPhoneInput = e => {
+    const raw = e.target.value.replace(/\D/g, "");
+    setForm(f => ({ ...f, phone: raw }));
+    if (touched.phone) {
+      const msg = validateField("phone", raw);
+      setFieldErrors(prev => {
+        if (msg) return { ...prev, phone: msg };
+        const { phone: _, ...rest } = prev;
+        return rest;
+      });
+    }
+  };
+
+  const onTaxCodeInput = e => {
+    const raw = e.target.value.replace(/\D/g, "");
+    setForm(f => ({ ...f, taxCode: raw }));
+    if (touched.taxCode) {
+      const msg = validateField("taxCode", raw);
+      setFieldErrors(prev => {
+        if (msg) return { ...prev, taxCode: msg };
+        const { taxCode: _, ...rest } = prev;
+        return rest;
+      });
+    }
+  };
 
   async function handleRefreshStatus() {
     setRefreshing(true);
@@ -104,7 +197,7 @@ export default function BecomePartnerPage({ navigate, user, onLogout }) {
       <div className="bp-root-auth">
         <MainNavbar active="become-partner" navigate={navigate} user={user} onLogout={onLogout} />
         <div className="bp-login-gate">
-          <div className="bp-login-icon">🏨</div>
+          <div className="bp-login-icon"><Building2 size={48} color="#BE1E2E" aria-hidden="true" /></div>
           <h2 className="bp-login-title">{t("bp_login_title")}</h2>
           <p className="bp-login-desc">{t("bp_login_desc")}</p>
           <button className="bp-login-btn" onClick={() => navigate("login")}>{t("bp_login_btn")}</button>
@@ -115,18 +208,7 @@ export default function BecomePartnerPage({ navigate, user, onLogout }) {
 
   function handleStartAndSubmit() {
     setError("");
-    if (!form.businessName.trim() || !form.email.trim() || !form.phone.trim() || !form.taxCode.trim() || !form.propertyType) {
-      setError(t("bp_err_required"));
-      return;
-    }
-    if (form.phone.length < 8 || form.phone.length > 10) {
-      setError(t("bp_err_phone"));
-      return;
-    }
-    if (!/^\d{10}$/.test(form.taxCode)) {
-      setError(t("bp_err_tax_code"));
-      return;
-    }
+    if (!validateAll()) return;
     startOnboarding.mutate(
       { businessName: form.businessName, email: form.email, phone: form.phone, taxCode: form.taxCode, propertyType: form.propertyType },
       {
@@ -147,10 +229,10 @@ export default function BecomePartnerPage({ navigate, user, onLogout }) {
   }
 
   const benefits = [
-    { icon: "📊", tkey_title: "bp_benefit_1_title", tkey_desc: "bp_benefit_1_desc" },
-    { icon: "🌐", tkey_title: "bp_benefit_2_title", tkey_desc: "bp_benefit_2_desc" },
-    { icon: "💰", tkey_title: "bp_benefit_3_title", tkey_desc: "bp_benefit_3_desc" },
-    { icon: "🛡️", tkey_title: "bp_benefit_4_title", tkey_desc: "bp_benefit_4_desc" },
+    { Icon: BarChart3,       tkey_title: "bp_benefit_1_title", tkey_desc: "bp_benefit_1_desc" },
+    { Icon: Globe,           tkey_title: "bp_benefit_2_title", tkey_desc: "bp_benefit_2_desc" },
+    { Icon: CircleDollarSign,tkey_title: "bp_benefit_3_title", tkey_desc: "bp_benefit_3_desc" },
+    { Icon: ShieldCheck,     tkey_title: "bp_benefit_4_title", tkey_desc: "bp_benefit_4_desc" },
   ];
 
   return (
@@ -159,7 +241,7 @@ export default function BecomePartnerPage({ navigate, user, onLogout }) {
 
       {/* Hero */}
       <div className="bp-hero">
-        <div className="bp-hero-icon">🏨</div>
+        <div className="bp-hero-icon"><Building2 size={56} color="#BE1E2E" aria-hidden="true" /></div>
         <h1 className="bp-hero-title">{t("bp_hero_title")}</h1>
         <p className="bp-hero-subtitle">{t("bp_hero_sub")}</p>
       </div>
@@ -173,24 +255,59 @@ export default function BecomePartnerPage({ navigate, user, onLogout }) {
             <h2 className="bp-card-title">{t("bp_info_title")}</h2>
             <p className="bp-card-subtitle">{t("bp_info_sub")}</p>
 
-            <Field label={t("bp_biz_name")} required hint={t("bp_biz_name_hint")}>
-              <input className="bp-input" value={form.businessName} onChange={upd("businessName")} placeholder={t("bp_biz_name_ph")} />
+            <Field label={t("bp_biz_name")} required hint={t("bp_biz_name_hint")} error={touched.businessName && fieldErrors.businessName}>
+              <input
+                className={`bp-input${touched.businessName && fieldErrors.businessName ? " bp-input-error" : ""}`}
+                value={form.businessName}
+                onChange={upd("businessName")}
+                onBlur={onBlur("businessName")}
+                placeholder={t("bp_biz_name_ph")}
+                maxLength={100}
+              />
             </Field>
 
-            <Field label={t("bp_email")} required hint={t("bp_email_hint")}>
-              <input className="bp-input" type="email" value={form.email} onChange={upd("email")} placeholder="business@example.com" />
+            <Field label={t("bp_email")} required hint={t("bp_email_hint")} error={touched.email && fieldErrors.email}>
+              <input
+                className={`bp-input${touched.email && fieldErrors.email ? " bp-input-error" : ""}`}
+                type="email"
+                value={form.email}
+                onChange={upd("email")}
+                onBlur={onBlur("email")}
+                placeholder="business@example.com"
+              />
             </Field>
 
-            <Field label={t("bp_phone")} required hint={t("bp_phone_hint")}>
-              <input className="bp-input" value={form.phone} onChange={upd("phone")} placeholder={t("bp_phone_ph")} maxLength={10} />
+            <Field label={t("bp_phone")} required hint={t("bp_phone_hint")} error={touched.phone && fieldErrors.phone}>
+              <input
+                className={`bp-input${touched.phone && fieldErrors.phone ? " bp-input-error" : ""}`}
+                value={form.phone}
+                onChange={onPhoneInput}
+                onBlur={onBlur("phone")}
+                placeholder={t("bp_phone_ph")}
+                maxLength={10}
+                inputMode="numeric"
+              />
             </Field>
 
-            <Field label={t("bp_tax_code")} required hint={t("bp_tax_code_hint")}>
-              <input className="bp-input" value={form.taxCode} onChange={upd("taxCode")} placeholder={t("bp_tax_code_ph")} maxLength={10} />
+            <Field label={t("bp_tax_code")} required hint={t("bp_tax_code_hint")} error={touched.taxCode && fieldErrors.taxCode}>
+              <input
+                className={`bp-input${touched.taxCode && fieldErrors.taxCode ? " bp-input-error" : ""}`}
+                value={form.taxCode}
+                onChange={onTaxCodeInput}
+                onBlur={onBlur("taxCode")}
+                placeholder={t("bp_tax_code_ph")}
+                maxLength={10}
+                inputMode="numeric"
+              />
             </Field>
 
-            <Field label={t("bp_property_type")} required hint={t("bp_property_type_hint")}>
-              <select className="bp-input" value={form.propertyType} onChange={upd("propertyType")}>
+            <Field label={t("bp_property_type")} required hint={t("bp_property_type_hint")} error={touched.propertyType && fieldErrors.propertyType}>
+              <select
+                className={`bp-input${touched.propertyType && fieldErrors.propertyType ? " bp-input-error" : ""}`}
+                value={form.propertyType}
+                onChange={upd("propertyType")}
+                onBlur={onBlur("propertyType")}
+              >
                 <option value="">{t("bp_property_type_ph")}</option>
                 {["HOTEL","APARTMENT","RESORT","VILLA","HOMESTAY","HOSTEL","GUEST_HOUSE"].map(pt => (
                   <option key={pt} value={pt}>{t(`bp_pt_${pt}`)}</option>
@@ -205,16 +322,8 @@ export default function BecomePartnerPage({ navigate, user, onLogout }) {
               <button
                 className="bp-next-btn"
                 onClick={() => {
-                  if (!form.businessName.trim() || !form.email.trim() || !form.phone.trim() || !form.taxCode.trim() || !form.propertyType) {
+                  if (!validateAll()) {
                     setError(t("bp_err_required"));
-                    return;
-                  }
-                  if (form.phone.length < 8 || form.phone.length > 10) {
-                    setError(t("bp_err_phone"));
-                    return;
-                  }
-                  if (!/^\d{10}$/.test(form.taxCode)) {
-                    setError(t("bp_err_tax_code"));
                     return;
                   }
                   setError("");
@@ -282,7 +391,9 @@ export default function BecomePartnerPage({ navigate, user, onLogout }) {
 
           return (
             <div className="bp-card">
-              <div className="bp-success-icon">{isApproved ? "🎉" : isRejected ? "❌" : "⏳"}</div>
+              <div className="bp-success-icon">
+                {isApproved ? <CheckCircle2 size={48} color="#059669" aria-hidden="true" /> : isRejected ? <XCircle size={48} color="#ef4444" aria-hidden="true" /> : <Clock size={48} color="#f59e0b" aria-hidden="true" />}
+              </div>
               <h2 className="bp-success-title" style={{ color: isRejected ? "#ef4444" : "#111827" }}>
                 {isApproved ? "Đơn đăng ký được duyệt!" : isRejected ? "Đơn bị từ chối" : "Đơn đang được xét duyệt"}
               </h2>
@@ -295,8 +406,8 @@ export default function BecomePartnerPage({ navigate, user, onLogout }) {
               {/* Re-login banner */}
               {needsRelogin && (
                 <div style={{ background: "#ecfdf5", border: "1px solid #bbf7d0", borderRadius: 12, padding: "14px 16px", marginBottom: 20, textAlign: "left" }}>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: "#047857", marginBottom: 6 }}>
-                    ✅ Tài khoản đã được nâng cấp lên Partner
+                  <div style={{ fontSize: 14, fontWeight: 700, color: "#047857", marginBottom: 6, display: "flex", alignItems: "center", gap: 6 }}>
+                    <CheckCircle2 size={16} aria-hidden="true" /> Tài khoản đã được nâng cấp lên Partner
                   </div>
                   <div style={{ fontSize: 13, color: "#065f46", marginBottom: 12 }}>
                     Vui lòng đăng xuất và đăng nhập lại để truy cập Partner Portal.
@@ -372,7 +483,7 @@ export default function BecomePartnerPage({ navigate, user, onLogout }) {
             <div className="bp-benefits-grid">
               {benefits.map(b => (
                 <div key={b.tkey_title} className="bp-benefit-card">
-                  <div className="bp-benefit-icon">{b.icon}</div>
+                  <div className="bp-benefit-icon"><b.Icon size={28} color="#BE1E2E" aria-hidden="true" /></div>
                   <div className="bp-benefit-title">{t(b.tkey_title)}</div>
                   <div className="bp-benefit-desc">{t(b.tkey_desc)}</div>
                 </div>
