@@ -42,6 +42,10 @@ public class Booking {
     @Column(name = "total_price", nullable = false)
     private Long totalPrice;
 
+    // Số khách của đơn (nullable cho đơn cũ chưa lưu trường này)
+    @Column(name = "guests")
+    private Integer guests;
+
     // trạng thái booking
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

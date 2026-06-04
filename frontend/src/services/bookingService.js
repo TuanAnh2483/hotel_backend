@@ -5,8 +5,8 @@ export const bookingService = {
     return apiClient.post("/api/bookings/quote", { checkIn, checkOut, room: rooms });
   },
 
-  createBooking({ checkIn, checkOut, rooms, contact }) {
-    return apiClient.post("/api/bookings", { checkIn, checkOut, room: rooms, contact });
+  createBooking({ checkIn, checkOut, rooms, contact, guests }) {
+    return apiClient.post("/api/bookings", { checkIn, checkOut, room: rooms, contact, guests });
   },
 
   getMyBookings() {

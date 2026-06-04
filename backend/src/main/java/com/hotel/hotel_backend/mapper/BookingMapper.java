@@ -66,6 +66,7 @@ public class BookingMapper {
                 booking.getCheckOut(),
                 booking.getTotalPrice(),
                 booking.getStatus().name(),
+                booking.getGuests(),
                 booking.getExpiresAt(),
                 itemResponses,
                 contactResponse,

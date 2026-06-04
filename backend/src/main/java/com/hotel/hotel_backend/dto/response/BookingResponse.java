@@ -11,6 +11,7 @@ public record BookingResponse (
         LocalDate checkOut,
         Long totalPrice,
         String status,
+        Integer guests,
         LocalDateTime expiresAt,
         List<BookingItemResponse> items,
         BookingContactResponse contact,

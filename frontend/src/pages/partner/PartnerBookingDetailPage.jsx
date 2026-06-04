@@ -7,7 +7,7 @@ import {
 import { PageHeader, Card, Badge, Modal, Btn } from "../../components/admin/AdminLayout";
 import { useLang } from "../../contexts/LanguageContext";
 import {
-  ArrowLeft, Calendar, User, Building2, CreditCard,
+  ArrowLeft, Calendar, User, Users, Building2, CreditCard,
   Clock, CheckCircle2, BedDouble, LogIn, AlertTriangle, Pencil,
 } from "lucide-react";
 import "../../styles/pages/PartnerBookingDetailPage.css";
@@ -520,6 +520,15 @@ export default function PartnerBookingDetailPage() {
                   <div style={{ fontSize: 11, color: "#94a3b8", fontWeight: 600 }}>{t("pt_bk_contact")}</div>
                   <div style={{ fontSize: 14, fontWeight: 600, color: "#1e293b" }}>
                     {booking.contact?.email || booking.contact?.phone || "—"}
+                  </div>
+                </div>
+              </div>
+              <div style={{ display: "flex", gap: 12 }}>
+                <Users size={18} color="#64748b" />
+                <div>
+                  <div style={{ fontSize: 11, color: "#94a3b8", fontWeight: 600 }}>{t("pt_bk_guests")}</div>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: "#1e293b" }}>
+                    {booking.guests != null ? `${booking.guests} ${t("pt_bk_guests_unit")}` : "—"}
                   </div>
                 </div>
               </div>

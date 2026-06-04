@@ -54,6 +54,7 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
                         b.checkOut,
                         b.totalPrice,
                         b.status,
+                        b.guests,
                         b.createdAt,
                         b.expiresAt
                     )
@@ -101,6 +102,7 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
                 b.checkOut,
                 b.totalPrice,
                 b.status,
+                b.guests,
                 b.createdAt,
                 b.expiresAt
             )

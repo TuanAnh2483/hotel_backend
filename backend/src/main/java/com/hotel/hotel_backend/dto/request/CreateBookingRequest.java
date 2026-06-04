@@ -5,6 +5,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.FutureOrPresent;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
@@ -30,6 +31,10 @@ public class  CreateBookingRequest {
      @Valid
      @NotNull(message = "contact is required")
      private BookingContactRequest contact;
+
+     // Số khách. Optional để tương thích ngược; khi có sẽ được validate theo tổng sức chứa phòng.
+     @Min(value = 1, message = "guests must be at least 1")
+     private Integer guests;
 
      @AssertTrue(message = "checkOut must be after checkIn")
      public boolean isDateRangeValid() {

@@ -52,6 +52,7 @@ export const vi = {
   // ── BookingPage error messages ──────────────────────────
   booking_err_contact:   "Vui lòng điền đầy đủ thông tin liên hệ.",
   booking_err_no_rooms:  "Thiếu thông tin phòng. Vui lòng quay lại và chọn phòng.",
+  booking_err_capacity:  "Số khách vượt quá sức chứa của các phòng đã chọn. Vui lòng quay lại chọn thêm phòng.",
   booking_err_failed:    "Đặt phòng thất bại. Vui lòng thử lại.",
   booking_err_expired:   "Thông tin đặt phòng không còn hiệu lực. Vui lòng chọn lại phòng.",
   booking_back_select:   "Quay lại chọn phòng",
@@ -182,6 +183,7 @@ export const en = {
   // ── BookingPage error messages ──────────────────────────
   booking_err_contact:   "Please fill in all contact information.",
   booking_err_no_rooms:  "Room information is missing. Please go back and select a room.",
+  booking_err_capacity:  "The number of guests exceeds the capacity of the selected rooms. Please go back and add more rooms.",
   booking_err_failed:    "Booking failed. Please try again.",
   booking_err_expired:   "Booking information is no longer valid. Please select a room again.",
   booking_back_select:   "Back to room selection",

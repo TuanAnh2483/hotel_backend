@@ -190,7 +190,8 @@ function SearchBar({ initial = {}, onSearch }) {
     }
     setProvinceErr(false);
     setSearchErr("");
-    onSearch({ ...q, province, guests: Number(q.guests) || 2, rooms: Number(q.rooms) || 1 });
+    // Không cap trên: số khách ở tìm kiếm chỉ là bộ lọc; ràng buộc thật là sức chứa lúc đặt.
+    onSearch({ ...q, province, guests: Math.max(1, Number(q.guests) || 2), rooms: Number(q.rooms) || 1 });
   };
 
   return (

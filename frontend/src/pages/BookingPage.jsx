@@ -94,12 +94,16 @@ export default function BookingPage({ navigate, user, params = {}, onLogout }) {
   const upd = k => e => setContact(p => ({ ...p, [k]: e.target.value }));
 
   const total = rooms.reduce((s, r) => s + (r.price || 0) * (r.quantity || 1) * nights, 0);
+  // Tổng sức chứa các phòng đã chọn — dùng để chặn khi số khách vượt quá.
+  const totalCapacity = rooms.reduce((s, r) => s + (r.capacity || 0) * (r.quantity || 1), 0);
 
   const hasContact = contact.fullName.trim() && contact.email.trim() && contact.phone.trim();
 
   const handleConfirm = async () => {
     if (!hasContact)     { setError(t("booking_err_contact")); return; }
     if (rooms.length === 0) { setError(t("booking_err_no_rooms")); return; }
+    // Lớp phòng vệ cuối: params có thể bị chỉnh qua URL/back-forward sau khi đã rời trang chi tiết.
+    if (totalCapacity > 0 && guests > totalCapacity) { setError(t("booking_err_capacity")); return; }
     setError("");
     createBooking.mutate(
       {
@@ -107,6 +111,7 @@ export default function BookingPage({ navigate, user, params = {}, onLogout }) {
         checkOut: checkout,
         rooms:    rooms.map(r => ({ roomTypeId: r.id, quantity: r.quantity || 1 })),
         contact:  { fullName: contact.fullName, email: contact.email, phone: contact.phone },
+        guests,
       },
       {
         onSuccess: (res) => navigate("booking-detail", { bookingId: res.bookingId, hotelName }),

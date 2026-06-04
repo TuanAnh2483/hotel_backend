@@ -641,13 +641,19 @@ export default function HotelDetailPage({ navigate, params = {}, user, onLogout,
               </div>
             )}
 
+            {(() => {
+            // Chặn đặt khi số khách vượt sức chứa phòng đã chọn (BY_ROOM). ENTIRE đã bị giới hạn bởi maxGuests.
+            const insufficientCapacity = !isEntire && cartItems.length > 0 && capacityDiff < 0;
+            const canBook = (isEntire ? entireRoom?.available : cartItems.length > 0) && !insufficientCapacity;
+            return (
             <button
-              disabled={isEntire ? !entireRoom?.available : cartItems.length === 0}
-              style={{ width: "100%", background: (isEntire ? entireRoom?.available : cartItems.length > 0) ? C.primary : "#ccc", color: "#fff", border: "none", borderRadius: 10, padding: "14px", fontSize: 15, fontWeight: 800, cursor: (isEntire ? entireRoom?.available : cartItems.length > 0) ? "pointer" : "not-allowed", marginBottom: 10 }}
+              disabled={!canBook}
+              style={{ width: "100%", background: canBook ? C.primary : "#ccc", color: "#fff", border: "none", borderRadius: 10, padding: "14px", fontSize: 15, fontWeight: 800, cursor: canBook ? "pointer" : "not-allowed", marginBottom: 10 }}
               onClick={() => {
+                if (!canBook) return;
                 const bookingRooms = isEntire
-                  ? [{ id: entireRoom.id, name: entireRoom.name, price: entireRoom.price, quantity: 1 }]
-                  : cartItems.map(({ room: r, quantity }) => ({ id: r.id, name: r.name, price: r.price, quantity }));
+                  ? [{ id: entireRoom.id, name: entireRoom.name, price: entireRoom.price, quantity: 1, capacity: entireRoom.capacity }]
+                  : cartItems.map(({ room: r, quantity }) => ({ id: r.id, name: r.name, price: r.price, quantity, capacity: r.capacity }));
                 const bp = { hotelId: hotel?.id, hotelName: hotel?.name, rooms: bookingRooms, checkin, checkout, guests, nights, cancellationPolicy: hotel?.cancellationPolicy || "MODERATE" };
                 if (user) navigate("booking", bp);
                 else if (requireAuth) requireAuth("booking", bp);
@@ -656,6 +662,8 @@ export default function HotelDetailPage({ navigate, params = {}, user, onLogout,
             >
               {isEntire ? (t("detail_book_entire") || "Đặt nguyên căn") : t("detail_confirm_btn")}
             </button>
+            );
+            })()}
 
             {(() => {
               const policy = hotel?.cancellationPolicy || "MODERATE";

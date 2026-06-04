@@ -120,6 +120,7 @@ public class BookingServiceImpl implements BookingService {
                 bookingRequest.getCheckOut(),
                 roomRequests
         );
+        validateGuestCapacity(bookingRequest.getGuests(), preparation.reservations());
         reserveInventory(preparation.reservations(), bookingRequest.getCheckIn(), bookingRequest.getCheckOut());
 
         Booking booking = createBookingEntity(userId, bookingRequest);
@@ -339,6 +340,24 @@ public class BookingServiceImpl implements BookingService {
         return reservations;
     }
 
+    /**
+     * Server-side guard: số khách không được vượt tổng sức chứa các phòng đã đặt.
+     * Optional (guests==null bỏ qua) để tương thích client cũ; chỉ enforce khi có dữ liệu sức chứa.
+     */
+    private void validateGuestCapacity(Integer guests, List<RoomReservation> reservations) {
+        if (guests == null) {
+            return;
+        }
+        int totalCapacity = reservations.stream()
+                .filter(r -> r.room().getCapacity() != null)
+                .mapToInt(r -> r.room().getCapacity() * r.quantity())
+                .sum();
+        if (totalCapacity > 0 && guests > totalCapacity) {
+            throw new ApiException(ErrorCode.VALIDATION_ERROR,
+                    "Số khách vượt quá sức chứa của các phòng đã chọn");
+        }
+    }
+
     private void reserveInventory(List<RoomReservation> reservations, LocalDate checkIn, LocalDate checkOut) {
         // Chỉ reserve ở bước create/confirm. Quote không được block inventory.
         for (RoomReservation reservation : reservations) {
@@ -356,6 +375,7 @@ public class BookingServiceImpl implements BookingService {
         booking.setUserId(userId);
         booking.setCheckIn(bookingRequest.getCheckIn());
         booking.setCheckOut(bookingRequest.getCheckOut());
+        booking.setGuests(bookingRequest.getGuests());
         booking.setTotalPrice(0L);
         // Sau confirm booking đã được giữ chỗ nhưng vẫn chờ bước pay placeholder.
         booking.setStatus(BookingStatus.PENDING_PAYMENT);

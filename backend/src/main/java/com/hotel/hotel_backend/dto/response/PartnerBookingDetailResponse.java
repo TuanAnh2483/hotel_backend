@@ -15,6 +15,7 @@ public record PartnerBookingDetailResponse(
         LocalDate checkOut,
         Long totalPrice,
         BookingStatus status,
+        Integer guests,
         LocalDateTime createdAt,
         LocalDateTime updatedAt,
         LocalDateTime expiresAt,

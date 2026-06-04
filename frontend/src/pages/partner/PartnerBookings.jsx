@@ -2,7 +2,7 @@ import { createElement, useState, useEffect } from "react";
 import { useNavigate, useOutletContext } from "react-router-dom";
 import { useMyHotels, usePartnerBookings, usePartnerBookingDetail, useCompleteBooking } from "../../hooks/usePartnerQueries";
 import { PageHeader, Card, Badge, Btn, Table, Modal } from "../../components/admin/AdminLayout";
-import { Filter, Calendar, Download, User, Building2, Eye, CheckCircle2, BedDouble, LogIn } from "lucide-react";
+import { Filter, Calendar, Download, User, Users, Building2, Eye, CheckCircle2, BedDouble, LogIn } from "lucide-react";
 import { useLang } from "../../contexts/LanguageContext";
 import "../../styles/pages/partner/PartnerBookings.css";
 
@@ -344,6 +344,7 @@ export default function PartnerBookings() {
                 <InfoItem label="Khách sạn" value={detail.hotelName} Icon={Building2} />
                 <InfoItem label="Nhận phòng" value={detail.checkIn} Icon={Calendar} />
                 <InfoItem label="Trả phòng" value={detail.checkOut} Icon={Calendar} />
+                <InfoItem label="Số khách" value={detail.guests != null ? `${detail.guests} khách` : "—"} Icon={Users} />
               </div>
 
               {detail.items && (

@@ -179,6 +179,7 @@ public class PartnerBookingService {
                 booking.getCheckOut(),
                 booking.getTotalPrice(),
                 booking.getStatus(),
+                booking.getGuests(),
                 booking.getCreatedAt(),
                 booking.getUpdatedAt(),
                 booking.getExpiresAt(),
