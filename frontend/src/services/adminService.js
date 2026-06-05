@@ -56,6 +56,12 @@ export const adminService = {
   updateHotel(hotelId, data) {
     return apiClient.put(`/api/admin/hotels/${hotelId}`, data);
   },
+  approveHotel(hotelId) {
+    return apiClient.post(`/api/admin/hotels/${hotelId}/approve`);
+  },
+  rejectHotel(hotelId, reason) {
+    return apiClient.post(`/api/admin/hotels/${hotelId}/reject`, { reason });
+  },
   deleteHotel(hotelId) {
     return apiClient.delete(`/api/admin/hotels/${hotelId}`);
   },

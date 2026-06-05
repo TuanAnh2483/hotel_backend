@@ -99,6 +99,24 @@ export function useAdminHotelRooms(hotelId, options = {}) {
   });
 }
 
+export function useApproveAdminHotel(options = {}) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (hotelId) => adminService.approveHotel(hotelId),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: adminKeys.hotels() }),
+    ...options,
+  });
+}
+
+export function useRejectAdminHotel(options = {}) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ hotelId, reason }) => adminService.rejectHotel(hotelId, reason),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: adminKeys.hotels() }),
+    ...options,
+  });
+}
+
 export function useUpdateAdminHotel(options = {}) {
   const queryClient = useQueryClient();
   return useMutation({
