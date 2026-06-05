@@ -62,6 +62,7 @@ function LineChart({ items }) {
     LOW:    { ...DEMAND_STYLE.LOW,    label: t("pt_fc_demand_low") },
   };
   if (!items.length) return null;
+  // W là tọa độ ảo trong viewBox — SVG sẽ scale theo container, không hardcode pixel.
   const W = 800, H = 180, PAD = 32;
   const pts = items.map((it, i) => ({
     x: PAD + (i * (W - 2 * PAD)) / Math.max(items.length - 1, 1),
@@ -73,40 +74,44 @@ function LineChart({ items }) {
 
   return (
     <div style={{ background: "#fff", borderRadius: 16, padding: "20px 16px", border: "1px solid #f1f5f9", marginBottom: 20 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
         <span style={{ fontSize: 13, fontWeight: 800, color: "#0f172a" }}>{t("pt_fc_chart_title")}</span>
-        <div style={{ display: "flex", gap: 14 }}>
+        <div style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
           {Object.entries(DEMAND_CFG).map(([k, v]) => (
             <div key={k} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: "#64748b" }}>
-              <div style={{ width: 8, height: 8, borderRadius: "50%", background: v.color }} /> {v.label}
+              <div style={{ width: 8, height: 8, borderRadius: "50%", background: v.color, flexShrink: 0 }} /> {v.label}
             </div>
           ))}
         </div>
       </div>
-      <div style={{ overflowX: "auto" }}>
-        <svg width={W} height={H} style={{ overflow: "visible", minWidth: W }}>
-          <defs>
-            <linearGradient id="fcGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#BE1E2E" stopOpacity="0.16" />
-              <stop offset="100%" stopColor="#BE1E2E" stopOpacity="0" />
-            </linearGradient>
-          </defs>
-          <line x1={PAD} y1={H - PAD} x2={W - PAD} y2={H - PAD} stroke="#f1f5f9" />
-          <line x1={PAD} y1={PAD} x2={W - PAD} y2={PAD} stroke="#f1f5f9" />
-          <text x={PAD - 4} y={H - PAD + 4} fontSize="9" fill="#94a3b8" textAnchor="end">0%</text>
-          <text x={PAD - 4} y={PAD + 4} fontSize="9" fill="#94a3b8" textAnchor="end">100%</text>
-          <path d={area} fill="url(#fcGrad)" />
-          <path d={path} fill="none" stroke="#BE1E2E" strokeWidth="2.5" strokeLinejoin="round" />
-          {pts.map((p, i) => (
-            <circle key={i} cx={p.x} cy={p.y} r="4" fill="#fff" stroke={p.color} strokeWidth="2" />
-          ))}
-          {items.map((it, i) => i % 2 === 0 && (
-            <text key={i} x={pts[i].x} y={H - 8} fontSize="9" fill="#94a3b8" textAnchor="middle">
-              {it.displayDate}
-            </text>
-          ))}
-        </svg>
-      </div>
+      {/* viewBox giữ nguyên hệ tọa độ 800×180; width="100%" khiến SVG co giãn theo container */}
+      <svg
+        viewBox={`0 0 ${W} ${H}`}
+        preserveAspectRatio="none"
+        style={{ width: "100%", height: H, display: "block", overflow: "visible" }}
+        aria-hidden="true"
+      >
+        <defs>
+          <linearGradient id="fcGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#BE1E2E" stopOpacity="0.16" />
+            <stop offset="100%" stopColor="#BE1E2E" stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        <line x1={PAD} y1={H - PAD} x2={W - PAD} y2={H - PAD} stroke="#f1f5f9" />
+        <line x1={PAD} y1={PAD}     x2={W - PAD} y2={PAD}     stroke="#f1f5f9" />
+        <text x={PAD - 4} y={H - PAD + 4} fontSize="9" fill="#94a3b8" textAnchor="end">0%</text>
+        <text x={PAD - 4} y={PAD + 4}     fontSize="9" fill="#94a3b8" textAnchor="end">100%</text>
+        <path d={area} fill="url(#fcGrad)" />
+        <path d={path} fill="none" stroke="#BE1E2E" strokeWidth="2.5" strokeLinejoin="round" />
+        {pts.map((p, i) => (
+          <circle key={i} cx={p.x} cy={p.y} r="4" fill="#fff" stroke={p.color} strokeWidth="2" />
+        ))}
+        {items.map((it, i) => i % 2 === 0 && (
+          <text key={i} x={pts[i].x} y={H - 8} fontSize="9" fill="#94a3b8" textAnchor="middle">
+            {it.displayDate}
+          </text>
+        ))}
+      </svg>
     </div>
   );
 }
@@ -468,7 +473,8 @@ export default function PartnerForecast() {
 }
 
 // ── sub-components ────────────────────────────────────────────────────
-function MetricCard({ icon: Icon, label, value, valueColor, sub, subColor }) {
+function MetricCard({ icon, label, value, valueColor, sub, subColor }) {
+  const Icon = icon; // uppercase alias required for JSX component syntax; exempt from varsIgnorePattern
   return (
     <Card style={{ padding: 20, borderRadius: 20 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
