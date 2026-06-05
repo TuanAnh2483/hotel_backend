@@ -25,10 +25,16 @@ function fmtDateTime(d) {
   if (!d) return "—";
   return new Date(d).toLocaleString("vi-VN");
 }
-function canCheckoutBooking(booking) {
-  if (booking?.status !== "CONFIRMED" || !booking.checkOut) return false;
-  const co = new Date(`${booking.checkOut}T00:00:00`);
+function canCheckoutBooking(booking, occupiedCount = 0) {
+  if (booking?.status !== "CONFIRMED" || !booking.checkIn) return false;
+  const ci = new Date(`${booking.checkIn}T00:00:00`);
   const today = new Date(); today.setHours(0, 0, 0, 0);
+  if (today < ci) return false;
+  // Khách đã check-in (có phòng OCCUPIED) → cho phép early checkout
+  if (occupiedCount > 0) return true;
+  // Chưa check-in → chỉ hiện checkout khi đến/qua ngày trả phòng
+  if (!booking.checkOut) return false;
+  const co = new Date(`${booking.checkOut}T00:00:00`);
   return !isNaN(co) && co <= today;
 }
 function isCheckinDay(booking) {
@@ -176,7 +182,7 @@ function AssignRoomModal({ booking, allUnits, customerName, mode, onConfirm, onC
 
 // ── RoomPhysicalSection ────────────────────────────────────────────────────
 
-function RoomPhysicalSection({ booking, allUnits, customerName, onAssign, onCheckin, checkinDay }) {
+function RoomPhysicalSection({ booking, allUnits, onAssign, onCheckin, checkinDay }) {
   const items = booking?.items ?? [];
   const isConfirmed = booking?.status === "CONFIRMED";
 
@@ -423,10 +429,16 @@ export default function PartnerBookingDetailPage() {
     </div>
   );
 
-  const showCheckout = canCheckoutBooking(booking);
-  // Chỉ hiện Check-in khi đến ngày nhận phòng VÀ chưa đến ngày trả phòng,
-  // tránh trường hợp cả 2 nút cùng hiện vào ngày checkout.
-  const checkinDay   = isCheckinDay(booking) && !showCheckout;
+  const occupiedCount  = assignedUnits.filter(u => u.status === "OCCUPIED").length;
+  const showCheckout   = canCheckoutBooking(booking, occupiedCount);
+  // Ẩn nút check-in khi khách đã được check-in (có phòng OCCUPIED)
+  const checkinDay     = isCheckinDay(booking) && occupiedCount === 0 && !showCheckout;
+  const isEarlyCheckout = (() => {
+    if (!booking?.checkOut) return false;
+    const co = new Date(`${booking.checkOut}T00:00:00`);
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    return today < co;
+  })();
 
   return (
     <div>
@@ -451,7 +463,21 @@ export default function PartnerBookingDetailPage() {
       <PageHeader
         title={t("pt_bk_detail_title").replace("#{id}", booking.bookingId)}
         subtitle={t("pt_bk_detail_subtitle").replace("{name}", customerName)}
-        action={<Badge status={booking.status} />}
+        action={
+          <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+            <Badge status={booking.status} />
+            {occupiedCount > 0 && (
+              <span style={{
+                display: "inline-flex", alignItems: "center", gap: 4,
+                background: "#dbeafe", color: "#1d4ed8",
+                borderRadius: 999, padding: "4px 10px",
+                fontSize: 12, fontWeight: 800,
+              }}>
+                <LogIn size={12} /> Đang lưu trú
+              </span>
+            )}
+          </div>
+        }
       />
 
       <div className="pbd-grid">
@@ -621,10 +647,21 @@ export default function PartnerBookingDetailPage() {
       )}
 
       {modalMode === "confirmCheckout" && (
-        <Modal title={t("pt_bk_confirm_checkout_title") || "Xác nhận hoàn tất"} onClose={() => setModalMode(null)} width={400}>
-          <p style={{ fontSize: 14, color: "#475569", lineHeight: 1.65, margin: "0 0 24px" }}>
+        <Modal title={t("pt_bk_confirm_checkout_title") || "Xác nhận hoàn tất"} onClose={() => setModalMode(null)} width={420}>
+          <p style={{ fontSize: 14, color: "#475569", lineHeight: 1.65, margin: "0 0 16px" }}>
             {t("pt_bk_confirm_checkout") || `Xác nhận checkout cho khách ${customerName}? Các phòng đã gán sẽ chuyển sang trạng thái Dọn phòng.`}
           </p>
+          {isEarlyCheckout && (
+            <div style={{
+              display: "flex", gap: 8, alignItems: "flex-start",
+              background: "#fffbeb", border: "1px solid #fde68a",
+              borderRadius: 10, padding: "10px 12px", marginBottom: 16,
+              fontSize: 13, color: "#92400e", lineHeight: 1.5,
+            }}>
+              <AlertTriangle size={15} style={{ flexShrink: 0, marginTop: 1 }} />
+              <span>Khách trả phòng sớm hơn dự kiến. Ngày trả phòng đã đặt: <strong>{fmtDate(booking.checkOut)}</strong>.</span>
+            </div>
+          )}
           <div style={{ display: "flex", gap: 12 }}>
             <Btn variant="ghost" style={{ flex: 1 }} onClick={() => setModalMode(null)} disabled={completing}>
               {t("pt_cancel") || "Hủy"}
