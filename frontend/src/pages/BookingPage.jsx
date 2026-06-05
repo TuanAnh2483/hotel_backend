@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+﻿import { useState, useMemo } from "react";
 import { C } from "../lib/constants";
 import { ActionBtn } from "../components/auth/AuthShared";
 import MainNavbar from "../components/MainNavbar";
@@ -12,6 +12,23 @@ import {
 } from "lucide-react";
 import "../styles/pages/BookingPage.css";
 
+
+// ── Session persistence ──────────────────────────────────────────────
+// Khi user refresh trang /book, location.state bị mất. sessionStorage giữ
+// params lại để trang có thể tự khôi phục thay vì hiển thị "phiên hết hạn".
+const SESSION_KEY = "vlu_bkp_draft";
+
+function getEffectiveParams(incoming) {
+  if (incoming.hotelId && incoming.rooms?.length > 0) {
+    try { sessionStorage.setItem(SESSION_KEY, JSON.stringify(incoming)); } catch { /* storage unavailable */ }
+    return incoming;
+  }
+  try {
+    const saved = sessionStorage.getItem(SESSION_KEY);
+    if (saved) return JSON.parse(saved);
+  } catch { /* storage unavailable */ }
+  return incoming;
+}
 
 const ICONS = {
   calendar: Calendar,
@@ -83,7 +100,9 @@ function Field({ label, icon, children }) {
 
 export default function BookingPage({ navigate, user, params = {}, onLogout }) {
   const { t } = useLang();
-  const { hotelId, hotelName, rooms = [], checkin, checkout, guests = 1, nights = 1, cancellationPolicy = "MODERATE" } = params;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const effectiveParams = useMemo(() => getEffectiveParams(params), []);
+  const { hotelId, hotelName, rooms = [], checkin, checkout, guests = 1, nights = 1, cancellationPolicy = "MODERATE" } = effectiveParams;
 
   const [contact, setContact] = useState({ fullName: "", email: user?.email || "", phone: "" });
   const [error, setError]     = useState("");
@@ -114,7 +133,10 @@ export default function BookingPage({ navigate, user, params = {}, onLogout }) {
         guests,
       },
       {
-        onSuccess: (res) => navigate("booking-detail", { bookingId: res.bookingId, hotelName }),
+        onSuccess: (res) => {
+          try { sessionStorage.removeItem(SESSION_KEY); } catch { /* storage unavailable */ }
+          navigate("booking-detail", { bookingId: res.bookingId, hotelName });
+        },
         onError:   (err) => setError(err.message || t("booking_err_failed")),
       }
     );
