@@ -354,9 +354,13 @@ function AppRoutes() {
         <ProtectedRoute role="CUSTOMER"><PaymentRoute /></ProtectedRoute>
       } />
 
-      {/* ── Payment result pages ───────────────────────────────────── */}
-      <Route path="/payment/success" element={<PaymentResultRoute variant="success" />} />
-      <Route path="/payment/failed"  element={<PaymentResultRoute variant="failed" />} />
+      {/* ── Payment result pages (CUSTOMER only — tránh PARTNER/ADMIN truy cập) ── */}
+      <Route path="/payment/success" element={
+        <ProtectedRoute role="CUSTOMER"><PaymentResultRoute variant="success" /></ProtectedRoute>
+      } />
+      <Route path="/payment/failed" element={
+        <ProtectedRoute role="CUSTOMER"><PaymentResultRoute variant="failed" /></ProtectedRoute>
+      } />
 
       {/* ── Refund request (customer auth required) ───────────────── */}
       <Route path="/customer/refund-request/:bookingId" element={
