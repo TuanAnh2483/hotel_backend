@@ -1,8 +1,8 @@
 import { useState } from "react";
 import {
   LayoutDashboard, Users, Handshake, Building2,
-  ClipboardList, CircleDollarSign, Settings, Home, LogOut,
-  Menu, Search, Star, ChevronDown, UserPlus
+  Settings, Home, LogOut,
+  Menu, Search, Star, ChevronDown, UserPlus, PanelLeftClose, PanelLeftOpen,
 } from "lucide-react";
 import { LOGO_IMG } from "../auth/AuthShared";
 import { useLang } from "../../contexts/LanguageContext";
@@ -23,7 +23,7 @@ const TOPBAR_ICON   = 18;
 const ACTION_ICON   = 16;
 
 // ── Sidebar ───────────────────────────────────────────────────────────
-function Sidebar({ page, navigate, user, onLogout, open, onClose }) {
+function Sidebar({ page, navigate, user, onLogout, open, onClose, collapsed }) {
   const { t } = useLang();
   const NAV = [
     { key: "admin-dashboard", icon: <LayoutDashboard size={NAV_ICON} />, label: t("adm_nav_dashboard") },
@@ -36,10 +36,8 @@ function Sidebar({ page, navigate, user, onLogout, open, onClose }) {
         { key: "admin-partners", icon: <Handshake size={NAV_CHILD_ICON} />,  label: t("adm_dash_tile_partners") },
       ],
     },
-    { key: "admin-hotels",   icon: <Building2 size={NAV_ICON} />,        label: t("adm_hotels_title") },
-    { key: "admin-bookings", icon: <ClipboardList size={NAV_ICON} />,    label: t("adm_nav_bookings") },
-    { key: "admin-refunds",  icon: <CircleDollarSign size={NAV_ICON} />, label: t("adm_dash_tile_refunds") },
-    { key: "admin-reviews",  icon: <Star size={NAV_ICON} />,             label: t("adm_rv_title") },
+    { key: "admin-hotels",   icon: <Building2 size={NAV_ICON} />, label: t("adm_hotels_title") },
+    { key: "admin-reviews",  icon: <Star size={NAV_ICON} />,      label: t("adm_rv_title") },
     { key: "admin-system",   icon: <Settings size={NAV_ICON} />,         label: t("adm_sys_title") },
   ];
   const initialOpen = NAV
@@ -54,33 +52,36 @@ function Sidebar({ page, navigate, user, onLogout, open, onClose }) {
     <>
       {open && <div className="admin-sidebar-overlay" onClick={onClose} />}
 
-      <aside className={`admin-sidebar${open ? " open" : ""}`}>
+      <aside className={`admin-sidebar${open ? " open" : ""}${collapsed ? " collapsed" : ""}`}>
         {/* Logo */}
         <div className="admin-sidebar-logo">
           <div className="admin-sidebar-logo-box">
             <img src={LOGO_IMG} alt="VLU Hotel Hub" />
           </div>
-          <div className="admin-sidebar-logo-tag">{t("adm_sidebar_tag")}</div>
+          {!collapsed && <div className="admin-sidebar-logo-tag">{t("adm_sidebar_tag")}</div>}
         </div>
 
         {/* Nav */}
         <nav className="admin-sidebar-nav">
-          <div className="admin-nav-section-label">{t("adm_sidebar_cat")}</div>
+          {!collapsed && <div className="admin-nav-section-label">{t("adm_sidebar_cat")}</div>}
           {NAV.map(item => {
             if (item.children) {
-              const isOpen    = expanded.includes(item.key);
+              const isOpen    = !collapsed && expanded.includes(item.key);
               const hasActive = item.children.some(c => c.key === page);
               return (
                 <div key={item.key} style={{ marginBottom: 2 }}>
                   <button
-                    onClick={() => toggleGroup(item.key)}
+                    title={collapsed ? item.label : undefined}
+                    onClick={() => collapsed ? navigate(item.children[0].key) : toggleGroup(item.key)}
                     className={`admin-nav-btn${hasActive ? " active" : ""}`}
                   >
                     <span className="admin-nav-icon">{item.icon}</span>
-                    <span style={{ flex: 1 }}>{item.label}</span>
-                    <span className={`admin-nav-chevron ${isOpen ? "open" : "closed"}`}>
-                      <ChevronDown size={NAV_CHILD_ICON} />
-                    </span>
+                    {!collapsed && <span style={{ flex: 1 }}>{item.label}</span>}
+                    {!collapsed && (
+                      <span className={`admin-nav-chevron ${isOpen ? "open" : "closed"}`}>
+                        <ChevronDown size={NAV_CHILD_ICON} />
+                      </span>
+                    )}
                   </button>
                   {isOpen && (
                     <div className="admin-nav-children">
@@ -107,20 +108,21 @@ function Sidebar({ page, navigate, user, onLogout, open, onClose }) {
             return (
               <button
                 key={item.key}
+                title={collapsed ? item.label : undefined}
                 onClick={() => { navigate(item.key); onClose?.(); }}
                 className={`admin-nav-btn${isActive ? " active" : ""}`}
               >
                 <span className="admin-nav-icon">{item.icon}</span>
-                {item.label}
+                {!collapsed && item.label}
               </button>
             );
           })}
 
           {/* Back to home */}
           <div className="admin-nav-divider">
-            <button onClick={() => navigate("home")} className="admin-nav-home-btn">
+            <button title={collapsed ? t("adm_dash_home") : undefined} onClick={() => navigate("home")} className="admin-nav-home-btn">
               <span className="admin-nav-icon"><Home size={NAV_ICON} /></span>
-              {t("adm_dash_home")}
+              {!collapsed && t("adm_dash_home")}
             </button>
           </div>
         </nav>
@@ -128,16 +130,18 @@ function Sidebar({ page, navigate, user, onLogout, open, onClose }) {
         {/* User info */}
         <div className="admin-sidebar-user">
           <div className="admin-sidebar-user-row">
-            <div className="admin-sidebar-avatar">
+            <div className="admin-sidebar-avatar" title={user?.email || "Admin"}>
               {user?.email?.[0]?.toUpperCase() || "A"}
             </div>
-            <div className="admin-sidebar-user-info">
-              <div className="admin-sidebar-user-email">{user?.email || "admin"}</div>
-              <div className="admin-sidebar-user-role">{t("adm_sidebar_role")}</div>
-            </div>
+            {!collapsed && (
+              <div className="admin-sidebar-user-info">
+                <div className="admin-sidebar-user-email">{user?.email || "admin"}</div>
+                <div className="admin-sidebar-user-role">{t("adm_sidebar_role")}</div>
+              </div>
+            )}
           </div>
-          <button onClick={onLogout} className="admin-sidebar-logout-btn">
-            <LogOut size={ACTION_ICON} /> {t("nav_logout")}
+          <button onClick={onLogout} title={collapsed ? t("nav_logout") : undefined} className="admin-sidebar-logout-btn">
+            <LogOut size={ACTION_ICON} /> {!collapsed && t("nav_logout")}
           </button>
         </div>
       </aside>
@@ -148,14 +152,13 @@ function Sidebar({ page, navigate, user, onLogout, open, onClose }) {
 // ── Main layout ───────────────────────────────────────────────────────
 export default function AdminLayout({ page, navigate, user, onLogout, children }) {
   const { t } = useLang();
-  const [mobileOpen, setMobileOpen] = useState(false);
+  const [mobileOpen,  setMobileOpen]  = useState(false);
+  const [collapsed,   setCollapsed]   = useState(false);
   const PAGE_TITLES = {
     "admin-dashboard": t("adm_nav_dashboard"),
     "admin-users":     t("adm_users_title"),
     "admin-partners":  t("adm_partners_title"),
     "admin-hotels":    t("adm_hotels_title"),
-    "admin-bookings":  t("adm_bk_title"),
-    "admin-refunds":   t("adm_rf_title"),
     "admin-reviews":   t("adm_rv_title"),
     "admin-system":    t("adm_sys_title"),
   };
@@ -165,11 +168,13 @@ export default function AdminLayout({ page, navigate, user, onLogout, children }
       <Sidebar
         page={page} navigate={navigate} user={user} onLogout={onLogout}
         open={mobileOpen} onClose={() => setMobileOpen(false)}
+        collapsed={collapsed}
       />
 
-      <div className="admin-content-area">
+      <div className={`admin-content-area${collapsed ? " sidebar-collapsed" : ""}`}>
         {/* Top bar */}
         <div className="admin-topbar">
+          {/* Mobile: open drawer */}
           <button
             onClick={() => setMobileOpen(true)}
             className="admin-menu-btn"
@@ -177,9 +182,18 @@ export default function AdminLayout({ page, navigate, user, onLogout, children }
           >
             <Menu size={20} color={AP} />
           </button>
+          {/* Desktop: collapse toggle */}
+          <button
+            onClick={() => setCollapsed(c => !c)}
+            className="admin-collapse-btn"
+            aria-label={collapsed ? "Mở rộng menu" : "Thu gọn menu"}
+            title={collapsed ? "Mở rộng menu" : "Thu gọn menu"}
+          >
+            {collapsed
+              ? <PanelLeftOpen  size={18} color={AP} />
+              : <PanelLeftClose size={18} color={AP} />}
+          </button>
           <div className="admin-topbar-breadcrumb">
-            <span className="admin-topbar-parent">{t("adm_sidebar_role")}</span>
-            <span className="admin-topbar-sep">/</span>
             <span className="admin-topbar-title">{PAGE_TITLES[page] || page}</span>
           </div>
         </div>
@@ -223,13 +237,15 @@ export function Card({ children, style = {} }) {
 export { default as Badge } from "../ui/Badge";
 export { default as Modal } from "../ui/Modal";
 
-export function Btn({ children, onClick, variant = "primary", disabled = false, small = false, loading = false, style: extraStyle = {} }) {
+export function Btn({ children, onClick, variant = "primary", disabled = false, small = false, loading = false, iconOnly = false, title, style: extraStyle = {} }) {
   return (
     <button
       onClick={onClick}
       disabled={disabled || loading}
       data-variant={variant}
       data-small={small || undefined}
+      data-icon-only={iconOnly || undefined}
+      title={title}
       className="admin-btn"
       style={extraStyle}
     >
