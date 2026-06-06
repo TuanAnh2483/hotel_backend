@@ -4,11 +4,9 @@ import { adminService } from "../services/adminService";
 export const adminKeys = {
   stats:        ()         => ["admin", "stats"],
   applications: (status)   => ["admin", "partner-applications", status],
-  users:        (search)   => ["admin", "users", search],
+  users:        ()         => ["admin", "users"],
   hotels:       ()         => ["admin", "hotels"],
   hotelRooms:   (hotelId)  => ["admin", "hotels", hotelId, "rooms"],
-  bookings:     (status)   => ["admin", "bookings", status],
-  refunds:      (status)   => ["admin", "refunds", status],
   reviews:      ()         => ["admin", "reviews"],
   system:       ()         => ["admin", "system"],
 };
@@ -51,10 +49,10 @@ export function useRejectPartner(options = {}) {
   });
 }
 
-export function useAdminUsers(search, options = {}) {
+export function useAdminUsers(options = {}) {
   return useQuery({
-    queryKey: adminKeys.users(search),
-    queryFn:  () => adminService.getUsers(search),
+    queryKey: adminKeys.users(),
+    queryFn:  () => adminService.getUsers(),
     staleTime: 60 * 1000,
     gcTime:    5 * 60 * 1000,
     ...options,
@@ -131,35 +129,6 @@ export function useDeleteAdminHotel(options = {}) {
   return useMutation({
     mutationFn: (hotelId) => adminService.deleteHotel(hotelId),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: adminKeys.hotels() }),
-    ...options,
-  });
-}
-
-export function useAdminBookings(status, options = {}) {
-  return useQuery({
-    queryKey: adminKeys.bookings(status),
-    queryFn:  () => adminService.getBookings(status),
-    staleTime: 60 * 1000,
-    gcTime:    5 * 60 * 1000,
-    ...options,
-  });
-}
-
-export function useAdminRefunds(status, options = {}) {
-  return useQuery({
-    queryKey: adminKeys.refunds(status),
-    queryFn:  () => adminService.getRefunds(status),
-    staleTime: 60 * 1000,
-    gcTime:    5 * 60 * 1000,
-    ...options,
-  });
-}
-
-export function useUpdateRefundStatus(options = {}) {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({ refundId, newStatus, transferNote }) => adminService.updateRefundStatus(refundId, newStatus, transferNote),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin", "refunds"] }),
     ...options,
   });
 }
