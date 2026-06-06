@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { useNavigate, useOutletContext } from "react-router-dom";
-import { useQueryClient } from "@tanstack/react-query";
 import {
-  useMyHotels, useCatalogOptions, partnerKeys,
+  useMyHotels, useCatalogOptions,
   useUpdateHotel, useDeleteHotel,
   useUploadHotelImages, useDeleteHotelImage, useSetHotelCoverImage,
 } from "../../hooks/usePartnerQueries";
@@ -35,11 +34,6 @@ const HOTEL_STATUS_CONFIG = {
   INACTIVE: { label: "Tạm ngừng",      color: "#d97706", bg: "#fffbeb", border: "#fde68a", Icon: Clock         },
   BLOCKED:  { label: "Bị chặn",        color: "#dc2626", bg: "#fef2f2", border: "#fecaca", Icon: Ban           },
 };
-const HOTEL_TYPE_LABELS = {
-  HOTEL: "Khách sạn", APARTMENT: "Căn hộ", RESORT: "Resort",
-  VILLA: "Villa", HOMESTAY: "Homestay", HOSTEL: "Hostel", GUEST_HOUSE: "Nhà khách",
-};
-
 const BOOKING_MODE_OPTIONS = [
   { value: "BY_ROOM",  label: "Đặt theo phòng (Khách sạn tiêu chuẩn)" },
   { value: "ENTIRE",   label: "Đặt nguyên căn (Villa, Căn hộ)" },
@@ -253,11 +247,6 @@ function HotelForm({ form, setForm, onSubmit, onCancel, saving, title, hotelType
 export default function PartnerHotels() {
   const { t } = useLang();
   const rrNavigate = useNavigate();
-  const HOTEL_TYPE_LABELS = {
-    HOTEL: t("pt_type_hotel"), APARTMENT: t("pt_type_apartment"), RESORT: t("pt_type_resort"),
-    VILLA: t("pt_type_villa"), HOMESTAY: t("pt_type_homestay"), HOSTEL: t("pt_type_hostel"), GUEST_HOUSE: t("pt_type_guest_house"),
-  };
-  const queryClient = useQueryClient();
   const [modal, setModal]       = useState(null);
   const [selected, setSelected] = useState(null);
   const [form, setForm]         = useState(EMPTY_FORM);
@@ -283,10 +272,6 @@ export default function PartnerHotels() {
     hotelTypes:    Array.isArray(catalogData?.hotelTypes)    && catalogData.hotelTypes.length    ? catalogData.hotelTypes    : HOTEL_TYPES,
     hotelAmenities: Array.isArray(catalogData?.hotelAmenities) && catalogData.hotelAmenities.length ? catalogData.hotelAmenities : [...HOTEL_AMENITY_KEYS],
   };
-
-  function load() {
-    queryClient.invalidateQueries({ queryKey: partnerKeys.hotels() });
-  }
 
   const hotelTypeOptions = Array.isArray(catalog.hotelTypes) && catalog.hotelTypes.length ? catalog.hotelTypes : HOTEL_TYPES;
 
@@ -364,7 +349,6 @@ export default function PartnerHotels() {
       setModal(null);
       setSelected(null);
       setForm({ ...EMPTY_FORM, images: [] });
-      load();
     } catch (e) { setSaveError(e.message); }
     finally { setSaving(false); }
   }
@@ -374,7 +358,6 @@ export default function PartnerHotels() {
     try {
       await deleteHotelMut.mutateAsync(selected.id);
       setModal(null);
-      load();
     } catch (e) { alert(e.message); }
     finally { setSaving(false); }
   }

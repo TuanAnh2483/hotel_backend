@@ -145,11 +145,11 @@
   padding: 16px;
 }
 .pcal-sb-title {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 900;
   color: #94a3b8;
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 0.8px;
   margin-bottom: 12px;
 }
 .pcal-sb-legend { display: flex; flex-direction: column; gap: 7px; }
@@ -211,11 +211,11 @@
   gap: 10px;
 }
 .pct-section-title {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 900;
   color: #94a3b8;
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 0.8px;
 }
 .pct-hr {
   height: 1px;
@@ -1146,11 +1146,11 @@
   border: 1px solid #FED7AA;
 }
 .pdom-close-reason-label {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 900;
   color: #C2410C;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.4px;
   margin-bottom: 5px;
 }
 .pdom-close-reason-text {
@@ -1283,7 +1283,7 @@
 .pdom-slot--maintenance .pdom-slot-dot { background: #d97706; }
 
 .pdom-slot-floor {
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 700;
   opacity: 0.65;
   margin-top: -3px;

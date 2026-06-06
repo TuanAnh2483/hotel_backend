@@ -383,12 +383,12 @@ export default function PartnerForecast() {
 
                   {/* Date */}
                   <div style={dateColSt}>
-                    <div style={{ fontSize: 10, fontWeight: 700, color: item.isWeekend ? "#BE1E2E" : "#94a3b8", textTransform: "uppercase" }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: item.isWeekend ? "#BE1E2E" : "#94a3b8", textTransform: "uppercase" }}>
                       {item.dayName}
                     </div>
                     <div style={{ fontSize: 16, fontWeight: 900, color: "#0f172a", marginTop: 2 }}>{item.displayDate}</div>
                     {item.isHoliday && (
-                      <div style={{ marginTop: 4, fontSize: 9, color: "#D97706", fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", gap: 2 }}>
+                      <div style={{ marginTop: 4, fontSize: 11, color: "#D97706", fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", gap: 2 }}>
                         <Gift size={9} /> {t("pt_fc_holiday")}
                       </div>
                     )}
@@ -404,7 +404,7 @@ export default function PartnerForecast() {
 
                   {/* Price — focal point */}
                   <div style={priceSectionSt}>
-                    <div style={{ fontSize: 10, color: "#94a3b8", fontWeight: 700, marginBottom: 5, textTransform: "uppercase", letterSpacing: "0.4px" }}>{t("pt_fc_price_label")}</div>
+                    <div style={{ fontSize: 11, color: "#94a3b8", fontWeight: 700, marginBottom: 5, textTransform: "uppercase", letterSpacing: "0.4px" }}>{t("pt_fc_price_label")}</div>
                     <div style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap" }}>
                       <span style={{ fontSize: 12, color: "#cbd5e1", textDecoration: "line-through" }}>{fmtCurrency(item.currentPrice)}</span>
                       <span style={{ fontSize: 22, fontWeight: 900, color: "#0f172a" }}>
@@ -430,7 +430,7 @@ export default function PartnerForecast() {
                           <div style={{ fontSize: 11, fontWeight: 700, color: "#059669" }}>
                             {fb.outcome === "SKIPPED" ? t("pt_fc_ignored") : t("pt_fc_applied")}
                           </div>
-                          {fb.appliedPrice && <div style={{ fontSize: 10, color: "#64748b" }}>{fmtCurrency(fb.appliedPrice)}</div>}
+                          {fb.appliedPrice && <div style={{ fontSize: 11, color: "#64748b" }}>{fmtCurrency(fb.appliedPrice)}</div>}
                         </div>
                       </div>
                     ) : (
@@ -458,7 +458,7 @@ export default function PartnerForecast() {
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12 }}>
                 {analytics.weeklyRevenue.map((w, i) => (
                   <div key={i} style={weeklyCardSt}>
-                    <div style={{ fontSize: 10, fontWeight: 800, color: "#94a3b8", marginBottom: 6 }}>{w.label}</div>
+                    <div style={{ fontSize: 11, fontWeight: 800, color: "#94a3b8", marginBottom: 6 }}>{w.label}</div>
                     <div style={{ fontSize: 16, fontWeight: 900, color: "#0f172a" }}>{fmtCurrency(w.revenue)}</div>
                     <div style={{ fontSize: 11, color: "#64748b", marginTop: 3 }}>{t("pt_fc_booking_count").replace("{n}", w.bookingCount)}</div>
                   </div>
@@ -478,17 +478,13 @@ function MetricCard({ icon, label, value, valueColor, sub, subColor }) {
   return (
     <Card style={{ padding: 20, borderRadius: 20 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
-        <span style={{ fontSize: 10, color: "#94a3b8", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px" }}>{label}</span>
+        <span style={{ fontSize: 11, color: "#94a3b8", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px" }}>{label}</span>
         <Icon size={15} color="#94a3b8" />
       </div>
       <div style={{ fontSize: 22, fontWeight: 900, color: valueColor ?? "#0f172a", marginBottom: 4 }}>{value}</div>
       {sub && <div style={{ fontSize: 11, color: subColor ?? "#64748b", fontWeight: 600 }}>{sub}</div>}
     </Card>
   );
-}
-
-function Sep() {
-  return <span style={{ color: "#e2e8f0" }}>·</span>;
 }
 
 // ── styles ────────────────────────────────────────────────────────────
