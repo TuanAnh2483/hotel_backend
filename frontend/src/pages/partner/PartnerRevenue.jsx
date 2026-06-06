@@ -142,20 +142,15 @@ export default function PartnerRevenue() {
             sub: t("pt_rev_adr_sub") || "Giá phòng trung bình / đêm", Icon: BedDouble, color: "#0ea5e9", bg: "#f0f9ff"
           },
         ].map((c) => (
-          <div key={c.label} style={{
-            background: "#fff", borderRadius: 20, padding: "24px", border: "1px solid #f1f5f9",
-            boxShadow: "0 1px 3px rgba(0,0,0,0.05)", position: "relative", overflow: "hidden"
-          }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
-              <div style={{ fontSize: 11, color: "#94a3b8", fontWeight: 800, letterSpacing: 0.5 }}>{c.label}</div>
-              <div style={{ width: 36, height: 36, borderRadius: 10, background: c.bg, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div key={c.label} className="prv-stat-card">
+            <div className="prv-stat-card-header">
+              <div className="prv-stat-card-label">{c.label}</div>
+              <div className="prv-stat-card-icon" style={{ background: c.bg }}>
                 <c.Icon size={18} color={c.color} />
               </div>
             </div>
-            <div style={{ fontSize: 26, fontWeight: 800, color: "#1e293b", marginBottom: 8 }}>{c.value}</div>
-            <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 700, color: "#94a3b8" }}>
-              {c.sub}
-            </div>
+            <div className="prv-stat-card-value">{c.value}</div>
+            <div className="prv-stat-card-sub">{c.sub}</div>
           </div>
         ))}
       </div>
@@ -214,7 +209,10 @@ export default function PartnerRevenue() {
         </div>
 
         {loading ? (
-          <div style={{ textAlign: "center", padding: 60, color: "#94a3b8" }}>{t("pt_rev_analyzing")}</div>
+          <div style={{ textAlign: "center", padding: 60, color: "#94a3b8" }}>
+            <div className="ui-spinner" style={{ margin: "0 auto 16px" }} />
+            {t("pt_rev_analyzing")}
+          </div>
         ) : (
           <div className="partner-revenue-chart-container">
             <div className="partner-revenue-chart-grid">
