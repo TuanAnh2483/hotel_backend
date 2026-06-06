@@ -253,7 +253,7 @@ export default function PartnerDashboard() {
                         </td>
                         <td style={{ padding: "16px", color: "#BE1E2E", fontWeight: 800 }}>{fmtPrice(b.totalPrice)}</td>
                         <td style={{ padding: "16px" }}>
-                          <span style={{ padding: "4px 12px", borderRadius: 20, background: s.bg, color: s.color, fontSize: 11, fontWeight: 800, border: `1px solid ${s.bg}` }}>
+                          <span style={{ padding: "4px 12px", borderRadius: 20, background: s.bg, color: s.color, fontSize: 11, fontWeight: 800, border: `1px solid ${s.color}30` }}>
                             {s.label.toUpperCase()}
                           </span>
                         </td>
