@@ -4,7 +4,7 @@ import AdminLayout, {
   Table, Modal, FormField, Input, Select,
 } from "../../components/admin/AdminLayout";
 import { useAdminUsers, useToggleUserStatus, useCreateAdminUser } from "../../hooks/useAdminQueries";
-import { Users, CheckCircle, Lock, Unlock, Handshake } from "lucide-react";
+import { Users, CheckCircle, Lock, Unlock, Handshake, Eye } from "lucide-react";
 import { useLang } from "../../contexts/LanguageContext";
 import "../../styles/pages/admin/AdminUsers.css";
 
@@ -38,7 +38,7 @@ export default function AdminUsers({ navigate, user, onLogout }) {
   const pageSize = 10;
   const avatarInputRef = useRef(null);
 
-  const { data: users = [], isLoading: loading } = useAdminUsers(search);
+  const { data: users = [], isLoading: loading } = useAdminUsers();
   const toggleStatus  = useToggleUserStatus();
   const createUser    = useCreateAdminUser();
   const saving        = createUser.isPending;
@@ -142,15 +142,20 @@ export default function AdminUsers({ navigate, user, onLogout }) {
               <Badge status={u.userType} />,
               <Badge status={u.status} />,
               <span className="admin-users-cell-date">{u.createdAt || "—"}</span>,
-              <div style={{ display: "flex", gap: 6 }}>
-                <Btn small variant="action" onClick={() => setDetailModal(u)}>{t("adm_users_view")}</Btn>
+              <div className="admin-cell-actions">
+                <Btn small iconOnly variant="action" title={t("adm_users_view")} onClick={() => setDetailModal(u)}>
+                  <Eye size={14} />
+                </Btn>
                 <Btn
-                  small
-                  variant="action"
-                  disabled={toggleStatus.isPending && toggleStatus.variables === u.id || u.userType === "ADMIN"}
+                  small iconOnly
+                  variant={u.status === "ACTIVE" ? "danger" : "success"}
+                  title={u.status === "ACTIVE" ? t("adm_users_lock") : t("adm_users_unlock")}
+                  disabled={(toggleStatus.isPending && toggleStatus.variables === u.id) || u.userType === "ADMIN"}
                   onClick={() => handleToggle(u.id)}
                 >
-                  {toggleStatus.isPending && toggleStatus.variables === u.id ? "..." : u.status === "ACTIVE" ? t("adm_users_lock") : t("adm_users_unlock")}
+                  {toggleStatus.isPending && toggleStatus.variables === u.id
+                    ? <span style={{ fontSize: 10, fontWeight: 900 }}>···</span>
+                    : u.status === "ACTIVE" ? <Lock size={14} /> : <Unlock size={14} />}
                 </Btn>
               </div>,
             ])}
@@ -159,12 +164,12 @@ export default function AdminUsers({ navigate, user, onLogout }) {
 
             {/* Pagination */}
             {filtered.length > pageSize && (
-              <div className="ui-pagination">
+              <div className="admin-pagination">
                 {[...Array(Math.ceil(filtered.length / pageSize))].map((_, i) => (
                   <button
                     key={i}
                     onClick={() => { setPage(i + 1); window.scrollTo({ top: 0, behavior: "smooth" }); }}
-                    className={`ui-page-btn${page === i + 1 ? " active" : ""}`}
+                    className={`admin-page-btn${page === i + 1 ? " active" : ""}`}
                   >
                     {i + 1}
                   </button>
@@ -179,7 +184,7 @@ export default function AdminUsers({ navigate, user, onLogout }) {
       {detailModal && (
         <Modal title={t("adm_users_detail_title")} onClose={() => setDetailModal(null)}>
           {[
-            ["ID", `#${detailModal.id}`],
+            ["Mã người dùng", `#${detailModal.id}`],
             [t("adm_email"), detailModal.email || "—"],
             [t("adm_users_col_type"), <Badge status={detailModal.userType} />],
             [t("adm_status"), <Badge status={detailModal.status} />],

@@ -10,7 +10,7 @@ import {
 import { useLang } from "../../contexts/LanguageContext";
 import { useToast } from "../../contexts/ToastContext";
 import { HOTEL_AMENITIES_FLAT, ROOM_AMENITIES_FLAT } from "../../utils/amenityConfig";
-import { Building2, CheckCircle2, Star, Clock, XCircle } from "lucide-react";
+import { Building2, CheckCircle2, Star, Clock, XCircle, Eye, Pencil, Trash2, Check } from "lucide-react";
 import { useVnLocations } from "../../hooks/useVnLocations";
 import "../../styles/pages/admin/AdminCommon.css";
 
@@ -227,7 +227,7 @@ export default function AdminHotels({ navigate, user, onLogout }) {
           <>
             <Table
               headers={[
-                t("adm_id"), t("adm_hotels_col_name"), "Đối tác",
+                t("adm_id"), t("adm_hotels_col_name"), t("adm_hotels_col_partner"),
                 t("adm_hotels_col_loc"), t("adm_hotels_col_type"),
                 t("adm_hotels_col_rating"), t("adm_status"), t("adm_actions"),
               ]}
@@ -249,7 +249,7 @@ export default function AdminHotels({ navigate, user, onLogout }) {
                   {[h.district, h.province].filter(Boolean).join(", ") || "—"}
                 </span>,
 
-                <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 9px", borderRadius: 20, background: "#f0f4ff", color: "#4361ee" }}>
+                <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 9px", borderRadius: 20, background: "#f0f4ff", color: "#4361ee", whiteSpace: "nowrap" }}>
                   {HOTEL_TYPE_LABEL[h.hotelType] || h.hotelType || "—"}
                 </span>,
 
@@ -261,16 +261,26 @@ export default function AdminHotels({ navigate, user, onLogout }) {
                 <Badge status={h.status || "ACTIVE"} />,
 
                 <div className="admin-cell-actions">
-                  <Btn small variant="ghost" onClick={() => openDetail(h)}>Chi tiết</Btn>
+                  <Btn small iconOnly variant="action" title="Chi tiết" onClick={() => openDetail(h)}>
+                    <Eye size={14} />
+                  </Btn>
                   {isPending(h) ? (
                     <>
-                      <Btn small variant="success" onClick={() => openApprove(h)}>Duyệt</Btn>
-                      <Btn small variant="danger"  onClick={() => openReject(h)}>Từ chối</Btn>
+                      <Btn small iconOnly variant="success" title="Duyệt" onClick={() => openApprove(h)}>
+                        <Check size={14} />
+                      </Btn>
+                      <Btn small iconOnly variant="danger" title="Từ chối" onClick={() => openReject(h)}>
+                        <XCircle size={14} />
+                      </Btn>
                     </>
                   ) : (
                     <>
-                      <Btn small variant="action" onClick={() => openEdit(h)}>{t("adm_edit")}</Btn>
-                      <Btn small variant="danger"  onClick={() => openDel(h)}>{t("adm_delete")}</Btn>
+                      <Btn small iconOnly variant="secondary" title={t("adm_edit")} onClick={() => openEdit(h)}>
+                        <Pencil size={14} />
+                      </Btn>
+                      <Btn small iconOnly variant="danger" title={t("adm_delete")} onClick={() => openDel(h)}>
+                        <Trash2 size={14} />
+                      </Btn>
                     </>
                   )}
                 </div>,
@@ -364,7 +374,7 @@ export default function AdminHotels({ navigate, user, onLogout }) {
           {/* Info grid */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px 20px", marginBottom: 18, fontSize: 13 }}>
             {[
-              ["ID",          `#${selected.id}`],
+              ["Mã KS",       `#${selected.id}`],
               ["Chủ sở hữu",  selected.ownerEmail],
               ["Loại hình",   HOTEL_TYPE_LABEL[selected.hotelType] || selected.hotelType],
               ["Trạng thái",  <Badge status={selected.status} />],

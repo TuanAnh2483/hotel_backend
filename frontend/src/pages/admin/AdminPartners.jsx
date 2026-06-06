@@ -3,7 +3,7 @@ import AdminLayout, {
   AP, PageHeader, Card, Badge, Btn, Table, Modal, FormField,
 } from "../../components/admin/AdminLayout";
 import { usePartnerApplications, useApprovePartner, useRejectPartner } from "../../hooks/useAdminQueries";
-import { Clock, CheckCircle, XCircle } from "lucide-react";
+import { Clock, CheckCircle, XCircle, Eye, Check } from "lucide-react";
 import { useToast } from "../../contexts/ToastContext";
 import { SkeletonRow } from "../../components/ui/Skeleton";
 import { useLang } from "../../contexts/LanguageContext";
@@ -116,11 +116,17 @@ export default function AdminPartners({ navigate, user, onLogout }) {
               <span className="admin-cell-text">{a.phone || "—"}</span>,
               <Badge status={a.status} />,
               <div className="admin-cell-actions">
-                <Btn small variant="action" onClick={() => setDetailModal(a)}>{t("adm_view")}</Btn>
+                <Btn small iconOnly variant="action" title={t("adm_view")} onClick={() => setDetailModal(a)}>
+                  <Eye size={14} />
+                </Btn>
                 {isReviewable(a.status) && (
                   <>
-                    <Btn small variant="success" loading={acting === a.id} onClick={() => handleApprove(a.id)}>{t("adm_approve")}</Btn>
-                    <Btn small variant="danger" loading={acting === a.id} onClick={() => { setRejectModal({ id: a.id }); setRejectReason(""); }}>{t("adm_reject")}</Btn>
+                    <Btn small iconOnly variant="success" title={t("adm_approve")} loading={acting === a.id} onClick={() => handleApprove(a.id)}>
+                      <Check size={14} />
+                    </Btn>
+                    <Btn small iconOnly variant="danger" title={t("adm_reject")} loading={acting === a.id} onClick={() => { setRejectModal({ id: a.id }); setRejectReason(""); }}>
+                      <XCircle size={14} />
+                    </Btn>
                   </>
                 )}
               </div>,
@@ -150,7 +156,7 @@ export default function AdminPartners({ navigate, user, onLogout }) {
       {detailModal && (
         <Modal title={t("adm_partners_modal_title")} onClose={() => setDetailModal(null)}>
           {[
-            ["ID", `#${detailModal.id}`],
+            ["Mã đơn", `#${detailModal.id}`],
             [t("adm_partners_col_biz"), detailModal.businessName || "—"],
             [t("adm_email"), detailModal.email || "—"],
             [t("adm_partners_col_phone"), detailModal.phone || "—"],
