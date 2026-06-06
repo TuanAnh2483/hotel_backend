@@ -5,7 +5,7 @@ import { PageHeader } from "../../components/admin/AdminLayout";
 import {
   useMyHotels, usePartnerRooms, useRoomCalendar, useUpdateRoomCalendar,
   usePartnerRefunds, useApproveRefund, useRejectRefund, usePriceSuggestions,
-  usePartnerBookings, useHotelRoomUnits,
+  usePartnerBookings, useRoomUnits,
 } from "../../hooks/usePartnerQueries";
 import { useLang } from "../../contexts/LanguageContext";
 import {
@@ -79,11 +79,8 @@ export default function PartnerCalendar() {
     [monthBookingsPage],
   );
 
-  const { data: allUnitData = [] } = useHotelRoomUnits(selectedHotelId);
-  const roomUnits = useMemo(
-    () => (Array.isArray(allUnitData) ? allUnitData : []).filter(u => String(u.roomId) === String(selectedRoomId)),
-    [allUnitData, selectedRoomId],
-  );
+  const { data: roomUnitsRaw = [] } = useRoomUnits(selectedRoomId);
+  const roomUnits = Array.isArray(roomUnitsRaw) ? roomUnitsRaw : [];
 
   const { data: refundsData, isLoading: refundsLoading } = usePartnerRefunds(
     { hotelId: selectedHotelId || undefined, status: refundStatusFilter || undefined },
