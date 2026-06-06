@@ -6,14 +6,12 @@ export const adminService = {
     try {
       const data = await apiClient.get("/api/admin/stats");
       return {
-        totalUsers:     data.totalUsers    ?? data.customerCount   ?? 0,
-        totalPartners:  data.totalPartners ?? data.partnerCount    ?? 0,
-        totalHotels:    data.totalHotels   ?? data.hotelCount      ?? 0,
-        totalBookings:  data.totalBookings ?? data.bookingCount    ?? 0,
-        pendingBookings: data.pendingBookings ?? data.pendingPaymentCount ?? 0,
+        totalUsers:    data.totalUsers    ?? data.customerCount ?? 0,
+        totalPartners: data.totalPartners ?? data.partnerCount  ?? 0,
+        totalHotels:   data.totalHotels   ?? data.hotelCount    ?? 0,
       };
     } catch {
-      return { totalUsers: 0, totalPartners: 0, totalHotels: 0, totalBookings: 0, pendingBookings: 0 };
+      return { totalUsers: 0, totalPartners: 0, totalHotels: 0 };
     }
   },
 
@@ -31,12 +29,10 @@ export const adminService = {
   },
 
   // Users
-  async getUsers(search = "") {
+  async getUsers() {
     try {
       const data = await apiClient.get("/api/admin/users");
-      const list = Array.isArray(data) ? data : [];
-      const q = search.toLowerCase();
-      return q ? list.filter((u) => u.email.toLowerCase().includes(q)) : list;
+      return Array.isArray(data) ? data : [];
     } catch { return []; }
   },
   toggleUserStatus(userId) {
@@ -72,34 +68,6 @@ export const adminService = {
     } catch { return []; }
   },
 
-  // Bookings
-  async getBookings(status = "") {
-    try {
-      const data = await apiClient.get("/api/admin/bookings");
-      const list = Array.isArray(data) ? data : [];
-      return status ? list.filter((b) => b.status === status) : list;
-    } catch { return []; }
-  },
-
-  // Refunds
-  async getRefunds(status = "") {
-    try {
-      const data = await apiClient.get("/api/admin/refunds", {
-        params: status ? { status } : {},
-      });
-      return Array.isArray(data) ? data : [];
-    } catch { return []; }
-  },
-  updateRefundStatus(refundId, newStatus, transferNote) {
-    if (newStatus === "APPROVED") {
-      return apiClient.post(`/api/admin/refunds/${refundId}/approve`, { transferNote: transferNote || null });
-    }
-    if (newStatus === "REJECTED") {
-      return apiClient.post(`/api/admin/refunds/${refundId}/reject`);
-    }
-    throw new Error("Unsupported refund status");
-  },
-
   // Reviews
   async getReviews() {
     try {
@@ -131,8 +99,5 @@ export const adminService = {
           : [],
       };
     } catch { return { flaggedBookings: [], recentErrors: [] }; }
-  },
-  resolveFlaggedBooking(flagId) {
-    return Promise.resolve({ id: flagId });
   },
 };

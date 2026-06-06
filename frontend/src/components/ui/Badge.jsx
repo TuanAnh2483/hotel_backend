@@ -26,6 +26,7 @@ export default function Badge({ status }) {
     <span style={{
       display: "inline-block", padding: "3px 10px", borderRadius: 20,
       background: s.bg, color: s.color, fontSize: 11, fontWeight: 700,
+      whiteSpace: "nowrap",
     }}>
       {s.label}
     </span>

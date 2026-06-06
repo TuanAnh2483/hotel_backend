@@ -1,13 +1,26 @@
-import AdminLayout, { AP, PageHeader, Card, Badge, Btn, Table } from "../../components/admin/AdminLayout";
+import AdminLayout, { AP, PageHeader, Card, Badge, Table } from "../../components/admin/AdminLayout";
 import { useAdminSystem } from "../../hooks/useAdminQueries";
 import { useLang } from "../../contexts/LanguageContext";
 import { Globe, Database, CreditCard, Mail, HardDrive, Zap, CheckCircle2 } from "lucide-react";
+
+function fmtDate(val) {
+  if (!val || val === "—") return "—";
+  const d = new Date(val);
+  return isNaN(d.getTime()) ? val : d.toLocaleString("vi-VN");
+}
 
 const ERROR_COLORS = {
   PAYMENT_FAILED:   "#c62828",
   EMAIL_ERROR:      "#e65100",
   BOOKING_CONFLICT: "#1565c0",
   AUTH_ANOMALY:     "#6a1b9a",
+};
+
+const ERROR_LABELS = {
+  PAYMENT_FAILED:   "Thanh toán thất bại",
+  EMAIL_ERROR:      "Lỗi gửi email",
+  BOOKING_CONFLICT: "Xung đột đặt phòng",
+  AUTH_ANOMALY:     "Bất thường xác thực",
 };
 
 const SERVICES = [
@@ -22,10 +35,6 @@ const SERVICES = [
 export default function AdminSystem({ navigate, user, onLogout }) {
   const { t } = useLang();
   const { data, isLoading: loading } = useAdminSystem();
-
-  const handleResolve = async flagId => {
-    navigate("admin-refunds", { refundId: flagId });
-  };
 
   return (
     <AdminLayout page="admin-system" navigate={navigate} user={user} onLogout={onLogout}>
@@ -80,15 +89,12 @@ export default function AdminSystem({ navigate, user, onLogout }) {
               </span>
             </div>
             <Table
-              headers={[t("adm_sys_col_booking"), t("adm_sys_col_severity"), t("adm_sys_col_reason"), t("adm_sys_col_reported"), t("adm_actions")]}
+              headers={[t("adm_sys_col_booking"), t("adm_sys_col_severity"), t("adm_sys_col_reason"), t("adm_sys_col_reported")]}
               rows={data.flaggedBookings.map(f => [
-                <span style={{ fontWeight: 700, fontFamily: "monospace" }}>#B{f.bookingId}</span>,
+                <span style={{ fontWeight: 600, color: "#374151", fontSize: 13 }}>Đặt phòng #{f.bookingId}</span>,
                 <Badge status={f.severity} />,
                 <span style={{ fontSize: 12, color: "#555" }}>{f.reason}</span>,
-                <span style={{ fontSize: 12, color: "#888" }}>{f.reportedAt}</span>,
-                <Btn small variant="action" onClick={() => handleResolve(f.id)}>
-                  {t("adm_sys_resolve")}
-                </Btn>,
+                <span style={{ fontSize: 12, color: "#888" }}>{fmtDate(f.reportedAt)}</span>,
               ])}
               empty={`✓ ${t("adm_sys_flagged_empty")}`}
             />
@@ -122,12 +128,12 @@ export default function AdminSystem({ navigate, user, onLogout }) {
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                         <span style={{
                           fontSize: 11, fontWeight: 700, color: ERROR_COLORS[err.type] || "#888",
-                          fontFamily: "monospace", background: `${ERROR_COLORS[err.type] || "#888"}18`,
+                          background: `${ERROR_COLORS[err.type] || "#888"}18`,
                           padding: "2px 8px", borderRadius: 4,
                         }}>
-                          {err.type}
+                          {ERROR_LABELS[err.type] || err.type}
                         </span>
-                        <span style={{ fontSize: 11, color: "#bbb" }}>{err.timestamp}</span>
+                        <span style={{ fontSize: 11, color: "#bbb" }}>{fmtDate(err.timestamp)}</span>
                       </div>
                       <div style={{ fontSize: 13, color: "#444", marginTop: 5 }}>{err.message}</div>
                     </div>
