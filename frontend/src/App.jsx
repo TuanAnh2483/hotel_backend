@@ -39,8 +39,6 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminUsers     from "./pages/admin/AdminUsers";
 import AdminPartners  from "./pages/admin/AdminPartners";
 import AdminHotels    from "./pages/admin/AdminHotels";
-import AdminBookings  from "./pages/admin/AdminBookings";
-import AdminRefunds   from "./pages/admin/AdminRefunds";
 import AdminReviews   from "./pages/admin/AdminReviews";
 import AdminSystem    from "./pages/admin/AdminSystem";
 
@@ -330,13 +328,7 @@ function AppRoutes() {
       <Route path="/admin/hotels" element={
         <ProtectedRoute role="ADMIN"><AdminRoute page={AdminHotels} /></ProtectedRoute>
       } />
-      <Route path="/admin/bookings" element={
-        <ProtectedRoute role="ADMIN"><AdminRoute page={AdminBookings} /></ProtectedRoute>
-      } />
-      <Route path="/admin/refunds" element={
-        <ProtectedRoute role="ADMIN"><AdminRoute page={AdminRefunds} /></ProtectedRoute>
-      } />
-      <Route path="/admin/reviews" element={
+<Route path="/admin/reviews" element={
         <ProtectedRoute role="ADMIN"><AdminRoute page={AdminReviews} /></ProtectedRoute>
       } />
       <Route path="/admin/system" element={

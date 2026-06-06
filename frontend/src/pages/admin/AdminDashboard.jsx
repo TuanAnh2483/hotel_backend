@@ -3,7 +3,7 @@ import { useAdminStats } from "../../hooks/useAdminQueries";
 import Skeleton from "../../components/ui/Skeleton";
 import { useLang } from "../../contexts/LanguageContext";
 import {
-  Users, Handshake, Building2, ClipboardList, Clock,
+  Users, Handshake, Building2,
   DollarSign, Settings, Home,
   Tag, Globe, Server, Database, Shield, Calendar,
   Bed, Star, BarChart3, Bot,
@@ -14,6 +14,9 @@ function StatCard({ icon, label, value, color, sub, onClick }) {
   return (
     <div
       onClick={onClick}
+      role={onClick ? "button" : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      onKeyDown={onClick ? (e) => { if (e.key === "Enter" || e.key === " ") onClick(); } : undefined}
       className="admin-dashboard-stat-card"
       style={{ cursor: onClick ? "pointer" : "default" }}
     >
@@ -57,18 +60,14 @@ export default function AdminDashboard({ navigate, user, onLogout }) {
   const STATS = [
     { icon: <Users size={24} color="#4361ee" />,     label: t("adm_dash_customers"),     key: "totalUsers",      color: "#4361ee", page: "admin-users"    },
     { icon: <Handshake size={24} color="#7209b7" />, label: t("adm_dash_partners"),       key: "totalPartners",   color: "#7209b7", page: "admin-partners" },
-    { icon: <Building2 size={24} color={AP} />,      label: t("adm_dash_hotels"),         key: "totalHotels",     color: AP,        page: "admin-hotels"   },
-    { icon: <ClipboardList size={24} color="#4cc9f0" />, label: t("adm_dash_total_bookings"), key: "totalBookings", color: "#4cc9f0", page: "admin-bookings" },
-    { icon: <Clock size={24} color="#f72585" />,     label: t("adm_dash_pending"),        key: "pendingBookings", color: "#f72585", page: "admin-bookings" },
+    { icon: <Building2 size={24} color={AP} />, label: t("adm_dash_hotels"), key: "totalHotels", color: AP, page: "admin-hotels" },
   ];
 
   const QUICK = [
     { icon: <Handshake size={22} color="#555" />, label: t("adm_dash_tile_partners"),  desc: t("adm_dash_tile_partners_sub"),  page: "admin-partners" },
     { icon: <Users size={22} color="#555" />,     label: t("adm_dash_tile_users"),     desc: t("adm_dash_tile_users_sub"),     page: "admin-users"    },
-    { icon: <Building2 size={22} color="#555" />, label: t("adm_dash_tile_hotels"),    desc: t("adm_dash_tile_hotels_sub"),    page: "admin-hotels"   },
-    { icon: <ClipboardList size={22} color="#555" />, label: t("adm_dash_tile_bookings"), desc: t("adm_dash_tile_bookings_sub"), page: "admin-bookings" },
-    { icon: <DollarSign size={22} color="#555" />,label: t("adm_dash_tile_refunds"),   desc: t("adm_dash_tile_refunds_sub"),   page: "admin-refunds"  },
-    { icon: <Settings size={22} color="#555" />,  label: t("adm_dash_tile_system"),    desc: t("adm_dash_tile_system_sub"),    page: "admin-system"   },
+    { icon: <Building2 size={22} color="#555" />, label: t("adm_dash_tile_hotels"),  desc: t("adm_dash_tile_hotels_sub"),  page: "admin-hotels" },
+    { icon: <Settings size={22} color="#555" />, label: t("adm_dash_tile_system"),  desc: t("adm_dash_tile_system_sub"), page: "admin-system" },
   ];
 
   return (
