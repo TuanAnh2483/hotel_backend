@@ -45,6 +45,25 @@
   flex-shrink: 0;
 }
 
+/* Desktop collapse toggle — hidden on mobile (hamburger takes over) */
+.partner-topbar-collapse {
+  display: flex;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 6px;
+  align-items: center;
+  justify-content: center;
+  color: #BE1E2E;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+
+.partner-topbar-collapse:hover {
+  background: rgba(190, 30, 46, 0.07);
+}
+
 .partner-topbar-breadcrumb {
   display: flex;
   align-items: center;
@@ -152,6 +171,10 @@
 
   .partner-topbar-hamburger {
     display: flex;
+  }
+
+  .partner-topbar-collapse {
+    display: none;
   }
 
   .partner-content {

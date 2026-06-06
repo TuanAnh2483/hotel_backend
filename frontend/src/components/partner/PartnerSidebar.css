@@ -11,6 +11,7 @@
   top: 0;
   border-right: 1px solid rgba(255, 255, 255, 0.06);
   overflow: hidden;
+  transition: width 0.22s ease;
 }
 
 /* ── Logo ─────────────────────────────────────────────────────────────── */
@@ -382,6 +383,64 @@
   display: flex;
   align-items: center;
   gap: 4px;
+}
+
+/* ── Collapsed sidebar ────────────────────────────────────────────────── */
+
+.ps-root.collapsed {
+  width: 64px;
+}
+
+.ps-root.collapsed .ps-section-label,
+.ps-root.collapsed .ps-logo-sub,
+.ps-root.collapsed .ps-hotel-info,
+.ps-root.collapsed .ps-add-btn,
+.ps-root.collapsed .ps-nav-label,
+.ps-root.collapsed .ps-nav-badge,
+.ps-root.collapsed .ps-nav-soon,
+.ps-root.collapsed .ps-nav-chevron,
+.ps-root.collapsed .ps-nav-sub,
+.ps-root.collapsed .ps-user-name,
+.ps-root.collapsed .ps-user-role,
+.ps-root.collapsed .ps-footer-actions {
+  display: none;
+}
+
+.ps-root.collapsed .ps-hotels {
+  padding: 0 6px;
+}
+
+.ps-root.collapsed .ps-hotel-item {
+  justify-content: center;
+  padding: 8px 4px;
+}
+
+.ps-root.collapsed .ps-nav {
+  padding: 0 6px 8px;
+}
+
+.ps-root.collapsed .ps-nav-item,
+.ps-root.collapsed .ps-nav-group-toggle {
+  justify-content: center;
+  padding: 10px;
+}
+
+.ps-root.collapsed .ps-logo {
+  justify-content: center;
+  padding: 10px 8px;
+}
+
+.ps-root.collapsed .ps-logo-img {
+  max-width: 36px;
+}
+
+.ps-root.collapsed .ps-footer {
+  padding: 10px 6px 12px;
+}
+
+.ps-root.collapsed .ps-user-btn {
+  justify-content: center;
+  padding: 6px;
 }
 
 /* ── Mobile ───────────────────────────────────────────────────────────── */

@@ -7,11 +7,12 @@ import {
 } from "lucide-react";
 import { useMyHotels, usePartnerReviews, usePartnerBookings } from "../../hooks/usePartnerQueries";
 import { useAuth } from "../../contexts/AuthContext";
-import { getPropertyGroup, getGroupColor, getTypeLabel } from "../../utils/propertyGroupUtils";
+import { getGroupColor, getTypeLabel } from "../../utils/propertyGroupUtils";
 import { useLang } from "../../contexts/LanguageContext";
 import "./PartnerSidebar.css";
 
-function NavItem({ icon: Icon, label, path, active, badge, navigate, disabled, soon }) {
+function NavItem({ icon, label, path, active, badge, navigate, disabled, soon, collapsed }) {
+  const Icon = icon;
   const cls = [
     "ps-nav-item",
     active ? "active" : "",
@@ -23,13 +24,15 @@ function NavItem({ icon: Icon, label, path, active, badge, navigate, disabled, s
       className={cls}
       onClick={() => !disabled && navigate(path)}
       tabIndex={disabled ? -1 : 0}
+      title={collapsed ? label : undefined}
+      aria-label={collapsed ? label : undefined}
     >
       <span className="ps-nav-icon"><Icon size={16} /></span>
-      <span className="ps-nav-label">{label}</span>
-      {badge > 0 && (
+      {!collapsed && <span className="ps-nav-label">{label}</span>}
+      {!collapsed && badge > 0 && (
         <span className="ps-nav-badge">{badge > 99 ? "99+" : badge}</span>
       )}
-      {soon && <span className="ps-nav-soon">Soon</span>}
+      {!collapsed && soon && <span className="ps-nav-soon">Soon</span>}
     </button>
   );
 }
@@ -45,7 +48,7 @@ function SubNavItem({ label, path, active, navigate }) {
   );
 }
 
-export default function PartnerSidebar({ selectedHotelId, onSelectHotel, open, onClose }) {
+export default function PartnerSidebar({ selectedHotelId, onSelectHotel, open, collapsed }) {
   const { pathname } = useLocation();
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -66,21 +69,21 @@ export default function PartnerSidebar({ selectedHotelId, onSelectHotel, open, o
     return pathname.startsWith(path);
   };
 
-  const effectiveRoomMenuOpen = roomMenuOpen || isRoomRoute;
+  const effectiveRoomMenuOpen = !collapsed && (roomMenuOpen || isRoomRoute);
 
   return (
-    <aside className={`ps-root${open ? " open" : ""}`}>
+    <aside className={`ps-root${open ? " open" : ""}${collapsed ? " collapsed" : ""}`}>
       {/* Logo */}
       <div className="ps-logo">
         <img src="/logo.png" alt="VLU Hotel Hub" className="ps-logo-img" />
-        <div className="ps-logo-sub">Partner Portal</div>
+        {!collapsed && <div className="ps-logo-sub">Partner Portal</div>}
       </div>
 
       {/* Scrollable middle: hotels + nav */}
       <div className="ps-middle">
         {/* Property list */}
         <div className="ps-hotels">
-          <div className="ps-section-label">Cơ sở lưu trú</div>
+          {!collapsed && <div className="ps-section-label">Cơ sở lưu trú</div>}
           {hotels.map(hotel => {
             const color = getGroupColor(hotel.hotelType);
             const isSelected = selectedHotelId ? hotel.id === selectedHotelId : hotel === hotels[0];
@@ -89,42 +92,50 @@ export default function PartnerSidebar({ selectedHotelId, onSelectHotel, open, o
                 key={hotel.id}
                 onClick={() => onSelectHotel(hotel.id)}
                 className={`ps-hotel-item${isSelected ? " active" : ""}`}
+                title={collapsed ? hotel.name : undefined}
               >
                 <div className="ps-hotel-dot" style={{ background: color }} />
-                <div className="ps-hotel-info">
-                  <div className="ps-hotel-name">{hotel.name}</div>
-                  <div className="ps-hotel-type">{getTypeLabel(hotel.hotelType, lang)}</div>
-                </div>
-                {isSelected && <ChevronRight size={12} color="#BE1E2E" />}
+                {!collapsed && (
+                  <div className="ps-hotel-info">
+                    <div className="ps-hotel-name">{hotel.name}</div>
+                    <div className="ps-hotel-type">{getTypeLabel(hotel.hotelType, lang)}</div>
+                  </div>
+                )}
+                {!collapsed && isSelected && <ChevronRight size={12} color="#BE1E2E" />}
               </button>
             );
           })}
-          <button
-            className="ps-add-btn"
-            onClick={() => navigate("/partner/add-property")}
-          >
-            <Plus size={13} /> Thêm cơ sở mới
-          </button>
+          {!collapsed && (
+            <button
+              className="ps-add-btn"
+              onClick={() => navigate("/partner/add-property")}
+            >
+              <Plus size={13} /> Thêm cơ sở mới
+            </button>
+          )}
         </div>
 
         {/* Feature menu */}
         <nav className="ps-nav">
-          <div className="ps-section-label">Quản lý</div>
-          <NavItem icon={LayoutDashboard} label="Tổng quan"       path="/partner"              active={isActive("/partner")}              navigate={navigate} />
-          <NavItem icon={Building2}      label="Cơ sở của tôi"    path="/partner/hotels"       active={isActive("/partner/hotels")}       navigate={navigate} />
+          {!collapsed && <div className="ps-section-label">Quản lý</div>}
+          <NavItem icon={LayoutDashboard} label="Tổng quan"        path="/partner"             active={isActive("/partner")}              navigate={navigate} collapsed={collapsed} />
+          <NavItem icon={Building2}      label="Cơ sở của tôi"    path="/partner/hotels"       active={isActive("/partner/hotels")}       navigate={navigate} collapsed={collapsed} />
 
           {/* Collapsible: Quản lý phòng */}
           <div className="ps-nav-group">
             <button
               className={`ps-nav-item ps-nav-group-toggle${isRoomRoute ? " active" : ""}`}
-              onClick={() => setRoomMenuOpen(v => !v)}
+              onClick={() => collapsed ? navigate("/partner/rooms") : setRoomMenuOpen(v => !v)}
+              title={collapsed ? "Quản lý phòng" : undefined}
             >
               <span className="ps-nav-icon"><BedDouble size={16} /></span>
-              <span className="ps-nav-label">Quản lý phòng</span>
-              <ChevronDown
-                size={13}
-                className={`ps-nav-chevron${effectiveRoomMenuOpen ? " open" : ""}`}
-              />
+              {!collapsed && <span className="ps-nav-label">Quản lý phòng</span>}
+              {!collapsed && (
+                <ChevronDown
+                  size={13}
+                  className={`ps-nav-chevron${effectiveRoomMenuOpen ? " open" : ""}`}
+                />
+              )}
             </button>
             {effectiveRoomMenuOpen && (
               <div className="ps-nav-sub">
@@ -144,35 +155,53 @@ export default function PartnerSidebar({ selectedHotelId, onSelectHotel, open, o
             )}
           </div>
 
-          <NavItem icon={CalendarDays}   label="Lịch & Vận hành"  path="/partner/calendar"     active={isActive("/partner/calendar")}     navigate={navigate} />
-          <NavItem icon={BookOpen}       label="Booking"           path="/partner/bookings"     active={isActive("/partner/bookings")}     navigate={navigate} badge={pendingBookings} />
-          <NavItem icon={Wrench}         label="Dịch vụ & tiện ích" path="/partner/services"    active={isActive("/partner/services")}     navigate={navigate} />
+          <NavItem icon={CalendarDays}   label="Lịch & Vận hành"  path="/partner/calendar"     active={isActive("/partner/calendar")}     navigate={navigate} collapsed={collapsed} />
+          <NavItem icon={BookOpen}       label="Booking"           path="/partner/bookings"     active={isActive("/partner/bookings")}     navigate={navigate} badge={pendingBookings} collapsed={collapsed} />
+          <NavItem icon={Wrench}         label="Dịch vụ & tiện ích" path="/partner/services"    active={isActive("/partner/services")}     navigate={navigate} collapsed={collapsed} />
 
-          <div className="ps-section-label">Phân tích</div>
-          <NavItem icon={Star}           label="Đánh giá"          path="/partner/reviews"      active={isActive("/partner/reviews")}      navigate={navigate} badge={unrepliedCount} />
-          <NavItem icon={TrendingUp}     label="Doanh thu"         path="/partner/revenue"      active={isActive("/partner/revenue")}      navigate={navigate} />
-          <NavItem icon={Sparkles}       label="AI Dự báo"         path="/partner/forecast"     active={isActive("/partner/forecast")}     navigate={navigate} />
+          {!collapsed && <div className="ps-section-label">Phân tích</div>}
+          <NavItem icon={Star}           label="Đánh giá"          path="/partner/reviews"      active={isActive("/partner/reviews")}      navigate={navigate} badge={unrepliedCount} collapsed={collapsed} />
+          <NavItem icon={TrendingUp}     label="Doanh thu"         path="/partner/revenue"      active={isActive("/partner/revenue")}      navigate={navigate} collapsed={collapsed} />
+          <NavItem icon={Sparkles}       label="AI Dự báo"         path="/partner/forecast"     active={isActive("/partner/forecast")}     navigate={navigate} collapsed={collapsed} />
         </nav>
       </div>
 
       {/* User footer */}
       <div className="ps-footer">
-        <button className="ps-user-btn" onClick={() => navigate("/profile")} title="Xem hồ sơ">
+        <button
+          className="ps-user-btn"
+          onClick={() => navigate("/profile")}
+          title={collapsed ? (user?.displayName || user?.email) : "Xem hồ sơ"}
+        >
           <div className="ps-avatar">
             {(user?.displayName || user?.email || "P")[0].toUpperCase()}
           </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div className="ps-user-name">{user?.displayName || user?.email}</div>
-            <div className="ps-user-role">
-              <User size={10} /> Partner
+          {!collapsed && (
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div className="ps-user-name">{user?.displayName || user?.email}</div>
+              <div className="ps-user-role">
+                <User size={10} /> Partner
+              </div>
             </div>
-          </div>
+          )}
         </button>
-        <div className="ps-footer-actions">
-          <button className="ps-footer-btn logout" onClick={logout}>
-            <LogOut size={13} /> Đăng xuất
+        {!collapsed && (
+          <div className="ps-footer-actions">
+            <button className="ps-footer-btn logout" onClick={logout}>
+              <LogOut size={13} /> Đăng xuất
+            </button>
+          </div>
+        )}
+        {collapsed && (
+          <button
+            className="ps-footer-btn logout"
+            onClick={logout}
+            title="Đăng xuất"
+            style={{ justifyContent: "center", width: "100%" }}
+          >
+            <LogOut size={13} />
           </button>
-        </div>
+        )}
       </div>
     </aside>
   );
