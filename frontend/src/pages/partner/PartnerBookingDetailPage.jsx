@@ -599,6 +599,11 @@ export default function PartnerBookingDetailPage() {
           {/* Dates */}
           <Card title={t("pt_bk_section_time")}>
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+
+              {/* Planned booking dates */}
+              <div style={{ fontSize: 10, color: "#94a3b8", fontWeight: 700, letterSpacing: "0.08em" }}>
+                {t("pt_bk_planned_dates")}
+              </div>
               {[
                 [t("pt_bk_col_checkin"),  fmtDate(booking.checkIn)],
                 [t("pt_bk_col_checkout"), fmtDate(booking.checkOut)],
@@ -612,8 +617,14 @@ export default function PartnerBookingDetailPage() {
                 </div>
               ))}
 
+              {/* Actual timestamps — only shown after action */}
               {(booking.checkedInAt || booking.checkedOutAt) && (
-                <div style={{ height: 1, background: "#f1f5f9" }} />
+                <>
+                  <div style={{ height: 1, background: "#f1f5f9" }} />
+                  <div style={{ fontSize: 10, color: "#1d4ed8", fontWeight: 700, letterSpacing: "0.08em" }}>
+                    {t("pt_bk_actual_times")}
+                  </div>
+                </>
               )}
 
               {booking.checkedInAt && (

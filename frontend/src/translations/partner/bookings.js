@@ -56,6 +56,8 @@ export const vi = {
   pt_bk_checkout_done:       "Đã check-out booking. Khách hàng đã có thể gửi đánh giá khách sạn.",
   pt_bk_section_time:        "Thời gian",
   pt_bk_created_at:          "NGÀY ĐẶT",
+  pt_bk_planned_dates:       "LỊCH ĐẶT PHÒNG",
+  pt_bk_actual_times:        "THỰC TẾ",
   pt_bk_actual_checkin:      "GIỜ CHECK-IN THỰC TẾ",
   pt_bk_actual_checkout:     "GIỜ CHECK-OUT THỰC TẾ",
 };
@@ -117,6 +119,8 @@ export const en = {
   pt_bk_checkout_done:       "Booking checked out. The guest can now leave a review.",
   pt_bk_section_time:        "Timing",
   pt_bk_created_at:          "BOOKED ON",
+  pt_bk_planned_dates:       "PLANNED DATES",
+  pt_bk_actual_times:        "ACTUAL",
   pt_bk_actual_checkin:      "ACTUAL CHECK-IN TIME",
   pt_bk_actual_checkout:     "ACTUAL CHECK-OUT TIME",
 };
