@@ -273,11 +273,23 @@ export function usePartnerBookingDetail(bookingId, options = {}) {
   });
 }
 
+export function useCheckinBooking(options = {}) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (bookingId) => partnerService.checkinBooking(bookingId),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["partner", "bookings"] }),
+    ...options,
+  });
+}
+
 export function useCompleteBooking(options = {}) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (bookingId) => partnerService.completeBooking(bookingId),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["partner", "bookings"] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["partner", "bookings"] });
+      queryClient.invalidateQueries({ queryKey: ["partner", "hotel-room-units"] });
+    },
     ...options,
   });
 }

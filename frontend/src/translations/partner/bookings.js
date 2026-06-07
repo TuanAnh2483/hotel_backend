@@ -32,6 +32,7 @@ export const vi = {
   pt_bk_err_checkout:   "Không thể check-out booking.",
   // Statuses in filter
   pt_bk_s_confirmed:    "Đã xác nhận",
+  pt_bk_s_checked_in:  "Đang lưu trú",
   pt_bk_s_pending:      "Chờ thanh toán",
   pt_bk_s_completed:    "Hoàn thành",
   pt_bk_s_cancelled:    "Đã hủy",
@@ -55,6 +56,8 @@ export const vi = {
   pt_bk_checkout_done:       "Đã check-out booking. Khách hàng đã có thể gửi đánh giá khách sạn.",
   pt_bk_section_time:        "Thời gian",
   pt_bk_created_at:          "NGÀY ĐẶT",
+  pt_bk_actual_checkin:      "GIỜ CHECK-IN THỰC TẾ",
+  pt_bk_actual_checkout:     "GIỜ CHECK-OUT THỰC TẾ",
 };
 
 export const en = {
@@ -90,6 +93,7 @@ export const en = {
   pt_bk_err_detail:     "Could not load booking detail.",
   pt_bk_err_checkout:   "Could not complete check-out.",
   pt_bk_s_confirmed:    "Confirmed",
+  pt_bk_s_checked_in:  "Checked in",
   pt_bk_s_pending:      "Pending payment",
   pt_bk_s_completed:    "Completed",
   pt_bk_s_cancelled:    "Cancelled",
@@ -113,4 +117,6 @@ export const en = {
   pt_bk_checkout_done:       "Booking checked out. The guest can now leave a review.",
   pt_bk_section_time:        "Timing",
   pt_bk_created_at:          "BOOKED ON",
+  pt_bk_actual_checkin:      "ACTUAL CHECK-IN TIME",
+  pt_bk_actual_checkout:     "ACTUAL CHECK-OUT TIME",
 };

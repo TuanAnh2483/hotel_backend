@@ -81,6 +81,9 @@ export const partnerService = {
 
   getBooking: (bookingId) => apiClient.get(`/api/partner/bookings/${bookingId}`),
 
+  checkinBooking: (bookingId) =>
+    apiClient.post(`/api/partner/bookings/${bookingId}/checkin`),
+
   completeBooking: (bookingId) =>
     apiClient.post(`/api/partner/bookings/${bookingId}/complete`),
 

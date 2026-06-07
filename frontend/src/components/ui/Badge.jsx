@@ -4,6 +4,7 @@ const BADGE_MAP = {
   INACTIVE:        { bg: "var(--secondary)",   color: "var(--text-light)", label: "Vô hiệu"      },
   DISABLED:        { bg: "var(--secondary)",   color: "var(--text-light)", label: "Vô hiệu"      },
   CONFIRMED:       { bg: "var(--info-bg)",     color: "var(--info)",     label: "Đã xác nhận"   },
+  CHECKED_IN:      { bg: "#dbeafe",            color: "#1d4ed8",         label: "Đang lưu trú"  },
   PENDING_PAYMENT: { bg: "var(--warning-bg)",  color: "var(--warning)",  label: "Chờ thanh toán" },
   CANCELLED:       { bg: "var(--secondary)",   color: "var(--text-muted)", label: "Đã hủy"       },
   COMPLETED:       { bg: "var(--success-bg)",  color: "var(--success)",  label: "Hoàn thành"    },

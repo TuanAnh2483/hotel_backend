@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
-  usePartnerBookingDetail, useCompleteBooking,
+  usePartnerBookingDetail, useCompleteBooking, useCheckinBooking,
   useHotelRoomUnits, useUpdateRoomUnit,
 } from "../../hooks/usePartnerQueries";
 import { PageHeader, Card, Badge, Modal, Btn } from "../../components/admin/AdminLayout";
@@ -26,7 +26,8 @@ function fmtDateTime(d) {
   return new Date(d).toLocaleString("vi-VN");
 }
 function canCheckoutBooking(booking, occupiedCount = 0) {
-  if (booking?.status !== "CONFIRMED" || !booking.checkIn) return false;
+  const status = booking?.status;
+  if ((status !== "CONFIRMED" && status !== "CHECKED_IN") || !booking.checkIn) return false;
   const ci = new Date(`${booking.checkIn}T00:00:00`);
   const today = new Date(); today.setHours(0, 0, 0, 0);
   if (today < ci) return false;
@@ -184,7 +185,7 @@ function AssignRoomModal({ booking, allUnits, customerName, mode, onConfirm, onC
 
 function RoomPhysicalSection({ booking, allUnits, onAssign, onCheckin, checkinDay }) {
   const items = booking?.items ?? [];
-  const isConfirmed = booking?.status === "CONFIRMED";
+  const isConfirmed = booking?.status === "CONFIRMED" || booking?.status === "CHECKED_IN";
 
   return (
     <Card title={
@@ -281,10 +282,11 @@ export default function PartnerBookingDetailPage() {
   const { data: allUnits = [] } = useHotelRoomUnits(booking?.hotelId);
 
   const completeBooking = useCompleteBooking();
+  const checkinBooking  = useCheckinBooking();
   const updateUnit      = useUpdateRoomUnit();
 
-  const completing = completeBooking.isPending || updateUnit.isPending;
-  const modalBusy  = updateUnit.isPending;
+  const completing = completeBooking.isPending || checkinBooking.isPending || updateUnit.isPending;
+  const modalBusy  = updateUnit.isPending || checkinBooking.isPending;
 
   const customerName = booking?.customerName
     || booking?.contact?.fullName
@@ -326,16 +328,14 @@ export default function PartnerBookingDetailPage() {
     }
   }
 
-  // ── check-in (RESERVED → OCCUPIED) ───────────────────────────────────────
+  // ── check-in (CONFIRMED → CHECKED_IN + RESERVED → OCCUPIED) ─────────────
   async function handleCheckin(selected) {
-    // Nếu đã có phòng RESERVED → flip luôn, không cần chọn lại
     const reservedUnits = allUnits.filter(
       u => u.notes?.startsWith(bkTag) && u.status === "RESERVED"
     );
 
     let updates;
     if (reservedUnits.length > 0) {
-      // Flip toàn bộ RESERVED → OCCUPIED, giữ nguyên bkTag trong notes
       updates = reservedUnits.map(u => ({
         roomId: u.roomId, unitId: u.id, hotelId: booking.hotelId,
         status: "OCCUPIED", guestName: customerName,
@@ -343,11 +343,11 @@ export default function PartnerBookingDetailPage() {
         floor: u.floor ?? null, coverImageUrl: u.coverImageUrl ?? null,
       }));
     } else {
-      // Chưa gán → dùng selection từ modal
       updates = buildUpdates(selected, "OCCUPIED");
     }
 
     try {
+      await checkinBooking.mutateAsync(booking.bookingId);
       await Promise.all(updates.map(u => updateUnit.mutateAsync(u)));
       setModalMode(null);
       setActionMessage(`Đã check-in ${updates.length} phòng cho ${customerName}.`);
@@ -368,16 +368,7 @@ export default function PartnerBookingDetailPage() {
     setActionError(""); setActionMessage("");
     try {
       await completeBooking.mutateAsync(booking.bookingId);
-      await Promise.all(
-        assignedUnits.map(u =>
-          updateUnit.mutateAsync({
-            roomId: u.roomId, unitId: u.id, hotelId: booking.hotelId,
-            status: "CLEANING", guestName: null,
-            notes: null, roomNumber: u.roomNumber ?? null,
-            floor: u.floor ?? null, coverImageUrl: u.coverImageUrl ?? null,
-          })
-        )
-      );
+      // Backend tự chuyển room units sang CLEANING — không cần update thủ công
       setActionMessage(
         assignedUnits.length > 0
           ? `${t("pt_bk_checkout_done")} · ${assignedUnits.length} phòng chuyển sang Dọn phòng.`
@@ -431,8 +422,8 @@ export default function PartnerBookingDetailPage() {
 
   const occupiedCount  = assignedUnits.filter(u => u.status === "OCCUPIED").length;
   const showCheckout   = canCheckoutBooking(booking, occupiedCount);
-  // Ẩn nút check-in khi khách đã được check-in (có phòng OCCUPIED)
-  const checkinDay     = isCheckinDay(booking) && occupiedCount === 0 && !showCheckout;
+  // Ẩn nút check-in khi đã CHECKED_IN hoặc có phòng OCCUPIED
+  const checkinDay     = isCheckinDay(booking) && booking?.status !== "CHECKED_IN" && occupiedCount === 0 && !showCheckout;
   const isEarlyCheckout = (() => {
     if (!booking?.checkOut) return false;
     const co = new Date(`${booking.checkOut}T00:00:00`);
@@ -620,6 +611,31 @@ export default function PartnerBookingDetailPage() {
                   </div>
                 </div>
               ))}
+
+              {(booking.checkedInAt || booking.checkedOutAt) && (
+                <div style={{ height: 1, background: "#f1f5f9" }} />
+              )}
+
+              {booking.checkedInAt && (
+                <div style={{ display: "flex", gap: 12 }}>
+                  <LogIn size={18} color="#1d4ed8" />
+                  <div>
+                    <div style={{ fontSize: 11, color: "#94a3b8", fontWeight: 600 }}>{t("pt_bk_actual_checkin")}</div>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: "#1d4ed8" }}>{fmtDateTime(booking.checkedInAt)}</div>
+                  </div>
+                </div>
+              )}
+
+              {booking.checkedOutAt && (
+                <div style={{ display: "flex", gap: 12 }}>
+                  <CheckCircle2 size={18} color="#059669" />
+                  <div>
+                    <div style={{ fontSize: 11, color: "#94a3b8", fontWeight: 600 }}>{t("pt_bk_actual_checkout")}</div>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: "#059669" }}>{fmtDateTime(booking.checkedOutAt)}</div>
+                  </div>
+                </div>
+              )}
+
               <div style={{ height: 1, background: "#f1f5f9" }} />
               <div style={{ display: "flex", gap: 12 }}>
                 <Clock size={18} color="#64748b" />
