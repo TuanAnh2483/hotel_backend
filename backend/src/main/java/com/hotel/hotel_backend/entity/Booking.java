@@ -72,6 +72,12 @@ public class Booking {
     @Column(name = "expires_at")
     private LocalDateTime expiresAt;
 
+    @Column(name = "checked_in_at")
+    private LocalDateTime checkedInAt;
+
+    @Column(name = "checked_out_at")
+    private LocalDateTime checkedOutAt;
+
     @PrePersist
     void prePersist() {
         var now = LocalDateTime.now();
