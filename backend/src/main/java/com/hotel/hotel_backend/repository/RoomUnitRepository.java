@@ -50,6 +50,13 @@ public interface RoomUnitRepository extends JpaRepository<RoomUnit, Long> {
             """)
     List<RoomUnit> findByHotelId(@Param("hotelId") Long hotelId);
 
+    long countByRoomIdAndStatusNot(Long roomId, RoomUnitStatus status);
+
+    @Query("SELECT u FROM RoomUnit u WHERE u.notes LIKE :prefix AND u.status IN :statuses")
+    List<RoomUnit> findByNotesStartingWithAndStatusIn(
+            @Param("prefix") String prefix,
+            @Param("statuses") Collection<RoomUnitStatus> statuses);
+
     @Query("""
             SELECT u.room.id          AS roomId,
                    COUNT(u)           AS totalCount,

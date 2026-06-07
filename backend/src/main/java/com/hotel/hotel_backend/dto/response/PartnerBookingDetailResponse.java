@@ -19,6 +19,8 @@ public record PartnerBookingDetailResponse(
         LocalDateTime createdAt,
         LocalDateTime updatedAt,
         LocalDateTime expiresAt,
+        LocalDateTime checkedInAt,
+        LocalDateTime checkedOutAt,
         List<BookingItemResponse> items,
         BookingContactResponse contact
 ) {}

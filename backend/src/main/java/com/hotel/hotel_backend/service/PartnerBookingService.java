@@ -13,9 +13,12 @@ import com.hotel.hotel_backend.dto.response.PartnerBookingSummaryResponse;
 import com.hotel.hotel_backend.entity.Booking;
 import com.hotel.hotel_backend.entity.BookingStatus;
 import com.hotel.hotel_backend.entity.Hotel;
+import com.hotel.hotel_backend.entity.RoomUnit;
+import com.hotel.hotel_backend.entity.RoomUnitStatus;
 import com.hotel.hotel_backend.exception.ApiException;
 import com.hotel.hotel_backend.exception.ErrorCode;
 import com.hotel.hotel_backend.repository.BookingRepository;
+import com.hotel.hotel_backend.repository.RoomUnitRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -23,9 +26,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -33,6 +38,7 @@ import java.util.Map;
 public class PartnerBookingService {
 
     private final BookingRepository bookingRepository;
+    private final RoomUnitRepository roomUnitRepository;
     private final SecurityService securityService;
     private final BookingExpirationService bookingExpirationService;
     private final BookingRefundService bookingRefundService;
@@ -71,6 +77,29 @@ public class PartnerBookingService {
     }
 
     @Transactional
+    public PartnerBookingDetailResponse checkinPartnerBooking(Long bookingId) {
+        Booking booking = loadOwnedBooking(bookingId);
+        booking = bookingExpirationService.expirePendingBookingIfNeeded(booking);
+
+        if (booking.getStatus() == BookingStatus.CHECKED_IN) {
+            return toPartnerBookingDetail(booking);
+        }
+
+        if (booking.getStatus() != BookingStatus.CONFIRMED) {
+            throw new ApiException(ErrorCode.CONFLICT, "Only confirmed bookings can be checked in");
+        }
+
+        if (booking.getCheckIn().isAfter(LocalDate.now())) {
+            throw new ApiException(ErrorCode.CONFLICT, "Cannot check in before the check-in date");
+        }
+
+        booking.setStatus(BookingStatus.CHECKED_IN);
+        booking.setCheckedInAt(LocalDateTime.now());
+        Booking savedBooking = bookingRepository.save(booking);
+        return toPartnerBookingDetail(savedBooking);
+    }
+
+    @Transactional
     public PartnerBookingDetailResponse completePartnerBooking(Long bookingId) {
         Booking booking = loadOwnedBooking(bookingId);
         booking = bookingExpirationService.expirePendingBookingIfNeeded(booking);
@@ -79,18 +108,37 @@ public class PartnerBookingService {
             return toPartnerBookingDetail(booking);
         }
 
-        if (booking.getStatus() != BookingStatus.CONFIRMED) {
-            throw new ApiException(ErrorCode.CONFLICT, "Only confirmed bookings can be completed");
+        if (booking.getStatus() != BookingStatus.CONFIRMED && booking.getStatus() != BookingStatus.CHECKED_IN) {
+            throw new ApiException(ErrorCode.CONFLICT, "Only confirmed or checked-in bookings can be completed");
         }
 
         if (booking.getCheckOut().isAfter(LocalDate.now())) {
             throw new ApiException(ErrorCode.CONFLICT, "Booking cannot be completed before checkout date");
         }
 
+        bookingExpirationService.releaseReservedInventory(booking);
+        cleanupRoomUnitsOnCheckout(bookingId);
         booking.setStatus(BookingStatus.COMPLETED);
+        booking.setCheckedOutAt(LocalDateTime.now());
         Booking savedBooking = bookingRepository.save(booking);
         userNotificationService.createCheckoutReviewNotification(savedBooking);
         return toPartnerBookingDetail(savedBooking);
+    }
+
+    private void cleanupRoomUnitsOnCheckout(Long bookingId) {
+        String bookingTag = "bk:" + bookingId + "%";
+        List<RoomUnit> occupiedUnits = roomUnitRepository.findByNotesStartingWithAndStatusIn(
+                bookingTag,
+                Set.of(RoomUnitStatus.OCCUPIED, RoomUnitStatus.RESERVED)
+        );
+        for (RoomUnit unit : occupiedUnits) {
+            unit.setStatus(RoomUnitStatus.CLEANING);
+            unit.setGuestName(null);
+            unit.setNotes(null);
+        }
+        if (!occupiedUnits.isEmpty()) {
+            roomUnitRepository.saveAll(occupiedUnits);
+        }
     }
 
     @Transactional
@@ -183,6 +231,8 @@ public class PartnerBookingService {
                 booking.getCreatedAt(),
                 booking.getUpdatedAt(),
                 booking.getExpiresAt(),
+                booking.getCheckedInAt(),
+                booking.getCheckedOutAt(),
                 booking.getItems().stream()
                         .map(item -> new BookingItemResponse(
                                 item.getRoom().getId(),

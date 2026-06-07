@@ -17,15 +17,17 @@ function calcNights(checkIn, checkOut) {
 }
 
 const STATUS_TABS = [
-  { label: "pt_all_statuses",  value: "" },
-  { label: "pt_bk_s_confirmed", value: "CONFIRMED" },
-  { label: "pt_bk_s_pending",   value: "PENDING_PAYMENT" },
-  { label: "pt_bk_s_completed", value: "COMPLETED" },
-  { label: "pt_bk_s_cancelled", value: "CANCELLED" },
+  { label: "pt_all_statuses",    value: "" },
+  { label: "pt_bk_s_confirmed",  value: "CONFIRMED" },
+  { label: "pt_bk_s_checked_in", value: "CHECKED_IN" },
+  { label: "pt_bk_s_pending",    value: "PENDING_PAYMENT" },
+  { label: "pt_bk_s_completed",  value: "COMPLETED" },
+  { label: "pt_bk_s_cancelled",  value: "CANCELLED" },
 ];
 
 function canCheckoutBooking(booking) {
-  if (booking?.status !== "CONFIRMED" || !booking.checkOut) return false;
+  const status = booking?.status;
+  if ((status !== "CONFIRMED" && status !== "CHECKED_IN") || !booking.checkOut) return false;
   const checkOut = new Date(`${booking.checkOut}T00:00:00`);
   const today = new Date();
   today.setHours(0, 0, 0, 0);

@@ -120,6 +120,12 @@ public class PartnerController {
         return ApiResponse.ok(partnerBookingService.getPartnerBooking(bookingId));
     }
 
+    @PostMapping("/bookings/{bookingId}/checkin")
+    @PreAuthorize("hasRole('PARTNER')")
+    public ApiResponse<PartnerBookingDetailResponse> checkinBooking(@PathVariable Long bookingId) {
+        return ApiResponse.ok(partnerBookingService.checkinPartnerBooking(bookingId));
+    }
+
     /**
      * Endpoint nay giai quyet cau hoi: khi stay da ket thuc, partner chot booking
      * sang COMPLETED o dau de lifecycle khop nghiep vu?
