@@ -231,4 +231,11 @@ public class InventoryServiceImpl implements InventoryService {
     public void capInventory(Long roomId, int newQuantity) {
         dailyInventoryRepository.capAvailableRooms(roomId, LocalDate.now(), newQuantity);
     }
+
+    @Override
+    @Transactional
+    public void restoreOneUnit(Long roomId, int maxCapacity) {
+        if (maxCapacity <= 0) return;
+        dailyInventoryRepository.incrementAvailableRoomsUpTo(roomId, LocalDate.now(), maxCapacity);
+    }
 }

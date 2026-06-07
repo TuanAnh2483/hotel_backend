@@ -36,4 +36,11 @@ public interface InventoryService {
      * Dùng khi giảm quantity thay vì gọi generateInventory().
      */
     void capInventory(Long roomId, int newQuantity);
+
+    /**
+     * Tăng availableRooms lên 1 cho các ngày từ hôm nay trở đi,
+     * không vượt quá maxCapacity (Room.quantity).
+     * Dùng khi một RoomUnit ra khỏi trạng thái MAINTENANCE.
+     */
+    void restoreOneUnit(Long roomId, int maxCapacity);
 }
