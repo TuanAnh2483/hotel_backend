@@ -112,8 +112,8 @@ public class PartnerBookingService {
             throw new ApiException(ErrorCode.CONFLICT, "Only confirmed or checked-in bookings can be completed");
         }
 
-        if (booking.getCheckOut().isAfter(LocalDate.now())) {
-            throw new ApiException(ErrorCode.CONFLICT, "Booking cannot be completed before checkout date");
+        if (booking.getCheckIn().isAfter(LocalDate.now())) {
+            throw new ApiException(ErrorCode.CONFLICT, "Booking cannot be completed before check-in date");
         }
 
         bookingExpirationService.releaseReservedInventory(booking);
@@ -268,7 +268,7 @@ public class PartnerBookingService {
 
             switch (booking.status()) {
                 case PENDING_PAYMENT -> pendingPaymentBookings++;
-                case CONFIRMED -> {
+                case CONFIRMED, CHECKED_IN -> {
                     confirmedBookings++;
                     grossRevenue += amount;
                 }
