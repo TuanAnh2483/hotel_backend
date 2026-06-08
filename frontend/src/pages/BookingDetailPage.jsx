@@ -1,4 +1,5 @@
-﻿import { useState } from "react";
+﻿import { useState, useEffect } from "react";
+import { useCountdown } from "../hooks/useCountdown";
 import { C } from "../lib/constants";
 import MainNavbar from "../components/MainNavbar";
 import Footer from "../components/Footer";
@@ -20,13 +21,22 @@ import {
   ReceiptText,
   RefreshCcw,
   ShieldCheck,
+  ShieldOff,
   Star,
   User,
   XCircle,
 } from "lucide-react";
 import "../styles/pages/BookingDetailPage.css";
+import { useScrollLock } from "../hooks/useScrollLock";
 
-function ConfirmDialog({ title, message, confirmLabel = "Xác nhận", onConfirm, onCancel, loading }) {
+const POLICY_CFG = {
+  FLEXIBLE: { Icon: ShieldCheck, color: "#16a34a", bg: "#f0fdf4", border: "#bbf7d0", warnKey: "bkd_cancel_warn_flexible" },
+  MODERATE: { Icon: Clock,       color: "#d97706", bg: "#fffbeb", border: "#fde68a", warnKey: "bkd_cancel_warn_moderate" },
+  STRICT:   { Icon: ShieldOff,   color: "#dc2626", bg: "#fff1f2", border: "#fecdd3", warnKey: "bkd_cancel_warn_strict"   },
+};
+
+function ConfirmDialog({ title, message, policyWarning, confirmLabel = "Xác nhận", onConfirm, onCancel, loading }) {
+  useScrollLock(true);
   return (
     <div
       role="dialog"
@@ -37,7 +47,12 @@ function ConfirmDialog({ title, message, confirmLabel = "Xác nhận", onConfirm
     >
       <div className="bg-white rounded-2xl p-8 w-full max-w-sm" style={{ boxShadow: "var(--shadow-xl)" }}>
         <h3 id="confirm-dialog-title" className="text-[17px] font-[800] text-[var(--text-main)] mt-0 mb-2.5">{title}</h3>
-        <p className="text-[14px] text-[var(--text-muted)] leading-relaxed mt-0 mb-6">{message}</p>
+        <p className="text-[14px] text-[var(--text-muted)] leading-relaxed mt-0 mb-4">{message}</p>
+        {policyWarning && (
+          <div style={{ background: policyWarning.bg, border: `1px solid ${policyWarning.border}`, borderRadius: 10, color: policyWarning.color, fontSize: 13, fontWeight: 600, lineHeight: 1.6, marginBottom: 20, padding: "10px 14px" }}>
+            {policyWarning.text}
+          </div>
+        )}
         <div className="flex gap-3">
           <button onClick={onCancel} disabled={loading} className="btn btn-secondary flex-1">
             Hủy bỏ
@@ -52,6 +67,46 @@ function ConfirmDialog({ title, message, confirmLabel = "Xác nhận", onConfirm
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+function ExpiryCountdown({ expiresAt, onExpired }) {
+  const { t } = useLang();
+  const { minutes, seconds, expired, urgent } = useCountdown(expiresAt);
+
+  useEffect(() => {
+    if (expired && onExpired) onExpired();
+  }, [expired]);
+
+  if (expired) {
+    return (
+      <div style={{ background: "#fff1f2", border: "1px solid #fecdd3", borderRadius: 14, color: "#be123c", fontWeight: 700, marginBottom: 18, padding: "12px 14px" }}>
+        {t("bkd_expired")}
+      </div>
+    );
+  }
+
+  const pad = n => String(n).padStart(2, "0");
+  return (
+    <div style={{
+      background: urgent ? "#fff1f2" : "#fffbeb",
+      border: `1px solid ${urgent ? "#fecdd3" : "#fde68a"}`,
+      borderRadius: 14,
+      color: urgent ? "#be123c" : "#92400e",
+      marginBottom: 18,
+      padding: "12px 14px",
+      display: "flex",
+      alignItems: "center",
+      gap: 10,
+    }}>
+      <Clock size={16} style={{ flexShrink: 0 }} />
+      <span style={{ fontWeight: 700 }}>
+        {t("bkd_expires_in")}{" "}
+        <span style={{ fontVariantNumeric: "tabular-nums", fontSize: 16 }}>
+          {pad(minutes)}:{pad(seconds)}
+        </span>
+      </span>
     </div>
   );
 }
@@ -242,7 +297,7 @@ export default function BookingDetailPage({ navigate, user, params = {}, onLogou
   const [cancelError, setCancelError]         = useState("");
   const [showCancelDialog, setShowCancelDialog] = useState(false);
 
-  const { data: booking,       isLoading: loading,         error: bookingError    } = useBookingDetail(bookingId);
+  const { data: booking, isLoading: loading, error: bookingError, refetch: refetchBooking } = useBookingDetail(bookingId);
   const { data: rawPayments,   isLoading: paymentsLoading, error: paymentsErr     } = usePaymentHistory(bookingId);
   const { data: refundRequest, isLoading: refundLoading,   error: refundErr       } = useRefundRequest(bookingId);
 
@@ -349,10 +404,8 @@ export default function BookingDetailPage({ navigate, user, params = {}, onLogou
                   </div>
                 </div>
 
-                {booking.expiresAt && booking.status === "PENDING_PAYMENT" && (
-                  <div style={{ background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 14, color: "#92400e", marginBottom: 18, padding: "12px 14px" }}>
-                    {t("bkd_expires")} {fmtDateTime(booking.expiresAt)}
-                  </div>
+                {booking.status === "PENDING_PAYMENT" && booking.expiresAt && (
+                  <ExpiryCountdown expiresAt={booking.expiresAt} onExpired={refetchBooking} />
                 )}
 
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 14 }}>
@@ -490,6 +543,29 @@ export default function BookingDetailPage({ navigate, user, params = {}, onLogou
                 )}
               </Card>
 
+              {/* Cancellation Policy */}
+              {(() => {
+                const pKey = (booking.cancellationPolicy || "MODERATE").toUpperCase();
+                const pcfg = POLICY_CFG[pKey] || POLICY_CFG.MODERATE;
+                const { Icon: PolicyIcon } = pcfg;
+                return (
+                  <Card>
+                    <div style={{ alignItems: "center", display: "flex", gap: 10, marginBottom: 14 }}>
+                      <PolicyIcon size={18} color={pcfg.color} />
+                      <h2 style={{ fontSize: 16, fontWeight: 800, color: "#0f172a", margin: 0 }}>{t("bkd_policy_title")}</h2>
+                    </div>
+                    <div style={{ background: pcfg.bg, border: `1px solid ${pcfg.border}`, borderRadius: 10, padding: "11px 14px" }}>
+                      <div style={{ fontSize: 12, fontWeight: 800, color: pcfg.color, marginBottom: 4 }}>
+                        {t(`booking_cancel_policy_title_${(booking.cancellationPolicy || "MODERATE").toLowerCase()}`)}
+                      </div>
+                      <div style={{ fontSize: 12, color: "#475569", lineHeight: 1.6 }}>
+                        {t(`booking_cancel_policy_text_${(booking.cancellationPolicy || "MODERATE").toLowerCase()}`)}
+                      </div>
+                    </div>
+                  </Card>
+                );
+              })()}
+
               <Card>
                 <div style={{ alignItems: "center", display: "flex", gap: 10, marginBottom: 16 }}>
                   <ReceiptText size={20} color={C.primary} />
@@ -537,6 +613,10 @@ export default function BookingDetailPage({ navigate, user, params = {}, onLogou
                       {t("bkd_refund_request")}
                     </button>
                   </div>
+                ) : !allowsRefund ? (
+                  <div style={{ background: "#fff1f2", border: "1px solid #fecdd3", borderRadius: 14, color: "#be123c", fontSize: 13, lineHeight: 1.6, padding: "12px 14px" }}>
+                    {t("bkd_refund_strict")}
+                  </div>
                 ) : (
                   <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 14, color: "#64748b", fontSize: 13, lineHeight: 1.6, padding: "12px 14px" }}>
                     {t("bkd_refund_empty")}
@@ -561,16 +641,21 @@ export default function BookingDetailPage({ navigate, user, params = {}, onLogou
         )}
       </div>
 
-      {showCancelDialog && (
-        <ConfirmDialog
-          title={t("bkd_confirm_cancel_title")}
-          message={t("bkd_confirm_cancel")}
-          confirmLabel={t("bkd_confirm_cancel_btn")}
-          loading={cancelling}
-          onConfirm={confirmCancel}
-          onCancel={() => setShowCancelDialog(false)}
-        />
-      )}
+      {showCancelDialog && (() => {
+        const pKey = (booking?.cancellationPolicy || "MODERATE").toUpperCase();
+        const pcfg = POLICY_CFG[pKey] || POLICY_CFG.MODERATE;
+        return (
+          <ConfirmDialog
+            title={t("bkd_confirm_cancel_title")}
+            message={t("bkd_confirm_cancel")}
+            policyWarning={{ bg: pcfg.bg, border: pcfg.border, color: pcfg.color, text: t(pcfg.warnKey) }}
+            confirmLabel={t("bkd_confirm_cancel_btn")}
+            loading={cancelling}
+            onConfirm={confirmCancel}
+            onCancel={() => setShowCancelDialog(false)}
+          />
+        );
+      })()}
 
       <Footer navigate={navigate} />
     </div>
