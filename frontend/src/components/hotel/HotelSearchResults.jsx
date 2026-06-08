@@ -106,7 +106,7 @@ function FilterOption({ label, checked, onClick, isRadio }) {
   );
 }
 
-function FilterSidebar({ filters, onChange, onApply }) {
+function FilterSidebar({ filters, onChange, onApply, isDirty, hasActiveFilters, onReset }) {
   const { t } = useLang();
 
   const Section = ({ iconKey, title, children }) => (
@@ -183,10 +183,46 @@ function FilterSidebar({ filters, onChange, onApply }) {
         </div>
       </div>
 
-      <button onClick={onApply}
-        style={{ width: "100%", padding: "11px", background: C.primary, color: "#fff", border: "none", borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
-        {t("filter_apply")}
-      </button>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        <button
+          onClick={onApply}
+          disabled={!isDirty}
+          style={{
+            width: "100%", padding: "11px",
+            background: isDirty ? C.primary : "#e5e7eb",
+            color: isDirty ? "#fff" : "#9ca3af",
+            border: "none", borderRadius: 10, fontSize: 13, fontWeight: 700,
+            cursor: isDirty ? "pointer" : "default",
+            transition: "background 0.2s, color 0.2s",
+            position: "relative",
+          }}
+        >
+          {t("filter_apply")}
+          {isDirty && (
+            <span style={{
+              position: "absolute", top: -5, right: -5,
+              width: 10, height: 10, borderRadius: "50%",
+              background: "#f59e0b", border: "2px solid #fff",
+            }} />
+          )}
+        </button>
+        {hasActiveFilters && (
+          <button
+            onClick={onReset}
+            style={{
+              width: "100%", padding: "9px",
+              background: "transparent", color: "#6b7280",
+              border: "1.5px solid #e5e7eb",
+              borderRadius: 10, fontSize: 12, fontWeight: 600, cursor: "pointer",
+              transition: "color 0.15s, border-color 0.15s",
+            }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = C.primary; e.currentTarget.style.color = C.primary; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = "#e5e7eb"; e.currentTarget.style.color = "#6b7280"; }}
+          >
+            {t("filter_reset")}
+          </button>
+        )}
+      </div>
     </div>
   );
 }
@@ -324,6 +360,17 @@ function createDefaultFilters(params = {}) {
   };
 }
 
+function isFiltersDirty(a, b) {
+  return (
+    a.hotelTypes     !== b.hotelTypes     ||
+    a.stars          !== b.stars          ||
+    a.roomCategories !== b.roomCategories ||
+    a.priceMax       !== b.priceMax       ||
+    JSON.stringify(a.hotelAmenities || []) !== JSON.stringify(b.hotelAmenities || []) ||
+    JSON.stringify(a.roomAmenities  || []) !== JSON.stringify(b.roomAmenities  || [])
+  );
+}
+
 function filtersToSearchParams(filters) {
   return {
     hotelTypes: filters.hotelTypes || "",
@@ -432,6 +479,15 @@ export default function HotelSearchResults({ navigate, params = {}, hideBanner =
     setPage(1);
   };
 
+  const handleResetFilters = () => {
+    const def = createDefaultFilters(params);
+    setFilters(def);
+    setAppliedFilters(def);
+    setPage(1);
+  };
+
+  const isDirty = isFiltersDirty(filters, appliedFilters);
+
   const activeFilterCount = [
     appliedFilters.hotelTypes,
     appliedFilters.stars,
@@ -439,6 +495,8 @@ export default function HotelSearchResults({ navigate, params = {}, hideBanner =
     ...(appliedFilters.hotelAmenities || []),
     ...(appliedFilters.roomAmenities || []),
   ].filter(Boolean).length + (appliedFilters.priceMax < 10000000 ? 1 : 0);
+
+  const hasActiveFilters = activeFilterCount > 0;
 
   return (
     <div ref={containerRef} className="hsr-container" style={{ maxWidth: 1300, margin: "0 auto", width: "100%", padding: "24px 40px 40px", display: "flex", gap: 24, flex: 1, boxSizing: "border-box" }}>
@@ -456,12 +514,22 @@ export default function HotelSearchResults({ navigate, params = {}, hideBanner =
           filters={filters}
           onChange={setFilters}
           onApply={() => { handleApplyFilters(); setFilterDrawerOpen(false); }}
+          isDirty={isDirty}
+          hasActiveFilters={hasActiveFilters}
+          onReset={() => { handleResetFilters(); setFilterDrawerOpen(false); }}
         />
       </div>
 
       {/* ── Desktop sidebar ───────────────────────────────────────────── */}
       <div className="hsr-sidebar" style={{ flex: "0 0 280px" }}>
-        <FilterSidebar filters={filters} onChange={setFilters} onApply={handleApplyFilters} />
+        <FilterSidebar
+          filters={filters}
+          onChange={setFilters}
+          onApply={handleApplyFilters}
+          isDirty={isDirty}
+          hasActiveFilters={hasActiveFilters}
+          onReset={handleResetFilters}
+        />
       </div>
 
       {/* ── Results area ─────────────────────────────────────────────── */}
