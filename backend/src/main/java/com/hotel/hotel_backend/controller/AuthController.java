@@ -2,6 +2,7 @@ package com.hotel.hotel_backend.controller;
 
 import com.hotel.hotel_backend.dto.request.ForgotPasswordRequest;
 import com.hotel.hotel_backend.dto.request.LoginRequest;
+import com.hotel.hotel_backend.dto.request.RefreshTokenRequest;
 import com.hotel.hotel_backend.dto.request.ResendVerificationRequest;
 import com.hotel.hotel_backend.dto.request.ResetPasswordRequest;
 import com.hotel.hotel_backend.dto.request.RegisterRequest;
@@ -9,6 +10,7 @@ import com.hotel.hotel_backend.dto.request.VerifyEmailRequest;
 import com.hotel.hotel_backend.dto.response.ApiResponse;
 import com.hotel.hotel_backend.dto.response.AuthResponse;
 import com.hotel.hotel_backend.dto.response.ForgotPasswordResponse;
+import com.hotel.hotel_backend.dto.response.RefreshResponse;
 import com.hotel.hotel_backend.dto.response.RegisterResponse;
 import com.hotel.hotel_backend.dto.response.ResendVerificationResponse;
 import com.hotel.hotel_backend.dto.response.ResetPasswordResponse;
@@ -67,6 +69,11 @@ public class AuthController {
             @RequestBody @Valid ResendVerificationRequest request
     ) {
         return ResponseEntity.ok(ApiResponse.ok(authService.resendVerification(request)));
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<ApiResponse<RefreshResponse>> refresh(@RequestBody @Valid RefreshTokenRequest request) {
+        return ResponseEntity.ok(ApiResponse.ok(authService.refresh(request)));
     }
 
     @PostMapping("/logout")

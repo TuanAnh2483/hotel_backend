@@ -2,18 +2,21 @@ package com.hotel.hotel_backend.service;
 
 import com.hotel.hotel_backend.dto.request.ForgotPasswordRequest;
 import com.hotel.hotel_backend.dto.request.LoginRequest;
+import com.hotel.hotel_backend.dto.request.RefreshTokenRequest;
 import com.hotel.hotel_backend.dto.request.RegisterRequest;
 import com.hotel.hotel_backend.dto.request.ResendVerificationRequest;
 import com.hotel.hotel_backend.dto.request.ResetPasswordRequest;
 import com.hotel.hotel_backend.dto.request.VerifyEmailRequest;
 import com.hotel.hotel_backend.dto.response.AuthResponse;
 import com.hotel.hotel_backend.dto.response.ForgotPasswordResponse;
+import com.hotel.hotel_backend.dto.response.RefreshResponse;
 import com.hotel.hotel_backend.dto.response.RegisterResponse;
 import com.hotel.hotel_backend.dto.response.ResendVerificationResponse;
 import com.hotel.hotel_backend.dto.response.ResetPasswordResponse;
 import com.hotel.hotel_backend.dto.response.VerifyEmailResponse;
 import com.hotel.hotel_backend.entity.EmailVerificationToken;
 import com.hotel.hotel_backend.entity.PasswordResetToken;
+import com.hotel.hotel_backend.entity.RefreshToken;
 import com.hotel.hotel_backend.entity.User;
 import com.hotel.hotel_backend.entity.UserStatus;
 import com.hotel.hotel_backend.entity.UserType;
@@ -22,6 +25,7 @@ import com.hotel.hotel_backend.exception.BadRequestException;
 import com.hotel.hotel_backend.exception.ErrorCode;
 import com.hotel.hotel_backend.repository.EmailVerificationTokenRepository;
 import com.hotel.hotel_backend.repository.PasswordResetTokenRepository;
+import com.hotel.hotel_backend.repository.RefreshTokenRepository;
 import com.hotel.hotel_backend.repository.UserRepository;
 import com.hotel.hotel_backend.security.JwtService;
 import jakarta.validation.Valid;
@@ -54,6 +58,7 @@ public class AuthService {
 
     private static final long PASSWORD_RESET_TTL_MINUTES = 30;
     private static final long EMAIL_VERIFICATION_TTL_HOURS = 24;
+    private static final long REFRESH_TOKEN_TTL_DAYS = 7;
     private static final String PASSWORD_RESET_MESSAGE =
             "If the account exists, a password reset token has been generated";
     private static final String REGISTER_MESSAGE =
@@ -64,6 +69,7 @@ public class AuthService {
     private final UserRepository userRepo;
     private final EmailVerificationTokenRepository emailVerificationTokenRepository;
     private final PasswordResetTokenRepository passwordResetTokenRepository;
+    private final RefreshTokenRepository refreshTokenRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final SecurityService securityService;
@@ -73,12 +79,11 @@ public class AuthService {
     private final String googleClientId;
     private final SecureRandom secureRandom = new SecureRandom();
 
-
-
     public AuthService(
             UserRepository userRepo,
             EmailVerificationTokenRepository emailVerificationTokenRepository,
             PasswordResetTokenRepository passwordResetTokenRepository,
+            RefreshTokenRepository refreshTokenRepository,
             PasswordEncoder passwordEncoder,
             JwtService jwtService,
             SecurityService securityService,
@@ -86,11 +91,11 @@ public class AuthService {
             EmailVerificationEmailService emailVerificationEmailService,
             @Value("${app.mail.expose-debug-tokens:false}") boolean exposeDebugTokens,
             @Value("${google.client-id:}") String googleClientId
-
     ) {
         this.userRepo = userRepo;
         this.emailVerificationTokenRepository = emailVerificationTokenRepository;
         this.passwordResetTokenRepository = passwordResetTokenRepository;
+        this.refreshTokenRepository = refreshTokenRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.securityService = securityService;
@@ -100,11 +105,27 @@ public class AuthService {
         this.googleClientId = googleClientId;
     }
 
-    private AuthResponse buildAuthResponse(User user, String token) {
+    private record RefreshTokenData(String rawToken, long expiresInSeconds) {}
+
+    private RefreshTokenData issueNewRefreshToken(User user) {
+        refreshTokenRepository.deleteByUserId(user.getId());
+        String rawToken = generateOpaqueToken();
+        RefreshToken rt = new RefreshToken();
+        rt.setUser(user);
+        rt.setTokenHash(hashToken(rawToken));
+        rt.setExpiresAt(OffsetDateTime.now().plusDays(REFRESH_TOKEN_TTL_DAYS));
+        refreshTokenRepository.save(rt);
+        return new RefreshTokenData(rawToken, REFRESH_TOKEN_TTL_DAYS * 86400L);
+    }
+
+    private AuthResponse buildAuthResponse(User user, String accessToken) {
+        RefreshTokenData rtd = issueNewRefreshToken(user);
         return new AuthResponse(
-                token,
+                accessToken,
                 "Bearer",
                 jwtService.getExpSeconds(),
+                rtd.rawToken(),
+                rtd.expiresInSeconds(),
                 new AuthResponse.UserView(
                         user.getId(),
                         user.getEmail(),
@@ -121,7 +142,7 @@ public class AuthService {
         return registerWithRole(req, UserType.CUSTOMER);
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public AuthResponse login(LoginRequest log) {
         String email = normalizeEmail(log.email());
         User user = userRepo.findByEmail(email)
@@ -246,9 +267,44 @@ public class AuthService {
     }
 
     @Transactional
+    public RefreshResponse refresh(@Valid RefreshTokenRequest request) {
+        String hash = hashToken(request.refreshToken());
+        RefreshToken stored = refreshTokenRepository.findByTokenHash(hash)
+                .orElseThrow(() -> new ApiException(ErrorCode.UNAUTHORIZED, "Refresh token không hợp lệ"));
+
+        if (stored.getExpiresAt().isBefore(OffsetDateTime.now())) {
+            refreshTokenRepository.delete(stored);
+            throw new ApiException(ErrorCode.UNAUTHORIZED, "Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại");
+        }
+
+        User user = stored.getUser();
+        assertActive(user);
+
+        // Rotate: xoá token cũ, phát token mới
+        refreshTokenRepository.delete(stored);
+        String newRaw = generateOpaqueToken();
+        RefreshToken newRt = new RefreshToken();
+        newRt.setUser(user);
+        newRt.setTokenHash(hashToken(newRaw));
+        newRt.setExpiresAt(OffsetDateTime.now().plusDays(REFRESH_TOKEN_TTL_DAYS));
+        refreshTokenRepository.save(newRt);
+
+        String newAccessToken = jwtService.generate(user);
+        return new RefreshResponse(
+                newAccessToken,
+                "Bearer",
+                jwtService.getExpSeconds(),
+                newRaw,
+                REFRESH_TOKEN_TTL_DAYS * 86400L
+        );
+    }
+
+    @Transactional
     public void logout() {
         User currentUser = securityService.getCurrentUser();
+        refreshTokenRepository.deleteByUserId(currentUser.getId());
         currentUser.setTokenVersion(currentUser.getTokenVersion() + 1);
+        userRepo.save(currentUser);
     }
 
     private RegisterResponse registerWithRole(RegisterRequest req, UserType role) {
