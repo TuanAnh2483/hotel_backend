@@ -11,6 +11,7 @@ import { partnerService } from "../../services/partnerService"; // only used in 
 import {
   createExistingImageItems,
   createPendingImageItems,
+  createPendingImageItemsSafe,
   existingImageUrlsFromItems,
   imageItemUrl,
   pendingImageFilesFromItems,
@@ -170,6 +171,7 @@ function AmenityPicker({ form, setForm, onGoToServices }) {
 
 function RoomForm({ form, setForm, onSubmit, onCancel, saving, title, categories, bedTypes, hotel, aiSuggestion, isAdd, saveError, onGoToServices, originalQuantity }) {
   const { t } = useLang();
+  const [imageError, setImageError] = useState("");
 
   const isEntire = hotel?.bookingMode === "ENTIRE";
   const aiSuggestedPrice = aiSuggestion?.data?.suggestedPrice ?? null;
@@ -376,14 +378,20 @@ function RoomForm({ form, setForm, onSubmit, onCancel, saving, title, categories
               <input
                 type="file" multiple accept="image/png,image/jpeg,image/webp,image/gif" style={{ display: "none" }}
                 onChange={e => {
-                  const images = createPendingImageItems(e.target.files);
-                  setForm(f => ({ ...f, images: [...(f.images || []), ...images] }));
+                  const { accepted, rejected } = createPendingImageItemsSafe(e.target.files);
+                  setForm(f => ({ ...f, images: [...(f.images || []), ...accepted] }));
+                  setImageError(rejected.length > 0 ? rejected.map(r => r.reason).join(" ") : "");
                   e.target.value = "";
                 }}
               />
             </label>
           </div>
           <p className="pr-image-hint">{t("pt_rooms_img_hint")}</p>
+          {imageError && (
+            <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 8, color: "#b91c1c", fontSize: 12, fontWeight: 600, lineHeight: 1.5, padding: "8px 12px", marginTop: 4 }}>
+              ⚠️ {imageError}
+            </div>
+          )}
         </Field>
 
         {saveError && (
