@@ -90,8 +90,8 @@ function LoginRoute() {
     return <Navigate to="/" replace />;
   }
 
-  function handleLoginSuccess(userData, token) {
-    login(userData, token);
+  function handleLoginSuccess(userData, token, refreshToken) {
+    login(userData, token, refreshToken);
     if (userData.userType === "ADMIN")   { rrNavigate("/admin",    { replace: true }); return; }
     if (userData.userType === "PARTNER") { rrNavigate("/partner", { replace: true }); return; }
     const from = location.state?.from?.pathname || "/";

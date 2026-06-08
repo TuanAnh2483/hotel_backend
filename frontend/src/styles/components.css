@@ -1,5 +1,18 @@
 /* ── Shared UI Components ─────────────────────────────────────────────── */
 
+/*
+ * Font-weight scale (defined in index.css as CSS vars):
+ *   --fw-normal   400  body copy, descriptions
+ *   --fw-medium   500  subtle emphasis
+ *   --fw-semibold 600  captions, badge labels, helper text
+ *   --fw-bold     700  buttons, column headers, section sub-labels
+ *   --fw-heavy    800  card titles, page section headings, KPI labels
+ *   --fw-black    900  page h1, hero numbers, large prices
+ *
+ * Rule: never mix 700 and 800 for the same semantic role.
+ * Use var(--fw-*) in CSS, C.* tokens or var(--fw-*) in inline styles.
+ */
+
 /* ── Button system ──────────────────────────────────────────────────────── */
 .btn {
   display: inline-flex;
@@ -9,8 +22,8 @@
   border: none;
   border-radius: var(--radius-md);
   font-family: inherit;
-  font-weight: 700;
-  font-size: 14px;
+  font-weight: var(--fw-bold);
+  font-size: var(--text-base);
   padding: 11px 20px;
   cursor: pointer;
   transition: background 0.18s, opacity 0.18s, box-shadow 0.18s, border-color 0.18s;
@@ -68,8 +81,8 @@
   background: var(--secondary);
 }
 
-.btn-sm { padding: 7px 14px; font-size: 12px; border-radius: var(--radius-sm); }
-.btn-lg { padding: 15px 28px; font-size: 15px; border-radius: var(--radius-lg); }
+.btn-sm   { padding: 7px 14px;  font-size: var(--text-sm);  border-radius: var(--radius-sm); }
+.btn-lg   { padding: 15px 28px; font-size: var(--text-md);  border-radius: var(--radius-lg); }
 .btn-full { width: 100%; }
 
 /* ── Status badge system ─────────────────────────────────────────────────── */

@@ -7,8 +7,8 @@ import { useCreateBooking } from "../hooks/useBookingQueries";
 import { useLang } from "../contexts/LanguageContext";
 import BookingStepper from "../components/ui/BookingStepper";
 import {
-  Bed, Calendar, ChevronLeft, Info, Mail, Moon,
-  Phone, Shield, User, Users,
+  Bed, Calendar, ChevronLeft, Clock, Info, Mail, Moon,
+  Phone, Shield, ShieldCheck, ShieldOff, User, Users,
 } from "lucide-react";
 import "../styles/pages/BookingPage.css";
 
@@ -40,6 +40,12 @@ const ICONS = {
   email:    Mail,
   shield:   Shield,
   info:     Info,
+};
+
+const POLICY_CFG = {
+  FLEXIBLE: { Icon: ShieldCheck, color: "#16a34a", bg: "#f0fdf4", border: "#bbf7d0" },
+  MODERATE: { Icon: Clock,       color: "#d97706", bg: "#fffbeb", border: "#fde68a" },
+  STRICT:   { Icon: ShieldOff,   color: "#dc2626", bg: "#fff1f2", border: "#fecdd3" },
 };
 
 function SvgIcon({ k, size = 16, color = "currentColor" }) {
@@ -104,9 +110,10 @@ export default function BookingPage({ navigate, user, params = {}, onLogout }) {
   const effectiveParams = useMemo(() => getEffectiveParams(params), []);
   const { hotelId, hotelName, rooms = [], checkin, checkout, guests = 1, nights = 1, cancellationPolicy = "MODERATE" } = effectiveParams;
 
-  const [contact, setContact] = useState({ fullName: "", email: user?.email || "", phone: "" });
-  const [error, setError]     = useState("");
-  const [focusField, setFocusField] = useState(null);
+  const [contact, setContact]           = useState({ fullName: "", email: user?.email || "", phone: "" });
+  const [error, setError]               = useState("");
+  const [focusField, setFocusField]     = useState(null);
+  const [strictAcknowledged, setStrictAcknowledged] = useState(false);
 
   const createBooking = useCreateBooking();
 
@@ -121,8 +128,10 @@ export default function BookingPage({ navigate, user, params = {}, onLogout }) {
   const handleConfirm = async () => {
     if (!hasContact)     { setError(t("booking_err_contact")); return; }
     if (rooms.length === 0) { setError(t("booking_err_no_rooms")); return; }
-    // Lớp phòng vệ cuối: params có thể bị chỉnh qua URL/back-forward sau khi đã rời trang chi tiết.
     if (totalCapacity > 0 && guests > totalCapacity) { setError(t("booking_err_capacity")); return; }
+    if (cancellationPolicy === "STRICT" && !strictAcknowledged) {
+      setError(t("booking_strict_ack_required")); return;
+    }
     setError("");
     createBooking.mutate(
       {
@@ -270,17 +279,42 @@ export default function BookingPage({ navigate, user, params = {}, onLogout }) {
           </Card>
 
           {/* Cancellation policy */}
-          <Card>
-            <div className="bkp-policy-row">
-              <div className="bkp-policy-icon">
-                <SvgIcon k="shield" size={18} color="#2e7d32" />
-              </div>
-              <div>
-                <div className="bkp-policy-title">{t(`booking_cancel_policy_title_${cancellationPolicy.toLowerCase()}`)}</div>
-                <div className="bkp-policy-text">{t(`booking_cancel_policy_text_${cancellationPolicy.toLowerCase()}`)}</div>
-              </div>
-            </div>
-          </Card>
+          {(() => {
+            const pKey = (cancellationPolicy || "MODERATE").toUpperCase();
+            const cfg  = POLICY_CFG[pKey] || POLICY_CFG.MODERATE;
+            const PolicyIcon = cfg.Icon;
+            return (
+              <Card>
+                <div
+                  className="bkp-policy-box"
+                  style={{ background: cfg.bg, border: `1.5px solid ${cfg.border}`, borderRadius: 12, padding: "14px 16px" }}
+                >
+                  <div className="bkp-policy-row" style={{ marginBottom: 6 }}>
+                    <PolicyIcon size={18} color={cfg.color} style={{ flexShrink: 0 }} />
+                    <div className="bkp-policy-title" style={{ color: cfg.color }}>
+                      {t(`booking_cancel_policy_title_${cancellationPolicy.toLowerCase()}`)}
+                    </div>
+                  </div>
+                  <div className="bkp-policy-text">
+                    {t(`booking_cancel_policy_text_${cancellationPolicy.toLowerCase()}`)}
+                  </div>
+                  {pKey === "STRICT" && (
+                    <label className="bkp-strict-ack">
+                      <input
+                        type="checkbox"
+                        checked={strictAcknowledged}
+                        onChange={e => { setStrictAcknowledged(e.target.checked); setError(""); }}
+                        style={{ width: 16, height: 16, accentColor: cfg.color, flexShrink: 0, marginTop: 1 }}
+                      />
+                      <span style={{ fontSize: 13, color: "#374151", lineHeight: 1.5 }}>
+                        {t("booking_strict_ack")}
+                      </span>
+                    </label>
+                  )}
+                </div>
+              </Card>
+            );
+          })()}
         </div>
 
         {/* ── RIGHT — sticky ── */}
