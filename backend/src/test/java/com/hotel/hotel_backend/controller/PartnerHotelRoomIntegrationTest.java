@@ -143,7 +143,7 @@ class PartnerHotelRoomIntegrationTest {
                                   ]
                                 }
                                 """))
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.name").value("Catalog Resort"))
                 .andExpect(jsonPath("$.data.hotelType").value("RESORT"))
                 .andExpect(jsonPath("$.data.amenities[0]").exists())
@@ -171,7 +171,7 @@ class PartnerHotelRoomIntegrationTest {
                                   ]
                                 }
                                 """))
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.name").value("Twin Suite Room"))
                 .andExpect(jsonPath("$.data.roomCategory").value("SUITE"))
                 .andExpect(jsonPath("$.data.bedType").value("TWIN"))
@@ -219,7 +219,7 @@ class PartnerHotelRoomIntegrationTest {
                                   ]
                                 }
                                 """))
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.province").value("TP. Hồ Chí Minh"))
                 .andExpect(jsonPath("$.data.district").value("Quận 1"))
                 .andReturn();
@@ -243,7 +243,7 @@ class PartnerHotelRoomIntegrationTest {
                                   ]
                                 }
                                 """))
-                .andExpect(status().isOk());
+                .andExpect(status().isCreated());
 
         LocalDate checkIn = LocalDate.now().plusDays(7);
         LocalDate checkOut = checkIn.plusDays(2);

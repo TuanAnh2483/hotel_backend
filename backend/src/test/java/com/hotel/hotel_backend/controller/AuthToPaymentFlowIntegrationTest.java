@@ -163,7 +163,7 @@ class AuthToPaymentFlowIntegrationTest {
                                   "amenities": ["PARKING"]
                                 }
                                 """))
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.name").value("Flow Suites Hotel"))
                 .andReturn();
 
@@ -183,7 +183,7 @@ class AuthToPaymentFlowIntegrationTest {
                                   "amenities": ["TV"]
                                 }
                                 """))
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.name").value("Flow Room"))
                 .andExpect(jsonPath("$.data.quantity").value(3))
                 .andReturn();
@@ -267,7 +267,7 @@ class AuthToPaymentFlowIntegrationTest {
                                   }
                                 }
                                 """.formatted(checkIn, checkOut, roomId)))
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.status").value("PENDING_PAYMENT"))
                 .andExpect(jsonPath("$.data.items[0].roomTypeId").value(roomId))
                 .andExpect(jsonPath("$.data.expiresAt").exists())

@@ -199,7 +199,7 @@ class BookingIntegrationTest {
                                   }
                                 }
                                 """.formatted(checkIn, checkOut, room.getId())))
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.checkIn").value(checkIn.toString()))
                 .andExpect(jsonPath("$.data.checkOut").value(checkOut.toString()))
@@ -251,7 +251,7 @@ class BookingIntegrationTest {
                                   }
                                 }
                                 """.formatted(checkIn, checkOut, room.getId())))
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())
                 .andReturn();
 
         long bookingId = readBookingId(createResult);
@@ -311,7 +311,7 @@ class BookingIntegrationTest {
                                   }
                                 }
                                 """.formatted(checkIn, checkOut, room.getId())))
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())
                 .andReturn();
 
         long bookingId = readBookingId(createResult);
@@ -383,7 +383,7 @@ class BookingIntegrationTest {
                                   }
                                 }
                                 """.formatted(checkIn, checkOut, room.getId())))
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())
                 .andReturn();
 
         long bookingId = readBookingId(createResult);
@@ -431,7 +431,7 @@ class BookingIntegrationTest {
                                   }
                                 }
                                 """.formatted(checkIn, checkOut, room.getId())))
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.status").value("PENDING_PAYMENT"))
                 .andReturn();
 
@@ -486,7 +486,7 @@ class BookingIntegrationTest {
                                   }
                                 }
                                 """.formatted(checkIn, checkOut, room.getId())))
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())
                 .andReturn();
 
         long bookingId = readBookingId(createResult);
@@ -547,7 +547,7 @@ class BookingIntegrationTest {
                                   }
                                 }
                                 """.formatted(checkIn, checkOut, room.getId())))
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.status").value("PENDING_PAYMENT"))
                 .andReturn();
 
@@ -606,7 +606,7 @@ class BookingIntegrationTest {
                                   }
                                 }
                                 """.formatted(checkIn, checkOut, room.getId())))
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())
                 .andReturn();
 
         long bookingId = readBookingId(createResult);
@@ -668,7 +668,7 @@ class BookingIntegrationTest {
                                   }
                                 }
                                 """.formatted(checkIn, checkOut, room.getId())))
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.status").value("PENDING_PAYMENT"))
                 .andReturn();
 
@@ -747,7 +747,7 @@ class BookingIntegrationTest {
                                   }
                                 }
                                 """.formatted(checkIn, checkOut, room.getId())))
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())
                 .andReturn();
 
         long bookingId = readBookingId(createResult);
@@ -822,7 +822,7 @@ class BookingIntegrationTest {
                                   }
                                 }
                                 """.formatted(checkIn, checkOut, room.getId())))
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.status").value("PENDING_PAYMENT"))
                 .andReturn();
 
@@ -891,7 +891,7 @@ class BookingIntegrationTest {
                                   }
                                 }
                                 """.formatted(checkIn, checkOut, room.getId())))
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.status").value("PENDING_PAYMENT"))
                 .andReturn();
 
@@ -945,7 +945,7 @@ class BookingIntegrationTest {
                                   }
                                 }
                                 """.formatted(checkIn, checkOut, room.getId())))
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.status").value("PENDING_PAYMENT"))
                 .andReturn();
 
@@ -1055,7 +1055,7 @@ class BookingIntegrationTest {
                                   }
                                 }
                                 """.formatted(checkIn, checkOut, room.getId())))
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())
                 .andReturn();
 
         long bookingId = readBookingId(createResult);
@@ -1221,7 +1221,7 @@ class BookingIntegrationTest {
                                   }
                                 }
                                 """.formatted(checkIn, checkOut, standardRoom.getId(), suiteRoom.getId())))
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.status").value("PENDING_PAYMENT"))
                 .andExpect(jsonPath("$.data.totalPrice").value(2_600_000.0))
@@ -1260,7 +1260,7 @@ class BookingIntegrationTest {
                                   }
                                 }
                                 """.formatted(checkIn, checkOut, room.getId())))
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.status").value("PENDING_PAYMENT"))
                 .andExpect(jsonPath("$.data.totalPrice").value(3_600_000.0))

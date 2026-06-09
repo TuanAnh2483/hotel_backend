@@ -259,7 +259,7 @@ class PartnerRoomManagementIntegrationTest {
                         .content("""
                                 {"bookingId": %d, "rating": 5, "comment": "Excellent!"}
                                 """.formatted(bookingId)))
-                .andExpect(status().isOk());
+                .andExpect(status().isCreated());
 
         mockMvc.perform(get("/api/partner/reviews")
                         .header(HttpHeaders.AUTHORIZATION, bearer(partnerToken)))
@@ -365,7 +365,7 @@ class PartnerRoomManagementIntegrationTest {
                                   }
                                 }
                                 """.formatted(checkIn, checkOut, roomId, contactEmail)))
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())
                 .andReturn();
         JsonNode body = objectMapper.readTree(result.getResponse().getContentAsString());
         return body.path("data").path("bookingId").asLong();
