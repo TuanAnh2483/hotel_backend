@@ -238,7 +238,7 @@ public class BookingServiceImpl implements BookingService {
         booking = bookingExpirationService.expirePendingBookingIfNeeded(booking);
 
         if (booking.getStatus() == BookingStatus.CANCELLED) {
-            return bookingMapper.toBookingResponse(booking);
+            throw new ApiException(ErrorCode.CONFLICT, "Booking is already cancelled");
         }
 
         if (booking.getStatus() == BookingStatus.COMPLETED) {
