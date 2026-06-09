@@ -29,7 +29,9 @@ public class PartnerBookingSearchRequest {
     private Integer page = 1;
 
     @Min(value = 1, message = "Size must be >= 1")
-    @Max(value = 50, message = "Size must be <= 50")
+    // Calendar occupancy + operations views đọc 1 trang rộng booking của hotel mình
+    // (≤100). Thống kê năm đã chuyển sang aggregate server-side nên không cần size 500 nữa.
+    @Max(value = 100, message = "Size must be <= 100")
     private Integer size = 10;
 
     @AssertTrue(message = "checkInTo must be on or after checkInFrom")

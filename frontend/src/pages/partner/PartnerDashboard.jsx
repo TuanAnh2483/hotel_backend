@@ -95,8 +95,9 @@ export default function PartnerDashboard() {
   const sharedParam     = selectedHotelId ? { hotelId: selectedHotelId } : {};
   const analyticsParams = { checkInFrom: startOfCurrentMonth(), checkInTo: endOfCurrentMonth(), ...sharedParam };
   const bookingsParams  = { size: 10, page: 1, ...sharedParam };
-  // Đếm chính xác booking CONFIRMED check-in hôm nay (loại bỏ CANCELLED / PENDING)
-  const confirmedTodayParams = { checkInFrom: today, checkInTo: today, status: "CONFIRMED", size: 100, page: 1, ...sharedParam };
+  // Đếm chính xác booking CONFIRMED check-in hôm nay (loại bỏ CANCELLED / PENDING).
+  // Chỉ cần totalItems nên lấy size:1 — totalItems là tổng số bản ghi, không phụ thuộc page size.
+  const confirmedTodayParams = { checkInFrom: today, checkInTo: today, status: "CONFIRMED", size: 1, page: 1, ...sharedParam };
 
   const { data: hotelData,         isLoading: hotelsLoading    } = useMyHotels();
   const { data: bookingData,       isLoading: bookingsLoading  } = usePartnerBookings(bookingsParams);

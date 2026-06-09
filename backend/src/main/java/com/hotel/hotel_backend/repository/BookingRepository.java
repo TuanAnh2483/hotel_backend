@@ -18,6 +18,23 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
 
     List<Booking> findByUserIdOrderByCreatedAtDesc(Long userId);
 
+    /**
+     * "Đơn của tôi" (customer): fetch-join contact + items → room → hotel trong 1 query
+     * để tránh N+1 khi BookingMapper.toBookingResponse map từng booking.
+     * Chỉ fetch 1 bag collection (items) nên không dính MultipleBagFetchException.
+     */
+    @Query("""
+            select distinct b
+            from Booking b
+            left join fetch b.contact c
+            left join fetch b.items bi
+            left join fetch bi.room r
+            left join fetch r.hotel h
+            where b.userId = :userId
+            order by b.createdAt desc
+            """)
+    List<Booking> findByUserIdWithDetails(@Param("userId") Long userId);
+
     long countByUserId(Long userId);
 
     Optional<Booking> findByIdAndUserId(Long id, Long userId);

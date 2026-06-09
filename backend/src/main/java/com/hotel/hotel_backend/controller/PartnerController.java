@@ -19,6 +19,7 @@ import com.hotel.hotel_backend.dto.response.HotelReviewResponse;
 import com.hotel.hotel_backend.dto.response.PartnerAnalyticsSummaryResponse;
 import com.hotel.hotel_backend.dto.response.PartnerBookingDetailResponse;
 import com.hotel.hotel_backend.dto.response.PartnerBookingPageResponse;
+import com.hotel.hotel_backend.dto.response.PartnerMonthlyStatsResponse;
 import com.hotel.hotel_backend.dto.response.PartnerRoomCalendarResponse;
 import com.hotel.hotel_backend.dto.response.RefundRequestResponse;
 import com.hotel.hotel_backend.dto.response.HotelRoomUnitResponse;
@@ -116,6 +117,19 @@ public class PartnerController {
             @Valid @ModelAttribute PartnerAnalyticsSummaryRequest request
     ) {
         return ApiResponse.ok(partnerBookingService.getPartnerAnalytics(request));
+    }
+
+    /**
+     * Thống kê doanh thu/booking theo từng tháng của một năm. Aggregate sẵn ở server để
+     * tab Thống kê không phải kéo toàn bộ booking cả năm về client.
+     */
+    @GetMapping("/analytics/monthly")
+    @PreAuthorize("hasRole('PARTNER')")
+    public ApiResponse<PartnerMonthlyStatsResponse> getMonthlyStats(
+            @RequestParam(required = false) Long hotelId,
+            @RequestParam int year
+    ) {
+        return ApiResponse.ok(partnerBookingService.getPartnerMonthlyStats(hotelId, year));
     }
 
     @GetMapping("/bookings/{bookingId}")
