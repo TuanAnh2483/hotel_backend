@@ -108,7 +108,7 @@ class CancellationPolicyIntegrationTest {
                                   "cancellationPolicy": "FLEXIBLE"
                                 }
                                 """))
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.cancellationPolicy").value("FLEXIBLE"));
     }
 
@@ -133,7 +133,7 @@ class CancellationPolicyIntegrationTest {
                                   "cancellationPolicy": "STRICT"
                                 }
                                 """))
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.cancellationPolicy").value("STRICT"));
     }
 
@@ -157,7 +157,7 @@ class CancellationPolicyIntegrationTest {
                                   "hotelType": "HOMESTAY"
                                 }
                                 """))
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.cancellationPolicy").value("MODERATE"));
     }
 
@@ -203,7 +203,7 @@ class CancellationPolicyIntegrationTest {
                                   "cancellationPolicy": "FLEXIBLE"
                                 }
                                 """))
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.cancellationPolicy").value("FLEXIBLE"))
                 .andReturn();
 
@@ -252,7 +252,7 @@ class CancellationPolicyIntegrationTest {
                                   "cancellationPolicy": "STRICT"
                                 }
                                 """))
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())
                 .andReturn();
 
         long hotelId = readLong(createResult, "data", "id");
@@ -304,7 +304,7 @@ class CancellationPolicyIntegrationTest {
                                   }
                                 }
                                 """.formatted(checkIn, checkOut, room.getId())))
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.cancellationPolicy").value("FLEXIBLE"));
     }
 
@@ -338,7 +338,7 @@ class CancellationPolicyIntegrationTest {
                                   }
                                 }
                                 """.formatted(checkIn, checkOut, room.getId())))
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.cancellationPolicy").value("STRICT"));
     }
 

@@ -10,9 +10,11 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
+@Tag(name = "Payment Webhooks", description = "SePay bank-transfer webhook callbacks (internal use)")
 @RestController
-@RequestMapping("/api/payments/webhooks")
+@RequestMapping({"/api/v1/payments/webhooks", "/api/payments/webhooks"})
 @RequiredArgsConstructor
 public class PaymentWebhookController {
 

@@ -114,7 +114,7 @@ class VillaBookingFlowIntegrationTest {
                                   "imageUrls": ["https://cdn.example.com/villa/cover.jpg"]
                                 }
                                 """))
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.name").value("Villa Phú Quốc"))
                 .andExpect(jsonPath("$.data.hotelType").value("VILLA"))
                 .andExpect(jsonPath("$.data.bookingMode").value("ENTIRE"))
@@ -139,7 +139,7 @@ class VillaBookingFlowIntegrationTest {
                                   "imageUrls": ["https://cdn.example.com/villa/room.jpg"]
                                 }
                                 """))
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.name").value("Nguyên căn villa"))
                 .andExpect(jsonPath("$.data.quantity").value(1))
                 .andExpect(jsonPath("$.data.capacity").value(8))
@@ -227,7 +227,7 @@ class VillaBookingFlowIntegrationTest {
                                   }
                                 }
                                 """.formatted(checkIn, checkOut, roomId)))
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.status").value("PENDING_PAYMENT"))
                 .andExpect(jsonPath("$.data.items[0].roomTypeId").value(roomId))
                 .andExpect(jsonPath("$.data.expiresAt").exists())
@@ -317,7 +317,7 @@ class VillaBookingFlowIntegrationTest {
                                   "amenities": []
                                 }
                                 """))
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())
                 .andReturn();
 
         long hotelId = readLong(hotelResult, "data", "id");
@@ -336,7 +336,7 @@ class VillaBookingFlowIntegrationTest {
                                   "amenities": []
                                 }
                                 """))
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())
                 .andReturn();
 
         long roomId = readLong(roomResult, "data", "id");
@@ -410,7 +410,7 @@ class VillaBookingFlowIntegrationTest {
                                   "amenities": []
                                 }
                                 """))
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())
                 .andReturn();
 
         long hotelId = readLong(hotelResult, "data", "id");
@@ -429,7 +429,7 @@ class VillaBookingFlowIntegrationTest {
                                   "amenities": []
                                 }
                                 """))
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())
                 .andReturn();
 
         long roomId = readLong(roomResult, "data", "id");
@@ -450,7 +450,7 @@ class VillaBookingFlowIntegrationTest {
                                   }
                                 }
                                 """.formatted(checkIn, checkOut, roomId)))
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.status").value("PENDING_PAYMENT"))
                 .andReturn();
 

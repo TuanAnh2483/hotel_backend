@@ -74,8 +74,12 @@ jobs:
     name: Deploy to VPS
     runs-on: ubuntu-latest
     needs: build-and-push
-    # Uncomment and configure when VPS is ready
-    if: false
+    if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main'
+    # Required GitHub Secrets:
+    #   SSH_HOST         — VPS IP or hostname
+    #   SSH_USER         — SSH username (e.g. ubuntu)
+    #   SSH_PRIVATE_KEY  — private key content (ED25519 or RSA)
+    #   SSH_PORT         — SSH port (default 22)
 
     steps:
       - name: Deploy via SSH
@@ -86,9 +90,18 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SSH_PORT || 22 }}
           script: |
+            set -e
             cd ~/hotel-backend
-            echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
             docker pull ghcr.io/${{ github.repository }}:latest
-            docker compose down
+            docker compose down --remove-orphans
             docker compose up -d
             docker image prune -f
+            echo "Deploy complete — $(date)"
+
+      - name: Health check
+        run: |
+          sleep 15
+          curl --fail --retry 5 --retry-delay 5 \
+            http://${{ secrets.SSH_HOST }}:8080/api/v1/health \
+            || (echo "Health check failed" && exit 1)

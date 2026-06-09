@@ -11,8 +11,11 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
+@Tag(name = "Partner Onboarding", description = "Submit and track partner registration applications")
 @RestController
-@RequestMapping("/api/partner-onboarding")
+@RequestMapping({"/api/v1/partner-onboarding", "/api/partner-onboarding"})
 @RequiredArgsConstructor
 public class PartnerOnboardingController {
 

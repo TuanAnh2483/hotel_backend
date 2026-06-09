@@ -278,7 +278,7 @@ class PartnerBookingIntegrationTest {
                                   "comment": null
                                 }
                                 """.formatted(bookingId)))
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.bookingId").value(bookingId));
 
         mockMvc.perform(get("/api/me/notifications")
@@ -462,7 +462,7 @@ class PartnerBookingIntegrationTest {
                                   }
                                 }
                                 """.formatted(checkIn, checkOut, roomId, email)))
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())
                 .andReturn();
 
         return readBookingId(result);

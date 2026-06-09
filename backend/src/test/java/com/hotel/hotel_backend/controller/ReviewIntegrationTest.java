@@ -132,7 +132,7 @@ class ReviewIntegrationTest {
                                   "comment": "Great stay"
                                 }
                                 """.formatted(bookingId)))
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.rating").value(5))
                 .andExpect(jsonPath("$.data.comment").value("Great stay"))
                 .andReturn();
@@ -223,7 +223,7 @@ class ReviewIntegrationTest {
                                   "comment": null
                                 }
                                 """.formatted(bookingId)))
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.rating").value(5))
                 .andExpect(jsonPath("$.data.comment").value(nullValue()))
                 .andReturn();
@@ -262,7 +262,7 @@ class ReviewIntegrationTest {
                                   "comment": "Would stay again"
                                 }
                                 """.formatted(bookingId)))
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())
                 .andReturn());
 
         mockMvc.perform(get("/api/reviews/me")
@@ -378,7 +378,7 @@ class ReviewIntegrationTest {
                                   }
                                 }
                                 """.formatted(checkIn, checkOut, roomId, email)))
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())
                 .andReturn();
 
         JsonNode body = objectMapper.readTree(result.getResponse().getContentAsString());

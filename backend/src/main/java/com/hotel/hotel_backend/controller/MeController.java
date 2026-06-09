@@ -26,9 +26,11 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
+@Tag(name = "My Account", description = "View/update profile, change password, billing history, notifications")
 @RestController
-@RequestMapping("/api/me")
+@RequestMapping({"/api/v1/me", "/api/me"})
 @RequiredArgsConstructor
 public class MeController {
 

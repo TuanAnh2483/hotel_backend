@@ -227,7 +227,7 @@ class PartnerRoomCalendarIntegrationTest {
                                   }
                                 }
                                 """.formatted(from, to.plusDays(1), room.getId())))
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.status").value("PENDING_PAYMENT"));
 
         mockMvc.perform(put("/api/partner/rooms/{roomId}/calendar", room.getId())

@@ -25,10 +25,14 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.net.URI;
 import java.util.List;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.http.ResponseEntity;
 
+@Tag(name = "Booking", description = "Create bookings, quote price, pay, cancel, refund requests")
 @RestController
-@RequestMapping("/api/bookings")
+@RequestMapping({"/api/v1/bookings", "/api/bookings"})
 @RequiredArgsConstructor
 public class BookingController {
 
@@ -48,9 +52,11 @@ public class BookingController {
 
     @PostMapping()
     @PreAuthorize("hasRole('CUSTOMER')")
-    public ApiResponse<BookingResponse> createBooking(@Valid @RequestBody CreateBookingRequest request,
+    public ResponseEntity<ApiResponse<BookingResponse>> createBooking(@Valid @RequestBody CreateBookingRequest request,
                                  @AuthenticationPrincipal JwtPrincipal principal) {
-        return ApiResponse.ok(bookingService.createBooking(requireUserId(principal), request));
+        BookingResponse booking = bookingService.createBooking(requireUserId(principal), request);
+        URI location = URI.create("/api/v1/bookings/" + booking.bookingId());
+        return ResponseEntity.created(location).body(ApiResponse.ok(booking));
     }
 
     @GetMapping("/me")

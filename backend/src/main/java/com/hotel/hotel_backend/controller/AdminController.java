@@ -29,9 +29,11 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 import static com.hotel.hotel_backend.dto.response.ApiResponse.ok;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
+@Tag(name = "Admin", description = "System statistics, user/partner/hotel management, review moderation, refunds")
 @RestController
-@RequestMapping("/api/admin")
+@RequestMapping({"/api/v1/admin", "/api/admin"})
 @RequiredArgsConstructor
 public class AdminController {
     private final AdminPartnerService adminPartnerService;

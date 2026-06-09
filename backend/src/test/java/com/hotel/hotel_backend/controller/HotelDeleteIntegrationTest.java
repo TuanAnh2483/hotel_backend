@@ -91,7 +91,7 @@ class HotelDeleteIntegrationTest {
                                   "amenities": ["WIFI"]
                                 }
                                 """))
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())
                 .andReturn();
 
         long hotelId = readId(hotelResult, "data", "id");
@@ -110,7 +110,7 @@ class HotelDeleteIntegrationTest {
                                   "amenities": []
                                 }
                                 """))
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())
                 .andReturn();
 
         long roomId = readId(roomResult, "data", "id");
@@ -155,7 +155,7 @@ class HotelDeleteIntegrationTest {
                                   "amenities": []
                                 }
                                 """))
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())
                 .andReturn();
 
         long hotelId = readId(hotelResult, "data", "id");
@@ -167,7 +167,7 @@ class HotelDeleteIntegrationTest {
                                 {"name":"Room A","capacity":2,"quantity":2,"price":400000,
                                  "roomCategory":"STANDARD","bedType":"SINGLE","amenities":[]}
                                 """))
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())
                 .andReturn();
 
         MvcResult room2Result = mockMvc.perform(post("/api/partner/hotels/{hotelId}/rooms", hotelId)
@@ -177,7 +177,7 @@ class HotelDeleteIntegrationTest {
                                 {"name":"Room B","capacity":4,"quantity":1,"price":800000,
                                  "roomCategory":"SUITE","bedType":"DOUBLE","amenities":[]}
                                 """))
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())
                 .andReturn();
 
         long room1Id = readId(room1Result, "data", "id");

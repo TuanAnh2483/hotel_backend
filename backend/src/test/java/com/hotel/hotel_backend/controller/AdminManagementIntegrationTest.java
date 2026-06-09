@@ -204,7 +204,7 @@ class AdminManagementIntegrationTest {
                                   "comment": "Good stay!"
                                 }
                                 """.formatted(bookingId)))
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())
                 .andReturn();
 
         long reviewId = objectMapper.readTree(reviewResult.getResponse().getContentAsString())
@@ -416,7 +416,7 @@ class AdminManagementIntegrationTest {
                                   }
                                 }
                                 """.formatted(checkIn, checkOut, roomId, contactEmail)))
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())
                 .andReturn();
         JsonNode body = objectMapper.readTree(result.getResponse().getContentAsString());
         return body.path("data").path("bookingId").asLong();
