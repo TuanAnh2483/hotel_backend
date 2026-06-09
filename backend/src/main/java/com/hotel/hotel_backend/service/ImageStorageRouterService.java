@@ -9,6 +9,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
 
 @Service
@@ -27,17 +29,52 @@ public class ImageStorageRouterService {
     }
 
     public List<String> storeHotelImages(Long hotelId, List<MultipartFile> files) {
-        // Từ đây trở xuống controller/service nghiệp vụ không cần biết đang dùng local hay cloud.
+        files.forEach(this::assertImageMagicBytes);
         return resolveActiveProvider().storeHotelImages(hotelId, files);
     }
 
     public List<String> storeRoomImages(Long roomId, List<MultipartFile> files) {
-        // Toàn bộ quyết định chọn nơi lưu ảnh được gom tại router này.
+        files.forEach(this::assertImageMagicBytes);
         return resolveActiveProvider().storeRoomImages(roomId, files);
     }
 
     public List<String> storeUserProfileImages(Long userId, List<MultipartFile> files) {
+        files.forEach(this::assertImageMagicBytes);
         return resolveActiveProvider().storeUserProfileImages(userId, files);
+    }
+
+    /**
+     * Verify the first bytes of the upload match a known image signature so that
+     * a malicious client cannot bypass content-type validation by renaming a
+     * non-image file and faking the MIME type header.
+     */
+    private void assertImageMagicBytes(MultipartFile file) {
+        if (file == null || file.isEmpty()) return;
+        try (InputStream in = file.getInputStream()) {
+            byte[] header = in.readNBytes(12);
+            if (!isKnownImageSignature(header)) {
+                throw new ApiException(ErrorCode.VALIDATION_ERROR,
+                        "File content does not match a supported image format (PNG, JPEG, WEBP, GIF)");
+            }
+        } catch (IOException ex) {
+            throw new ApiException(ErrorCode.VALIDATION_ERROR, "Could not read uploaded file");
+        }
+    }
+
+    private static boolean isKnownImageSignature(byte[] h) {
+        if (h.length < 4) return false;
+        // JPEG: FF D8 FF
+        if ((h[0] & 0xFF) == 0xFF && (h[1] & 0xFF) == 0xD8 && (h[2] & 0xFF) == 0xFF) return true;
+        // PNG: 89 50 4E 47 0D 0A 1A 0A
+        if (h.length >= 8 && (h[0] & 0xFF) == 0x89 && h[1] == 'P' && h[2] == 'N' && h[3] == 'G'
+                && (h[4] & 0xFF) == 0x0D && (h[5] & 0xFF) == 0x0A
+                && (h[6] & 0xFF) == 0x1A && (h[7] & 0xFF) == 0x0A) return true;
+        // GIF: GIF87a or GIF89a
+        if (h[0] == 'G' && h[1] == 'I' && h[2] == 'F' && h[3] == '8') return true;
+        // WebP: RIFF????WEBP
+        if (h.length >= 12 && h[0] == 'R' && h[1] == 'I' && h[2] == 'F' && h[3] == 'F'
+                && h[8] == 'W' && h[9] == 'E' && h[10] == 'B' && h[11] == 'P') return true;
+        return false;
     }
 
     /**

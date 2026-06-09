@@ -2,9 +2,11 @@ import { useState } from "react";
 import { CheckCircle2, XCircle, AlertTriangle } from "lucide-react";
 import { Btn } from "../../admin/AdminLayout";
 import { fmtCurrency } from "./calendarUtils";
+import { useScrollLock } from "../../../hooks/useScrollLock";
 
 export default function RefundConfirmModal({ pending, onConfirm, onCancel, loading }) {
   const [transferNote, setTransferNote] = useState("");
+  useScrollLock(Boolean(pending));
 
   if (!pending) return null;
   const isApprove = pending.type === "approve";

@@ -7,6 +7,38 @@ export function createExistingImageItems(imageUrls) {
     }));
 }
 
+const ALLOWED_IMAGE_TYPES = ["image/png", "image/jpeg", "image/webp", "image/gif"];
+const MAX_IMAGE_BYTES = 10 * 1024 * 1024; // 10 MB — mirrors backend UPLOAD_MAX_FILE_SIZE_BYTES
+
+/**
+ * Returns { accepted: ImageItem[], rejected: { file, reason }[] }.
+ * Callers decide how to surface rejections to the user.
+ */
+export function createPendingImageItemsSafe(fileList) {
+  const files = Array.from(fileList || []);
+  const createdAt = Date.now();
+  const accepted = [];
+  const rejected = [];
+
+  files.forEach((file, index) => {
+    if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+      rejected.push({ file, reason: `"${file.name}" không phải định dạng ảnh được hỗ trợ (PNG, JPEG, WEBP, GIF).` });
+      return;
+    }
+    if (file.size > MAX_IMAGE_BYTES) {
+      rejected.push({ file, reason: `"${file.name}" vượt quá dung lượng tối đa 10 MB.` });
+      return;
+    }
+    accepted.push({
+      id: `pending-${createdAt}-${index}-${file.name}-${file.size}-${file.lastModified}`,
+      url: URL.createObjectURL(file),
+      file,
+    });
+  });
+
+  return { accepted, rejected };
+}
+
 export function createPendingImageItems(fileList) {
   const files = Array.from(fileList || []);
   const createdAt = Date.now();

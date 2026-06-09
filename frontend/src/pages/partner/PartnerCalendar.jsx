@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useOutletContext } from "react-router-dom";
-import { Calendar as CalendarIcon, RefreshCcw } from "lucide-react";
+import { Calendar as CalendarIcon, RefreshCcw, ClipboardList } from "lucide-react";
 import { PageHeader } from "../../components/admin/AdminLayout";
 import {
   useMyHotels, usePartnerRooms, useRoomCalendar, useUpdateRoomCalendar,
@@ -18,6 +18,7 @@ import CalendarGrid        from "../../components/partner/calendar/CalendarGrid"
 import DayOccupancyModal   from "../../components/partner/calendar/DayOccupancyModal";
 import PricingModal        from "../../components/partner/calendar/PricingModal";
 import RefundDashboard     from "../../components/partner/calendar/RefundDashboard";
+import OperationsTab       from "../../components/partner/calendar/OperationsTab";
 import "../../styles/pages/PartnerCalendar.css";
 
 const EMPTY_FORM = {
@@ -256,8 +257,9 @@ export default function PartnerCalendar() {
   // ── Render ───────────────────────────────────────────────────────────────
 
   const TABS = [
-    { key: "CALENDAR", label: t("pt_cal_tab_calendar"), icon: CalendarIcon },
-    { key: "REFUNDS",  label: t("pt_cal_tab_refunds"),  icon: RefreshCcw  },
+    { key: "CALENDAR",    label: t("pt_cal_tab_calendar"),    icon: CalendarIcon  },
+    { key: "OPERATIONS",  label: "Vận hành",                  icon: ClipboardList },
+    { key: "REFUNDS",     label: t("pt_cal_tab_refunds"),     icon: RefreshCcw    },
   ];
 
   return (
@@ -278,7 +280,7 @@ export default function PartnerCalendar() {
         ))}
       </div>
 
-      {activeTab === "CALENDAR" ? (
+      {activeTab === "CALENDAR" && (
         <section>
           <CalendarKPIs
             items={calendarItems}
@@ -377,7 +379,18 @@ export default function PartnerCalendar() {
             t={t}
           />
         </section>
-      ) : (
+      )}
+
+      {activeTab === "OPERATIONS" && (
+        <OperationsTab
+          hotels={hotels}
+          selectedHotelId={selectedHotelId}
+          onHotelChange={handleHotelChange}
+          todayIso={todayIso}
+        />
+      )}
+
+      {activeTab === "REFUNDS" && (
         <RefundDashboard
           hotels={hotels}
           selectedHotelId={selectedHotelId}

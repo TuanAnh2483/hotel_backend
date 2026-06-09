@@ -41,7 +41,7 @@ const Login = ({ setPage, onSuccess }) => {
   const onSubmit = (data) => {
     setServerError("");
     loginMutation.mutate({ email: data.email, password: data.pw }, {
-      onSuccess: (res) => { if (onSuccess) onSuccess(res.user, res.accessToken); },
+      onSuccess: (res) => { if (onSuccess) onSuccess(res.user, res.accessToken, res.refreshToken); },
       onError: (err) => setServerError(err.message),
     });
   };
@@ -54,7 +54,7 @@ const Login = ({ setPage, onSuccess }) => {
   const handleGoogleLogin = (credential) => {
     setServerError("");
     googleLoginMutation.mutate({ credential }, {
-      onSuccess: (res) => { if (onSuccess) onSuccess(res.user, res.accessToken); },
+      onSuccess: (res) => { if (onSuccess) onSuccess(res.user, res.accessToken, res.refreshToken); },
       onError: (err) => setServerError(err.message),
     });
   };
