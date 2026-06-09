@@ -18,10 +18,12 @@ import com.hotel.hotel_backend.repository.DailyRateRepository;
 import com.hotel.hotel_backend.repository.HotelRepository;
 import com.hotel.hotel_backend.repository.HotelReviewRepository;
 import com.hotel.hotel_backend.repository.PaymentTransactionRepository;
+import com.hotel.hotel_backend.repository.RefundRequestRepository;
 import com.hotel.hotel_backend.repository.RoomRepository;
 import com.hotel.hotel_backend.repository.RoomUnitRepository;
 import com.hotel.hotel_backend.repository.UserRepository;
 import com.hotel.hotel_backend.security.JwtService;
+import com.hotel.hotel_backend.service.InventoryService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -103,10 +105,17 @@ class PartnerHotelRoomIntegrationTest {
     @Autowired
     private UploadStorageProperties uploadStorageProperties;
 
+    @Autowired
+    private RefundRequestRepository refundRequestRepository;
+
+    @Autowired
+    private InventoryService inventoryService;
+
     @BeforeEach
     void setUp() throws IOException {
         hotelReviewRepository.deleteAll();
         bookingItemRepository.deleteAll();
+        refundRequestRepository.deleteAll();
         bookingRepository.deleteAll();
         paymentTransactionRepository.deleteAll();
         dailyRateRepository.deleteAll();
@@ -119,6 +128,7 @@ class PartnerHotelRoomIntegrationTest {
     }
 
     @Test
+    @org.springframework.transaction.annotation.Transactional
     void partnerShouldCreateHotelAndRoomWithTypedCatalogFields() throws Exception {
         // Contract:
         // Partner create flow khong con gui free-text cho hotelType/roomType dimensions,
@@ -226,7 +236,7 @@ class PartnerHotelRoomIntegrationTest {
 
         long hotelId = readId(hotelResult, "data", "id");
 
-        mockMvc.perform(post("/api/partner/hotels/{hotelId}/rooms", hotelId)
+        MvcResult roomResult = mockMvc.perform(post("/api/partner/hotels/{hotelId}/rooms", hotelId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .header(HttpHeaders.AUTHORIZATION, bearer(partnerToken))
                         .content("""
@@ -243,10 +253,13 @@ class PartnerHotelRoomIntegrationTest {
                                   ]
                                 }
                                 """))
-                .andExpect(status().isCreated());
+                .andExpect(status().isCreated())
+                .andReturn();
 
+        long roomId = readId(roomResult, "data", "id");
         LocalDate checkIn = LocalDate.now().plusDays(7);
         LocalDate checkOut = checkIn.plusDays(2);
+        inventoryService.initInventory(roomId, checkIn, checkOut, 2);
 
         mockMvc.perform(get("/api/hotels/search")
                         .param("province", "ho chi minh")
@@ -266,6 +279,7 @@ class PartnerHotelRoomIntegrationTest {
     }
 
     @Test
+    @org.springframework.transaction.annotation.Transactional
     void partnerShouldUploadHotelAndRoomImagesAsPublicFiles() throws Exception {
         User partner = createPartner("partner-upload@test.com");
         String partnerToken = jwtService.generate(partner);
@@ -290,7 +304,7 @@ class PartnerHotelRoomIntegrationTest {
                 "files",
                 "hotel-cover.png",
                 "image/png",
-                "hotel-image-bytes".getBytes(StandardCharsets.UTF_8)
+                png("hotel-image-bytes")
         );
 
         MvcResult hotelUploadResult = mockMvc.perform(multipart("/api/partner/hotels/{hotelId}/images", hotel.getId())
@@ -307,13 +321,13 @@ class PartnerHotelRoomIntegrationTest {
         mockMvc.perform(get(hotelImageUrl))
                 .andExpect(status().isOk())
                 .andExpect(header().string(HttpHeaders.CONTENT_TYPE, containsString("image/png")))
-                .andExpect(content().bytes("hotel-image-bytes".getBytes(StandardCharsets.UTF_8)));
+                .andExpect(content().bytes(png("hotel-image-bytes")));
 
         MockMultipartFile roomImage = new MockMultipartFile(
                 "files",
                 "room-cover.png",
                 "image/png",
-                "room-image-bytes".getBytes(StandardCharsets.UTF_8)
+                png("room-image-bytes")
         );
 
         MvcResult roomUploadResult = mockMvc.perform(multipart("/api/partner/rooms/{roomId}/images", room.getId())
@@ -330,7 +344,7 @@ class PartnerHotelRoomIntegrationTest {
         mockMvc.perform(get(roomImageUrl))
                 .andExpect(status().isOk())
                 .andExpect(header().string(HttpHeaders.CONTENT_TYPE, containsString("image/png")))
-                .andExpect(content().bytes("room-image-bytes".getBytes(StandardCharsets.UTF_8)));
+                .andExpect(content().bytes(png("room-image-bytes")));
 
         assertThat(hotelRepository.findById(hotel.getId()).orElseThrow().getImageUrls())
                 .containsExactly(hotelImageUrl);
@@ -367,13 +381,13 @@ class PartnerHotelRoomIntegrationTest {
                 "files",
                 "hotel-a.png",
                 "image/png",
-                "hotel-a".getBytes(StandardCharsets.UTF_8)
+                png("hotel-a")
         );
         MockMultipartFile hotelImageB = new MockMultipartFile(
                 "files",
                 "hotel-b.png",
                 "image/png",
-                "hotel-b".getBytes(StandardCharsets.UTF_8)
+                png("hotel-b")
         );
 
         MvcResult hotelUploadResult = mockMvc.perform(multipart("/api/partner/hotels/{hotelId}/images", hotel.getId())
@@ -411,19 +425,19 @@ class PartnerHotelRoomIntegrationTest {
 
         mockMvc.perform(get(hotelImageUrlA))
                 .andExpect(status().isOk())
-                .andExpect(content().bytes("hotel-a".getBytes(StandardCharsets.UTF_8)));
+                .andExpect(content().bytes(png("hotel-a")));
 
         MockMultipartFile roomImageA = new MockMultipartFile(
                 "files",
                 "room-a.png",
                 "image/png",
-                "room-a".getBytes(StandardCharsets.UTF_8)
+                png("room-a")
         );
         MockMultipartFile roomImageB = new MockMultipartFile(
                 "files",
                 "room-b.png",
                 "image/png",
-                "room-b".getBytes(StandardCharsets.UTF_8)
+                png("room-b")
         );
 
         MvcResult roomUploadResult = mockMvc.perform(multipart("/api/partner/rooms/{roomId}/images", room.getId())
@@ -461,10 +475,21 @@ class PartnerHotelRoomIntegrationTest {
 
         mockMvc.perform(get(roomImageUrlA))
                 .andExpect(status().isOk())
-                .andExpect(content().bytes("room-a".getBytes(StandardCharsets.UTF_8)));
+                .andExpect(content().bytes(png("room-a")));
 
         assertThat(hotelRepository.findById(hotel.getId()).orElseThrow().getCoverImageUrl()).isEqualTo(hotelImageUrlA);
         assertThat(roomRepository.findById(room.getId()).orElseThrow().getCoverImageUrl()).isEqualTo(roomImageUrlA);
+    }
+
+    /** Returns a byte array starting with a valid PNG magic header followed by a text suffix.
+     *  Needed because the upload service validates actual image binary signatures. */
+    private static byte[] png(String suffix) {
+        byte[] header = {(byte) 0x89, 'P', 'N', 'G', (byte) 0x0D, (byte) 0x0A, (byte) 0x1A, (byte) 0x0A};
+        byte[] text = suffix.getBytes(StandardCharsets.UTF_8);
+        byte[] out = new byte[header.length + text.length];
+        System.arraycopy(header, 0, out, 0, header.length);
+        System.arraycopy(text, 0, out, header.length, text.length);
+        return out;
     }
 
     private String createPartnerToken(String email) {

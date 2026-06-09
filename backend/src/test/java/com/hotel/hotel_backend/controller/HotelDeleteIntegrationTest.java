@@ -13,6 +13,7 @@ import com.hotel.hotel_backend.repository.DailyInventoryRepository;
 import com.hotel.hotel_backend.repository.DailyRateRepository;
 import com.hotel.hotel_backend.repository.HotelRepository;
 import com.hotel.hotel_backend.repository.PaymentTransactionRepository;
+import com.hotel.hotel_backend.repository.RefundRequestRepository;
 import com.hotel.hotel_backend.repository.RoomRepository;
 import com.hotel.hotel_backend.repository.RoomUnitRepository;
 import com.hotel.hotel_backend.repository.UserRepository;
@@ -56,11 +57,13 @@ class HotelDeleteIntegrationTest {
     @Autowired BookingItemRepository bookingItemRepository;
     @Autowired BookingRepository bookingRepository;
     @Autowired PaymentTransactionRepository paymentTransactionRepository;
+    @Autowired RefundRequestRepository refundRequestRepository;
     @Autowired InventoryService inventoryService;
 
     @BeforeEach
     void setUp() {
         bookingItemRepository.deleteAll();
+        refundRequestRepository.deleteAll();
         bookingRepository.deleteAll();
         paymentTransactionRepository.deleteAll();
         dailyRateRepository.deleteAll();
