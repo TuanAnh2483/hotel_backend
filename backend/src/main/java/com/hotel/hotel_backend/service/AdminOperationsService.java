@@ -81,7 +81,7 @@ public class AdminOperationsService {
                         (existing, replacement) -> replacement  // keep latest (list ordered by id desc not guaranteed, so last write wins)
                 ));
 
-        return userRepository.findAllByOrderByCreatedAtDesc().stream()
+        return userRepository.findAllByOrderByIdDesc().stream()
                 .map(user -> new AdminUserResponse(
                         user.getId(),
                         user.getEmail(),
