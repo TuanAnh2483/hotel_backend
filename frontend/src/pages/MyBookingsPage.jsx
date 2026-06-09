@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useCountdown } from "../hooks/useCountdown";
 import { C } from "../lib/constants";
 import MainNavbar from "../components/MainNavbar";
 import Footer from "../components/Footer";
@@ -38,6 +39,30 @@ function StatusBadge({ status }) {
   const statusMap = useStatusMap();
   const cfg = statusMap[status] || { label: status, cls: "badge-cancelled" };
   return <span className={`badge ${cfg.cls}`}>{cfg.label}</span>;
+}
+
+function BookingExpiryBadge({ expiresAt, t }) {
+  const { minutes, seconds, expired, urgent } = useCountdown(expiresAt);
+  const pad = n => String(n).padStart(2, "0");
+
+  if (expired) {
+    return (
+      <div className="alert alert-danger inline-flex mb-3 text-[12px] py-1 px-3">
+        <AlertCircle size={13} aria-hidden="true" />
+        {t("bkd_expired")}
+      </div>
+    );
+  }
+
+  return (
+    <div className={`alert ${urgent ? "alert-danger" : "alert-warning"} inline-flex mb-3 text-[12px] py-1 px-3`}>
+      <CalendarDays size={13} aria-hidden="true" />
+      {t("bkd_expires_in")}{" "}
+      <span style={{ fontVariantNumeric: "tabular-nums", fontWeight: 800, marginLeft: 4 }}>
+        {pad(minutes)}:{pad(seconds)}
+      </span>
+    </div>
+  );
 }
 
 function BookingCard({ booking, onView }) {
@@ -84,12 +109,9 @@ function BookingCard({ booking, onView }) {
         )}
       </div>
 
-      {/* Expiry warning */}
+      {/* Expiry countdown */}
       {isPending && booking.expiresAt && (
-        <div className="alert alert-warning inline-flex mb-3 text-[12px] py-1 px-3">
-          <CalendarDays size={13} aria-hidden="true" />
-          {t("mybookings_expires")} {new Date(booking.expiresAt).toLocaleString("vi-VN")}
-        </div>
+        <BookingExpiryBadge expiresAt={booking.expiresAt} t={t} />
       )}
 
       {/* Footer row */}

@@ -89,6 +89,11 @@ app:
     from: ${MAIL_FROM:no-reply@hotel.local}
     expose-debug-tokens: ${MAIL_EXPOSE_DEBUG_TOKENS:false}
 
+  booking:
+    expiration:
+      fixed-delay-ms: ${BOOKING_EXPIRY_CHECK_MS:60000}
+      payment-ttl-minutes: ${BOOKING_PAYMENT_TTL_MINUTES:15}
+
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,https://hotel-backend.pages.dev,https://*.hotel-backend.pages.dev}
 

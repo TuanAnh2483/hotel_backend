@@ -21,6 +21,7 @@ export function AuthProvider({ children }) {
     return currentUser;
   }
 
+  // Khôi phục session khi load trang
   useEffect(() => {
     let ignore = false;
     const token = getToken();
@@ -47,8 +48,18 @@ export function AuthProvider({ children }) {
     return () => { ignore = true; };
   }, []);
 
-  function login(userData, token) {
-    setSession(token, userData);
+  // Khi access token hết hạn và refresh thất bại, apiClient dispatch event này
+  useEffect(() => {
+    function handleSessionExpired() {
+      setUser(null);
+    }
+    window.addEventListener("auth:session-expired", handleSessionExpired);
+    return () => window.removeEventListener("auth:session-expired", handleSessionExpired);
+  }, []);
+
+  // refreshToken là optional — login cũ (không có refresh token) vẫn hoạt động
+  function login(userData, accessToken, refreshToken) {
+    setSession(accessToken, userData, refreshToken);
     setUser(userData);
   }
 

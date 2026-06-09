@@ -10,6 +10,7 @@ export const vi = {
   filter_show_less:     "Thu gọn ‹",
   filter_budget:        "Ngân sách / đêm",
   filter_apply:         "Áp dụng bộ lọc",
+  filter_reset:         "Xóa bộ lọc",
 
   // ── Results ─────────────────────────────────────────────
   results_found:        "Đã tìm thấy",
@@ -63,6 +64,7 @@ export const en = {
   filter_show_less:     "Show less ‹",
   filter_budget:        "Budget per night",
   filter_apply:         "Apply filter",
+  filter_reset:         "Clear filters",
 
   results_found:        "Found",
   results_suffix:       "results",

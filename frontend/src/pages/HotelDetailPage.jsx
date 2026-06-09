@@ -599,7 +599,11 @@ export default function HotelDetailPage({ navigate, params = {}, user, onLogout,
                 <input
                   type="date"
                   value={checkin}
-                  onChange={e => setCheckin(e.target.value)}
+                  min={new Date().toISOString().slice(0, 10)}
+                  onChange={e => {
+                    setCheckin(e.target.value);
+                    if (checkout && checkout <= e.target.value) setCheckout("");
+                  }}
                   className="hdp-date-input"
                 />
               </div>
@@ -608,6 +612,7 @@ export default function HotelDetailPage({ navigate, params = {}, user, onLogout,
                 <input
                   type="date"
                   value={checkout}
+                  min={checkin || new Date().toISOString().slice(0, 10)}
                   onChange={e => setCheckout(e.target.value)}
                   className="hdp-date-input"
                 />

@@ -8,6 +8,7 @@ import {
 import {
   createExistingImageItems,
   createPendingImageItems,
+  createPendingImageItemsSafe,
   existingImageUrlsFromItems,
   imageItemUrl,
   pendingImageFilesFromItems,
@@ -89,6 +90,7 @@ function Field({ label, children, required }) {
 
 function HotelForm({ form, setForm, onSubmit, onCancel, saving, title, hotelTypes, saveError }) {
   const { t } = useLang();
+  const [imageError, setImageError] = useState("");
   const HOTEL_TYPE_LABELS = {
     HOTEL: t("pt_type_hotel"), APARTMENT: t("pt_type_apartment"), RESORT: t("pt_type_resort"),
     VILLA: t("pt_type_villa"), HOMESTAY: t("pt_type_homestay"), HOSTEL: t("pt_type_hostel"), GUEST_HOUSE: t("pt_type_guest_house"),
@@ -218,14 +220,20 @@ function HotelForm({ form, setForm, onSubmit, onCancel, saving, title, hotelType
               <input
                 type="file" multiple accept="image/png,image/jpeg,image/webp,image/gif" style={{ display: "none" }}
                 onChange={e => {
-                  const images = createPendingImageItems(e.target.files);
-                  setForm(f => ({ ...f, images: [...(f.images || []), ...images] }));
+                  const { accepted, rejected } = createPendingImageItemsSafe(e.target.files);
+                  setForm(f => ({ ...f, images: [...(f.images || []), ...accepted] }));
+                  setImageError(rejected.length > 0 ? rejected.map(r => r.reason).join(" ") : "");
                   e.target.value = "";
                 }}
               />
             </label>
           </div>
           <p className="partner-hotel-img-hint">{t("pt_hotels_img_hint")}</p>
+          {imageError && (
+            <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 8, color: "#b91c1c", fontSize: 12, fontWeight: 600, lineHeight: 1.5, padding: "8px 12px", marginTop: 4 }}>
+              ⚠️ {imageError}
+            </div>
+          )}
         </Field>
 
         {saveError && (

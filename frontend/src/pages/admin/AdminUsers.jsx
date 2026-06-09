@@ -31,6 +31,8 @@ export default function AdminUsers({ navigate, user, onLogout }) {
   const [search, setSearch]     = useState("");
   const [modal, setModal]       = useState(false);
   const [detailModal, setDetailModal] = useState(null);
+  const [confirmToggle, setConfirmToggle] = useState(null); // { id, email, currentStatus }
+  const [toggleError, setToggleError] = useState("");
   const [form, setForm]         = useState(EMPTY_FORM);
   const [error, setError]       = useState("");
   const [fieldErrors, setFieldErrors] = useState({});
@@ -55,8 +57,16 @@ export default function AdminUsers({ navigate, user, onLogout }) {
   };
 
   const handleToggle = (userId) => {
-    toggleStatus.mutate(userId, {
-      onError: (e) => alert(e.message),
+    const target = users.find(u => u.id === userId);
+    if (!target) return;
+    setToggleError("");
+    setConfirmToggle({ id: userId, email: target.email, currentStatus: target.status });
+  };
+
+  const confirmToggleAction = () => {
+    toggleStatus.mutate(confirmToggle.id, {
+      onSuccess: () => setConfirmToggle(null),
+      onError: (e) => setToggleError(e.message || t("adm_users_err_generic")),
     });
   };
 
@@ -198,6 +208,40 @@ export default function AdminUsers({ navigate, user, onLogout }) {
           ))}
           <div className="admin-modal-actions-right" style={{ marginTop: 16 }}>
             <Btn variant="ghost" onClick={() => setDetailModal(null)}>{t("adm_close")}</Btn>
+          </div>
+        </Modal>
+      )}
+
+      {/* Confirm toggle status modal */}
+      {confirmToggle && (
+        <Modal
+          title={confirmToggle.currentStatus === "ACTIVE" ? t("adm_users_lock") : t("adm_users_unlock")}
+          onClose={() => { setConfirmToggle(null); setToggleError(""); }}
+        >
+          <p style={{ margin: "0 0 16px", color: "#333", lineHeight: 1.6 }}>
+            {confirmToggle.currentStatus === "ACTIVE"
+              ? t("adm_users_lock_confirm").replace("{email}", confirmToggle.email)
+              : t("adm_users_unlock_confirm").replace("{email}", confirmToggle.email)
+            }
+          </p>
+          {toggleError && (
+            <div style={{ background: "#ffebee", color: "#c62828", padding: "10px 14px", borderRadius: 8, fontSize: 13, marginBottom: 16 }}>
+              ⚠️ {toggleError}
+            </div>
+          )}
+          <div className="admin-users-modal-actions">
+            <Btn variant="ghost" onClick={() => { setConfirmToggle(null); setToggleError(""); }}>
+              {t("adm_cancel")}
+            </Btn>
+            <Btn
+              variant={confirmToggle.currentStatus === "ACTIVE" ? "danger" : "success"}
+              disabled={toggleStatus.isPending}
+              onClick={confirmToggleAction}
+            >
+              {toggleStatus.isPending ? t("adm_processing") : (
+                confirmToggle.currentStatus === "ACTIVE" ? t("adm_users_lock") : t("adm_users_unlock")
+              )}
+            </Btn>
           </div>
         </Modal>
       )}

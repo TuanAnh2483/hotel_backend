@@ -2,7 +2,7 @@ import apiClient from "./apiClient";
 import { clearSession } from "./authStorage";
 
 // Re-export storage helpers so existing callers don't break
-export { getToken, getStoredUser, setSession, setStoredUser, clearSession } from "./authStorage";
+export { getToken, getRefreshToken, getStoredUser, setSession, setStoredUser, setTokens, clearSession } from "./authStorage";
 
 export const authService = {
   login({ email, password }) {
@@ -31,6 +31,10 @@ export const authService = {
 
   resendVerification({ email }) {
     return apiClient.post("/api/auth/resend-verification", { email });
+  },
+
+  refresh(refreshToken) {
+    return apiClient.post("/api/auth/refresh", { refreshToken });
   },
 
   getCurrentUser() {

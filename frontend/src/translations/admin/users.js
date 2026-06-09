@@ -34,6 +34,8 @@ export const vi = {
   adm_users_detail_title:      "Chi tiết người dùng",
   adm_users_col_tax_code:      "Mã số thuế",
   adm_users_view:              "Xem",
+  adm_users_lock_confirm:      "Bạn có chắc muốn khóa tài khoản {email}? Người dùng này sẽ không thể đăng nhập cho đến khi được mở khóa.",
+  adm_users_unlock_confirm:    "Bạn có chắc muốn mở khóa tài khoản {email}?",
 };
 
 export const en = {
@@ -71,4 +73,6 @@ export const en = {
   adm_users_detail_title:      "User details",
   adm_users_col_tax_code:      "Tax code",
   adm_users_view:              "View",
+  adm_users_lock_confirm:      "Are you sure you want to lock {email}? This user will be unable to log in until unlocked.",
+  adm_users_unlock_confirm:    "Are you sure you want to unlock {email}?",
 };

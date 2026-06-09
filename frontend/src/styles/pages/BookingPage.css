@@ -273,34 +273,35 @@
 }
 
 /* Cancellation policy */
+.bkp-policy-box { /* colour set via inline style */ }
+
 .bkp-policy-row {
   display: flex;
-  gap: 14px;
-  align-items: flex-start;
-}
-
-.bkp-policy-icon {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  background: #e8f5e9;
-  display: flex;
+  gap: 10px;
   align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
+  margin-bottom: 6px;
 }
 
 .bkp-policy-title {
-  font-size: 14px;
-  font-weight: 700;
-  color: #1a1a1a;
-  margin-bottom: 6px;
+  font-size: 13px;
+  font-weight: 800;
+  /* colour set via inline style */
 }
 
 .bkp-policy-text {
   font-size: 13px;
-  color: #555;
-  line-height: 1.7;
+  color: #475569;
+  line-height: 1.65;
+}
+
+.bkp-strict-ack {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid #fecdd3;
+  cursor: pointer;
 }
 
 /* Right sticky column */

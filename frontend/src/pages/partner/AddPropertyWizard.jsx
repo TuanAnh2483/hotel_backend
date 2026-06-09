@@ -8,8 +8,8 @@ import {
 } from "lucide-react";
 import { partnerService } from "../../services/partnerService";
 import {
-  createPendingImageItems, pendingImageFilesFromItems,
-  imageItemUrl, revokePendingImageUrls,
+  createPendingImageItems, createPendingImageItemsSafe,
+  pendingImageFilesFromItems, imageItemUrl, revokePendingImageUrls,
 } from "../../utils/imageFormItems";
 import { getPropertyGroup, getDefaultBookingMode } from "../../utils/propertyGroupUtils";
 import { ROOM_CATEGORIES, ROOM_CATEGORY_LABELS, BED_TYPES, BED_TYPE_LABELS } from "../../utils/roomConfig";
@@ -434,9 +434,11 @@ function StepAmenities({ state, update }) {
 // ── Step 4: Hình ảnh ─────────────────────────────────────────────────────
 
 function StepImages({ state, update }) {
+  const [imageError, setImageError] = useState("");
   function handleFiles(e) {
-    const items = createPendingImageItems(e.target.files);
-    update({ images: [...state.images, ...items] });
+    const { accepted, rejected } = createPendingImageItemsSafe(e.target.files);
+    update({ images: [...state.images, ...accepted] });
+    setImageError(rejected.length > 0 ? rejected.map(r => r.reason).join(" ") : "");
     e.target.value = "";
   }
   function removeImage(idx) {
@@ -449,7 +451,12 @@ function StepImages({ state, update }) {
     <div>
       <h2 style={{ fontSize: 20, fontWeight: 800, color: "#111827", marginBottom: 8 }}>Hình ảnh</h2>
       <p style={{ color: "#6b7280", marginBottom: 8 }}>Tải lên ít nhất 3 hình ảnh chất lượng cao</p>
-      <p style={{ fontSize: 12, color: "#9ca3af", marginBottom: 24 }}>Hình đầu tiên sẽ là ảnh đại diện. Định dạng JPG, PNG — tối đa 20MB/ảnh</p>
+      <p style={{ fontSize: 12, color: "#9ca3af", marginBottom: imageError ? 8 : 24 }}>Hình đầu tiên sẽ là ảnh đại diện. Định dạng JPG, PNG, WEBP, GIF — tối đa 10 MB/ảnh</p>
+      {imageError && (
+        <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 8, color: "#b91c1c", fontSize: 12, fontWeight: 600, lineHeight: 1.5, padding: "8px 12px", marginBottom: 16 }}>
+          ⚠️ {imageError}
+        </div>
+      )}
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 12 }}>
         {state.images.map((img, idx) => (
@@ -468,7 +475,7 @@ function StepImages({ state, update }) {
           onMouseLeave={e => e.currentTarget.style.borderColor = "#e5e7eb"}>
           <Upload size={24} />
           <span style={{ fontSize: 12, fontWeight: 600 }}>Thêm ảnh</span>
-          <input type="file" multiple accept="image/*" style={{ display: "none" }} onChange={handleFiles} />
+          <input type="file" multiple accept="image/png,image/jpeg,image/webp,image/gif" style={{ display: "none" }} onChange={handleFiles} />
         </label>
       </div>
     </div>
