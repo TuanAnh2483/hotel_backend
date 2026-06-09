@@ -17,9 +17,13 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.http.ResponseEntity;
+import java.net.URI;
 
+@Tag(name = "Reviews", description = "Create, update, delete hotel reviews; view my reviews")
 @RestController
-@RequestMapping("/api/reviews")
+@RequestMapping({"/api/v1/reviews", "/api/reviews"})
 @RequiredArgsConstructor
 public class ReviewController {
 
@@ -33,8 +37,10 @@ public class ReviewController {
 
     @PostMapping
     @PreAuthorize("hasRole('CUSTOMER')")
-    public ApiResponse<HotelReviewResponse> createReview(@Valid @RequestBody CreateHotelReviewRequest request) {
-        return ApiResponse.ok(hotelReviewService.createReview(request));
+    public ResponseEntity<ApiResponse<HotelReviewResponse>> createReview(@Valid @RequestBody CreateHotelReviewRequest request) {
+        HotelReviewResponse review = hotelReviewService.createReview(request);
+        URI location = URI.create("/api/v1/reviews/" + review.reviewId());
+        return ResponseEntity.created(location).body(ApiResponse.ok(review));
     }
 
     @PutMapping("/{reviewId}")

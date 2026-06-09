@@ -51,11 +51,15 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.net.URI;
 import java.time.LocalDate;
 import java.util.List;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.http.ResponseEntity;
 
+@Tag(name = "Partner", description = "Manage hotels, rooms, calendar, bookings, reviews, revenue analytics")
 @RestController
-@RequestMapping("/api/partner")
+@RequestMapping({"/api/v1/partner", "/api/partner"})
 @RequiredArgsConstructor
 public class PartnerController {
 
@@ -179,9 +183,11 @@ public class PartnerController {
 
     @PostMapping("/hotels")
     @PreAuthorize("hasRole('PARTNER')")
-    public ApiResponse<HotelResponse> createHotel(
+    public ResponseEntity<ApiResponse<HotelResponse>> createHotel(
             @Valid @RequestBody CreateHotelRequest request) {
-        return ApiResponse.ok(hotelService.create(request));
+        HotelResponse hotel = hotelService.create(request);
+        URI location = URI.create("/api/v1/partner/hotels/" + hotel.id());
+        return ResponseEntity.created(location).body(ApiResponse.ok(hotel));
     }
 
     @PutMapping("/hotels/{id}")
@@ -246,10 +252,12 @@ public class PartnerController {
 
     @PostMapping("/hotels/{hotelId}/rooms")
     @PreAuthorize("hasRole('PARTNER')")
-    public ApiResponse<RoomResponse> createRoom(
+    public ResponseEntity<ApiResponse<RoomResponse>> createRoom(
             @PathVariable Long hotelId,
             @Valid @RequestBody CreateRoomRequest request) {
-        return ApiResponse.ok(roomService.create(hotelId, request));
+        RoomResponse room = roomService.create(hotelId, request);
+        URI location = URI.create("/api/v1/partner/hotels/" + hotelId + "/rooms/" + room.id());
+        return ResponseEntity.created(location).body(ApiResponse.ok(room));
     }
 
     @GetMapping("/hotels/{hotelId}/rooms")
@@ -347,11 +355,13 @@ public class PartnerController {
 
     @PostMapping("/rooms/{roomId}/units")
     @PreAuthorize("hasRole('PARTNER')")
-    public ApiResponse<RoomUnitResponse> createRoomUnit(
+    public ResponseEntity<ApiResponse<RoomUnitResponse>> createRoomUnit(
             @PathVariable Long roomId,
             @Valid @RequestBody CreateRoomUnitRequest request
     ) {
-        return ApiResponse.ok(roomUnitService.create(roomId, request));
+        RoomUnitResponse unit = roomUnitService.create(roomId, request);
+        URI location = URI.create("/api/v1/partner/rooms/" + roomId + "/units/" + unit.id());
+        return ResponseEntity.created(location).body(ApiResponse.ok(unit));
     }
 
     @PutMapping("/rooms/{roomId}/units/{unitId}")

@@ -13,9 +13,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Arrays;
 import java.util.List;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
+@Tag(name = "Catalog", description = "Static reference data: hotel types, room categories, amenities (public)")
 @RestController
-@RequestMapping("/api/catalog")
+@RequestMapping({"/api/v1/catalog", "/api/catalog"})
 public class CatalogController {
 
     @GetMapping("/options")

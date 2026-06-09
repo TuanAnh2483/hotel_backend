@@ -19,9 +19,11 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDate;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
+@Tag(name = "AI Pricing", description = "AI-powered price suggestions, occupancy forecast, model training and feedback")
 @RestController
-@RequestMapping("/api/partner/rooms/{roomId}")
+@RequestMapping({"/api/v1/partner/rooms/{roomId}", "/api/partner/rooms/{roomId}"})
 @RequiredArgsConstructor
 public class PriceSuggestionController {
 
