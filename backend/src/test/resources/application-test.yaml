@@ -58,3 +58,11 @@ app:
     client-id: ""
   resend:
     api-key: ""
+  rate-limit:
+    enabled: false
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
