@@ -119,27 +119,29 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(PathRequest.toStaticResources().atCommonLocations()).permitAll()
                         // public API
-                        .requestMatchers(HttpMethod.POST, "/api/auth/register").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/auth/google").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/auth/register-partner").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/auth/refresh").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/auth/forgot-password").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/auth/reset-password").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/auth/verify-email").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/auth/resend-verification").permitAll()
-                        // Webhook SePay không có JWT; endpoint tự xác thực bằng API key trong service.
-                        .requestMatchers(HttpMethod.POST, "/api/payments/webhooks/sepay").permitAll()
+                        // Auth — v1 + backward-compat legacy paths
+                        .requestMatchers(HttpMethod.POST, "/api/auth/register", "/api/v1/auth/register").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/auth/login", "/api/v1/auth/login").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/auth/google", "/api/v1/auth/google").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/auth/register-partner", "/api/v1/auth/register-partner").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/auth/refresh", "/api/v1/auth/refresh").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/auth/forgot-password", "/api/v1/auth/forgot-password").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/auth/reset-password", "/api/v1/auth/reset-password").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/auth/verify-email", "/api/v1/auth/verify-email").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/auth/resend-verification", "/api/v1/auth/resend-verification").permitAll()
+                        // Webhook SePay — v1 + legacy
+                        .requestMatchers(HttpMethod.POST, "/api/payments/webhooks/sepay", "/api/v1/payments/webhooks/sepay").permitAll()
                         .requestMatchers(HttpMethod.GET, "/auth-demo.html").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/health").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/health", "/api/v1/health").permitAll()
                         .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
-                        // Cho phép browser tải ảnh QR cố định được serve từ static resources.
                         .requestMatchers(HttpMethod.GET, "/payments/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/hotels/search").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/hotels/*").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/hotels/*/reviews").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/hotels/*/available-rooms").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/catalog/**").permitAll()
+                        // Hotels — v1 + legacy
+                        .requestMatchers(HttpMethod.GET, "/api/hotels/search", "/api/v1/hotels/search").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/hotels/*", "/api/v1/hotels/*").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/hotels/*/reviews", "/api/v1/hotels/*/reviews").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/hotels/*/available-rooms", "/api/v1/hotels/*/available-rooms").permitAll()
+                        // Catalog — v1 + legacy
+                        .requestMatchers(HttpMethod.GET, "/api/catalog/**", "/api/v1/catalog/**").permitAll()
                         .requestMatchers(HttpMethod.GET,
                                 "/",
                                 "/index.html",
@@ -166,6 +168,8 @@ public class SecurityConfig {
                                 "/payment/**"
                         ).permitAll()
                         .requestMatchers("/error").permitAll()
+                        // Swagger UI
+                        .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
 
                         // còn lại bắt buộc phải login
                         .anyRequest().authenticated()
