@@ -2,9 +2,8 @@
 import { C } from "../../lib/constants";
 import { useHotelSearch } from "../../hooks/useHotelQueries";
 import { useLang } from "../../contexts/LanguageContext";
-import { Building2, Zap, ShieldCheck, MapPin, CalendarDays, User, BedDouble, Map as MapIcon } from "lucide-react";
+import { Building2, Zap, ShieldCheck, MapPin, CalendarDays, User, BedDouble, Map as MapIcon, LocateFixed } from "lucide-react";
 import HotelResultsMap from "../map/HotelResultsMap";
-import PlaceAutocomplete from "../map/PlaceAutocomplete";
 import "./HotelSearchResults.css";
 
 function Img({ src, alt = "", h = 160, r = 0 }) {
@@ -455,6 +454,8 @@ export default function HotelSearchResults({ navigate, params = {}, hideBanner =
   const [hoveredId, setHoveredId] = useState(null);
   const [searchPoint, setSearchPoint] = useState(null); // tâm tìm kiếm khi click bản đồ
   const [radiusKm, setRadiusKm] = useState(2);
+  const [locating, setLocating] = useState(false);     // đang lấy vị trí "tìm quanh tôi"
+  const [geoError, setGeoError] = useState("");
 
   const searchParams = {
     ...params,
@@ -493,6 +494,32 @@ export default function HotelSearchResults({ navigate, params = {}, hideBanner =
     setBbox(bboxFromPoint(lat, lng, radiusKm));
     setPage(1);
   }, [radiusKm]);
+
+  // "Tìm quanh tôi": lấy vị trí hiện tại của user qua Geolocation API (cần HTTPS/localhost).
+  const handleLocateMe = useCallback(() => {
+    if (!navigator.geolocation) {
+      setGeoError("Trình duyệt không hỗ trợ định vị.");
+      return;
+    }
+    setLocating(true);
+    setGeoError("");
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setLocating(false);
+        setShowMap(true); // đảm bảo bản đồ hiện để thấy vòng tròn bán kính
+        handlePointSelect(pos.coords.latitude, pos.coords.longitude);
+      },
+      (err) => {
+        setLocating(false);
+        setGeoError(
+          err.code === err.PERMISSION_DENIED
+            ? "Bạn đã từ chối quyền vị trí — hãy click lên bản đồ để chọn điểm."
+            : "Không lấy được vị trí — hãy click lên bản đồ để chọn điểm."
+        );
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+    );
+  }, [handlePointSelect]);
 
   // Đổi bán kính khi đã có tâm → tính lại vùng tìm.
   useEffect(() => {
@@ -620,9 +647,14 @@ export default function HotelSearchResults({ navigate, params = {}, hideBanner =
 
         {/* Thanh điều khiển bản đồ */}
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16, flexWrap: "wrap" }}>
-          <PlaceAutocomplete
-            onPlaceSelect={({ bbox: placeBbox }) => { setBbox(placeBbox); setSearchPoint(null); setPage(1); }}
-          />
+          <button
+            type="button"
+            onClick={handleLocateMe}
+            disabled={locating}
+            style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 10, border: `1.5px solid ${C.primary}`, background: C.primary, color: "#fff", fontSize: 13, fontWeight: 700, cursor: locating ? "default" : "pointer", opacity: locating ? 0.7 : 1, flexShrink: 0 }}
+          >
+            <LocateFixed size={15} /> {locating ? "Đang lấy vị trí..." : "Tìm quanh tôi"}
+          </button>
           <button
             type="button"
             onClick={() => setShowMap(v => !v)}
@@ -672,9 +704,14 @@ export default function HotelSearchResults({ navigate, params = {}, hideBanner =
             </button>
           )}
         </div>
-        {showMap && !bbox && (
+        {geoError && (
+          <p style={{ fontSize: 12.5, color: "#b45309", marginTop: -8, marginBottom: 16, display: "flex", alignItems: "center", gap: 6 }}>
+            <MapPin size={13} /> {geoError}
+          </p>
+        )}
+        {showMap && !bbox && !geoError && (
           <p style={{ fontSize: 12.5, color: "#94a3b8", marginTop: -8, marginBottom: 16, display: "flex", alignItems: "center", gap: 6 }}>
-            <MapIcon size={13} /> Mẹo: click thẳng lên bản đồ để tìm khách sạn quanh điểm đó (theo bán kính đã chọn).
+            <MapIcon size={13} /> Mẹo: bấm “Tìm quanh tôi” hoặc click thẳng lên bản đồ để tìm khách sạn quanh điểm đó (theo bán kính đã chọn).
           </p>
         )}
 
