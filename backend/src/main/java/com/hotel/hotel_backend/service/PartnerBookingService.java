@@ -10,6 +10,7 @@ import com.hotel.hotel_backend.dto.response.PartnerAnalyticsSummaryResponse;
 import com.hotel.hotel_backend.dto.response.PartnerBookingDetailResponse;
 import com.hotel.hotel_backend.dto.response.PartnerBookingPageResponse;
 import com.hotel.hotel_backend.dto.response.PartnerBookingSummaryResponse;
+import com.hotel.hotel_backend.dto.response.PartnerMonthlyStatsResponse;
 import com.hotel.hotel_backend.entity.Booking;
 import com.hotel.hotel_backend.entity.BookingStatus;
 import com.hotel.hotel_backend.entity.Hotel;
@@ -27,6 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -195,6 +197,61 @@ public class PartnerBookingService {
                 overall.netRevenue(),
                 hotelSummaries
         );
+    }
+
+    /**
+     * Thống kê theo tháng cho tab Thống kê (StatsTab). Aggregate ngay ở server để frontend
+     * không phải kéo toàn bộ booking cả năm về rồi tự cộng. Tái dùng query analytics có sẵn
+     * (đã distinct để khử trùng do join items).
+     */
+    public PartnerMonthlyStatsResponse getPartnerMonthlyStats(Long hotelId, int year) {
+        long ownerId = securityService.getCurrentPrincipal().userId();
+        LocalDate from = LocalDate.of(year, 1, 1);
+        LocalDate to = LocalDate.of(year, 12, 31);
+
+        List<PartnerBookingSummaryResponse> rawBookings = bookingRepository.findPartnerBookingSummariesForAnalytics(
+                ownerId, hotelId, from, to);
+
+        // Join items có thể nhân dòng — khử trùng theo bookingId (giống getPartnerAnalytics).
+        Map<Long, PartnerBookingSummaryResponse> bookingsById = new LinkedHashMap<>();
+        for (PartnerBookingSummaryResponse booking : rawBookings) {
+            bookingsById.putIfAbsent(booking.bookingId(), booking);
+        }
+
+        long totalRevenue = 0L;
+        long totalBookings = 0L;
+        long confirmedBookings = 0L;
+        long cancelledBookings = 0L;
+        long[] monthRevenue = new long[12];
+        long[] monthCount = new long[12];
+
+        for (PartnerBookingSummaryResponse booking : bookingsById.values()) {
+            totalBookings++;
+            BookingStatus status = booking.status();
+            long price = booking.totalPrice() != null ? booking.totalPrice() : 0L;
+
+            if (status == BookingStatus.CONFIRMED || status == BookingStatus.COMPLETED) {
+                confirmedBookings++;
+            }
+            if (status == BookingStatus.CANCELLED) {
+                cancelledBookings++;
+                continue; // revenue + bucket tháng loại CANCELLED
+            }
+
+            totalRevenue += price;
+            // checkIn không null (query lọc theo check_in trong năm) → tháng luôn hợp lệ.
+            int monthIndex = booking.checkIn().getMonthValue() - 1;
+            monthRevenue[monthIndex] += price;
+            monthCount[monthIndex]++;
+        }
+
+        List<PartnerMonthlyStatsResponse.MonthlyBucket> months = new ArrayList<>(12);
+        for (int i = 0; i < 12; i++) {
+            months.add(new PartnerMonthlyStatsResponse.MonthlyBucket(i + 1, monthRevenue[i], monthCount[i]));
+        }
+
+        return new PartnerMonthlyStatsResponse(
+                year, totalRevenue, totalBookings, confirmedBookings, cancelledBookings, months);
     }
 
     private Booking loadOwnedBooking(Long bookingId) {

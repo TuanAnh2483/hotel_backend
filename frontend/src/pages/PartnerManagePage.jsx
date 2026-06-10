@@ -4,7 +4,7 @@ import Footer from "../components/Footer";
 import {
   useMyHotels, useCreateHotel, useUpdateHotel,
   usePartnerRooms, useCreateRoom, useUpdateRoom, useUploadRoomImages,
-  usePartnerBookings,
+  usePartnerBookings, usePartnerMonthlyStats,
 } from "../hooks/usePartnerQueries";
 import {
   Building2, Bed, Calendar, BarChart3, Pencil, Users, DoorOpen,
@@ -622,31 +622,30 @@ function StatsTab() {
   const { data: hotelsData } = useMyHotels();
   const hotels = Array.isArray(hotelsData) ? hotelsData : [];
 
-  const { data: bookingsData, isLoading: loading } = usePartnerBookings(
-    { hotelId: selHotel?.id, size: 500 },
+  // Aggregate cards + biểu đồ tháng lấy từ server (không kéo toàn bộ booking về client).
+  const { data: statsData, isLoading: statsLoading } = usePartnerMonthlyStats(selHotel?.id, year);
+  // Bảng "Danh sách booking" chỉ cần một trang nhỏ booking trong năm (hiển thị tối đa 50).
+  const { data: bookingsData, isLoading: bookingsLoading } = usePartnerBookings(
+    { hotelId: selHotel?.id, checkInFrom: `${year}-01-01`, checkInTo: `${year}-12-31`, size: 50 },
     { enabled: Boolean(selHotel) },
   );
-  const bookings = bookingsData?.items || [];
+  const loading = statsLoading || bookingsLoading;
+  const tableBookings = bookingsData?.items || [];
 
   useEffect(() => {
     if (hotels.length && !selHotel) setSelHotel(hotels[0]);
   }, [hotels]);
 
-  const filtered = bookings.filter(b => {
-    const d = new Date(b.checkIn || b.createdAt || "");
-    return !isNaN(d) && d.getFullYear() === year;
-  });
-
-  const total   = filtered.filter(b => b.status !== "CANCELLED").reduce((s, b) => s + (b.totalPrice || 0), 0);
-  const counts  = { all: filtered.length, confirmed: filtered.filter(b => b.status === "CONFIRMED" || b.status === "COMPLETED").length, cancelled: filtered.filter(b => b.status === "CANCELLED").length };
+  const total   = statsData?.totalRevenue ?? 0;
+  const counts  = {
+    all:       statsData?.totalBookings ?? 0,
+    confirmed: statsData?.confirmedBookings ?? 0,
+    cancelled: statsData?.cancelledBookings ?? 0,
+  };
 
   const monthly = MONTH_SHORT.map((label, i) => {
-    const key = `${year}-${String(i + 1).padStart(2, "0")}`;
-    const mbks = filtered.filter(b => {
-      const d = b.checkIn || b.createdAt || "";
-      return d.startsWith(key) && b.status !== "CANCELLED";
-    });
-    return { label, revenue: mbks.reduce((s, b) => s + (b.totalPrice || 0), 0), count: mbks.length };
+    const bucket = statsData?.months?.find(m => m.month === i + 1);
+    return { label, revenue: bucket?.revenue ?? 0, count: bucket?.count ?? 0 };
   });
 
   const maxRev = Math.max(...monthly.map(m => m.revenue), 1);
@@ -708,7 +707,7 @@ function StatsTab() {
           {/* Booking table */}
           <div className="partner-manage-card" style={{ overflow: "hidden" }}>
             <div style={{ padding: "14px 20px", borderBottom: "1px solid #f0f0f0", fontWeight: 800, fontSize: 14, color: "#1a1a1a" }}>
-              Danh sách booking ({filtered.length})
+              Danh sách booking ({counts.all})
             </div>
             <div className="partner-manage-table-container">
               <table className="partner-manage-table">
@@ -720,9 +719,9 @@ function StatsTab() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.length === 0 ? (
+                  {tableBookings.length === 0 ? (
                     <tr><td colSpan={6} style={{ textAlign: "center", padding: 40, color: "#bbb" }}>Không có booking trong năm {year}</td></tr>
-                  ) : filtered.slice(0, 50).map(b => (
+                  ) : tableBookings.slice(0, 50).map(b => (
                     <tr key={b.id} className="partner-manage-table-row">
                       <td className="partner-manage-table-td" style={{ fontFamily: "monospace", color: "#888" }}>#{b.id}</td>
                       <td className="partner-manage-table-td">{fmtDate(b.checkIn)}</td>

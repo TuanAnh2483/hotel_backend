@@ -10,6 +10,7 @@ export const partnerKeys = {
   bookings:       (params)          => ["partner", "bookings", params],
   booking:        (id)              => ["partner", "booking", id],
   analytics:      (params)          => ["partner", "analytics", params],
+  monthlyStats:   (hotelId, year)   => ["partner", "monthly-stats", hotelId, year],
   calendar:       (roomId, params)  => ["partner", "calendar", roomId, params],
   refunds:        (params)          => ["partner", "refunds", params],
   priceSugs:      (roomId, from, to) => ["partner", "price-suggestions", roomId, from, to],
@@ -299,6 +300,18 @@ export function useAnalyticsSummary(params, options = {}) {
   return useQuery({
     queryKey: partnerKeys.analytics(params),
     queryFn:  () => partnerService.getAnalyticsSummary(params),
+    staleTime: 2 * 60 * 1000,
+    gcTime:    10 * 60 * 1000,
+    ...options,
+  });
+}
+
+// Thống kê theo tháng (aggregate server-side) cho tab Thống kê.
+export function usePartnerMonthlyStats(hotelId, year, options = {}) {
+  return useQuery({
+    queryKey: partnerKeys.monthlyStats(hotelId, year),
+    queryFn:  () => partnerService.getMonthlyStats(hotelId, year),
+    enabled:  Boolean(hotelId && year),
     staleTime: 2 * 60 * 1000,
     gcTime:    10 * 60 * 1000,
     ...options,

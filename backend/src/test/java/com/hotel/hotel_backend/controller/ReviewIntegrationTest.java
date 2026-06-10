@@ -102,8 +102,8 @@ class ReviewIntegrationTest {
         hotelReviewRepository.deleteAll();
         refundRequestRepository.deleteAll();
         bookingItemRepository.deleteAll();
-        bookingRepository.deleteAll();
         paymentTransactionRepository.deleteAll();
+        bookingRepository.deleteAll();
         dailyRateRepository.deleteAll();
         dailyInventoryRepository.deleteAll();
         roomUnitRepository.deleteAll();

@@ -16,7 +16,14 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Entity
-@Table(name = "bookings")
+@Table(name = "bookings", indexes = {
+        // Quét booking PENDING quá hạn (scheduled job 60s + passive expiration trên read path)
+        @Index(name = "idx_bookings_status_expires_at", columnList = "status, expires_at"),
+        // "Đơn của tôi" (customer) — lọc theo user, sắp theo created_at
+        @Index(name = "idx_bookings_user_id_created_at", columnList = "user_id, created_at"),
+        // Partner summary/analytics lọc theo khoảng check_in
+        @Index(name = "idx_bookings_check_in", columnList = "check_in")
+})
 @Getter
 @Setter
 @NoArgsConstructor

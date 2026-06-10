@@ -143,7 +143,7 @@ public class BookingServiceImpl implements BookingService {
     @Override
     @Transactional
     public List<BookingResponse> getMyBookings(Long userId) {
-        return bookingRepository.findByUserIdOrderByCreatedAtDesc(userId).stream()
+        return bookingRepository.findByUserIdWithDetails(userId).stream()
                 .map(bookingExpirationService::expirePendingBookingIfNeeded)
                 .map(bookingMapper::toBookingResponse)
                 .toList();

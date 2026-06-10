@@ -65,6 +65,7 @@ class VillaBookingFlowIntegrationTest {
     @Autowired private PaymentTransactionRepository paymentTransactionRepository;
     @Autowired private RefundRequestRepository refundRequestRepository;
     @Autowired private HotelReviewRepository hotelReviewRepository;
+    @Autowired private RefundRequestRepository refundRequestRepository;
     @Autowired private RoomUnitRepository roomUnitRepository;
 
     @BeforeEach
@@ -81,8 +82,8 @@ class VillaBookingFlowIntegrationTest {
         hotelReviewRepository.deleteAll();
         refundRequestRepository.deleteAll();
         bookingItemRepository.deleteAll();
-        bookingRepository.deleteAll();
         paymentTransactionRepository.deleteAll();
+        bookingRepository.deleteAll();
         dailyRateRepository.deleteAll();
         dailyInventoryRepository.deleteAll();
         roomUnitRepository.deleteAll();
