@@ -7,7 +7,11 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "booking_items")
+@Table(name = "booking_items", indexes = {
+        // FK columns — Postgres không tự tạo index; cần cho join booking→items→room
+        @Index(name = "idx_booking_items_booking_id", columnList = "booking_id"),
+        @Index(name = "idx_booking_items_room_type_id", columnList = "room_type_id")
+})
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder

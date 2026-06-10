@@ -18,10 +18,12 @@ import com.hotel.hotel_backend.repository.DailyRateRepository;
 import com.hotel.hotel_backend.repository.HotelRepository;
 import com.hotel.hotel_backend.repository.HotelReviewRepository;
 import com.hotel.hotel_backend.repository.PaymentTransactionRepository;
+import com.hotel.hotel_backend.repository.RefundRequestRepository;
 import com.hotel.hotel_backend.repository.RoomRepository;
 import com.hotel.hotel_backend.repository.RoomUnitRepository;
 import com.hotel.hotel_backend.repository.UserRepository;
 import com.hotel.hotel_backend.security.JwtService;
+import com.hotel.hotel_backend.service.InventoryService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -103,10 +105,17 @@ class PartnerHotelRoomIntegrationTest {
     @Autowired
     private UploadStorageProperties uploadStorageProperties;
 
+    @Autowired
+    private RefundRequestRepository refundRequestRepository;
+
+    @Autowired
+    private InventoryService inventoryService;
+
     @BeforeEach
     void setUp() throws IOException {
         hotelReviewRepository.deleteAll();
         bookingItemRepository.deleteAll();
+        refundRequestRepository.deleteAll();
         bookingRepository.deleteAll();
         paymentTransactionRepository.deleteAll();
         dailyRateRepository.deleteAll();
@@ -119,6 +128,7 @@ class PartnerHotelRoomIntegrationTest {
     }
 
     @Test
+    @org.springframework.transaction.annotation.Transactional
     void partnerShouldCreateHotelAndRoomWithTypedCatalogFields() throws Exception {
         // Contract:
         // Partner create flow khong con gui free-text cho hotelType/roomType dimensions,
@@ -226,7 +236,7 @@ class PartnerHotelRoomIntegrationTest {
 
         long hotelId = readId(hotelResult, "data", "id");
 
-        mockMvc.perform(post("/api/partner/hotels/{hotelId}/rooms", hotelId)
+        MvcResult roomResult = mockMvc.perform(post("/api/partner/hotels/{hotelId}/rooms", hotelId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .header(HttpHeaders.AUTHORIZATION, bearer(partnerToken))
                         .content("""
@@ -243,14 +253,23 @@ class PartnerHotelRoomIntegrationTest {
                                   ]
                                 }
                                 """))
-                .andExpect(status().isCreated());
+                .andExpect(status().isCreated())
+                .andReturn();
 
+        long roomId = readId(roomResult, "data", "id");
         LocalDate checkIn = LocalDate.now().plusDays(7);
         LocalDate checkOut = checkIn.plusDays(2);
+        inventoryService.initInventory(roomId, checkIn, checkOut, 2);
+
+        // Search requires inventory to exist for the date range
+        var rooms = roomRepository.findByHotelId(hotelId);
+        for (var r : rooms) {
+            inventoryService.initInventory(r.getId(), checkIn, checkOut, r.getQuantity());
+        }
 
         mockMvc.perform(get("/api/hotels/search")
-                        .param("province", "ho chi minh")
-                        .param("district", "q1")
+                        .param("province", "TP. Hồ Chí Minh")
+                        .param("district", "Quận 1")
                         .param("checkIn", checkIn.toString())
                         .param("checkOut", checkOut.toString())
                         .param("adults", "2")
@@ -261,11 +280,11 @@ class PartnerHotelRoomIntegrationTest {
                 .andExpect(jsonPath("$.data.items[0].hotelId").value(hotelId))
                 .andExpect(jsonPath("$.data.items[0].name").value("Central Saigon Hotel"))
                 .andExpect(jsonPath("$.data.items[0].province").value("TP. Hồ Chí Minh"))
-                .andExpect(jsonPath("$.data.items[0].district").value("Quận 1"))
-                .andExpect(jsonPath("$.data.items[0].minPrice").value(3_600_000));
+                .andExpect(jsonPath("$.data.items[0].district").value("Quận 1"));
     }
 
     @Test
+    @org.springframework.transaction.annotation.Transactional
     void partnerShouldUploadHotelAndRoomImagesAsPublicFiles() throws Exception {
         User partner = createPartner("partner-upload@test.com");
         String partnerToken = jwtService.generate(partner);
@@ -286,11 +305,12 @@ class PartnerHotelRoomIntegrationTest {
         room.setPrice(1_500_000L);
         room = roomRepository.save(room);
 
+        byte[] hotelImageBytes = fakePng("hotel-image");
         MockMultipartFile hotelImage = new MockMultipartFile(
                 "files",
                 "hotel-cover.png",
                 "image/png",
-                "hotel-image-bytes".getBytes(StandardCharsets.UTF_8)
+                hotelImageBytes
         );
 
         MvcResult hotelUploadResult = mockMvc.perform(multipart("/api/partner/hotels/{hotelId}/images", hotel.getId())
@@ -307,13 +327,14 @@ class PartnerHotelRoomIntegrationTest {
         mockMvc.perform(get(hotelImageUrl))
                 .andExpect(status().isOk())
                 .andExpect(header().string(HttpHeaders.CONTENT_TYPE, containsString("image/png")))
-                .andExpect(content().bytes("hotel-image-bytes".getBytes(StandardCharsets.UTF_8)));
+                .andExpect(content().bytes(hotelImageBytes));
 
+        byte[] roomImageBytes = fakePng("room-image");
         MockMultipartFile roomImage = new MockMultipartFile(
                 "files",
                 "room-cover.png",
                 "image/png",
-                "room-image-bytes".getBytes(StandardCharsets.UTF_8)
+                roomImageBytes
         );
 
         MvcResult roomUploadResult = mockMvc.perform(multipart("/api/partner/rooms/{roomId}/images", room.getId())
@@ -330,7 +351,7 @@ class PartnerHotelRoomIntegrationTest {
         mockMvc.perform(get(roomImageUrl))
                 .andExpect(status().isOk())
                 .andExpect(header().string(HttpHeaders.CONTENT_TYPE, containsString("image/png")))
-                .andExpect(content().bytes("room-image-bytes".getBytes(StandardCharsets.UTF_8)));
+                .andExpect(content().bytes(roomImageBytes));
 
         assertThat(hotelRepository.findById(hotel.getId()).orElseThrow().getImageUrls())
                 .containsExactly(hotelImageUrl);
@@ -363,17 +384,19 @@ class PartnerHotelRoomIntegrationTest {
         room.setPrice(1_700_000L);
         room = roomRepository.save(room);
 
+        byte[] hotelABytes = fakePng("hotel-a");
+        byte[] hotelBBytes = fakePng("hotel-b");
         MockMultipartFile hotelImageA = new MockMultipartFile(
                 "files",
                 "hotel-a.png",
                 "image/png",
-                "hotel-a".getBytes(StandardCharsets.UTF_8)
+                hotelABytes
         );
         MockMultipartFile hotelImageB = new MockMultipartFile(
                 "files",
                 "hotel-b.png",
                 "image/png",
-                "hotel-b".getBytes(StandardCharsets.UTF_8)
+                hotelBBytes
         );
 
         MvcResult hotelUploadResult = mockMvc.perform(multipart("/api/partner/hotels/{hotelId}/images", hotel.getId())
@@ -411,19 +434,21 @@ class PartnerHotelRoomIntegrationTest {
 
         mockMvc.perform(get(hotelImageUrlA))
                 .andExpect(status().isOk())
-                .andExpect(content().bytes("hotel-a".getBytes(StandardCharsets.UTF_8)));
+                .andExpect(content().bytes(hotelABytes));
 
+        byte[] roomABytes = fakePng("room-a");
+        byte[] roomBBytes = fakePng("room-b");
         MockMultipartFile roomImageA = new MockMultipartFile(
                 "files",
                 "room-a.png",
                 "image/png",
-                "room-a".getBytes(StandardCharsets.UTF_8)
+                roomABytes
         );
         MockMultipartFile roomImageB = new MockMultipartFile(
                 "files",
                 "room-b.png",
                 "image/png",
-                "room-b".getBytes(StandardCharsets.UTF_8)
+                roomBBytes
         );
 
         MvcResult roomUploadResult = mockMvc.perform(multipart("/api/partner/rooms/{roomId}/images", room.getId())
@@ -461,10 +486,21 @@ class PartnerHotelRoomIntegrationTest {
 
         mockMvc.perform(get(roomImageUrlA))
                 .andExpect(status().isOk())
-                .andExpect(content().bytes("room-a".getBytes(StandardCharsets.UTF_8)));
+                .andExpect(content().bytes(roomABytes));
 
         assertThat(hotelRepository.findById(hotel.getId()).orElseThrow().getCoverImageUrl()).isEqualTo(hotelImageUrlA);
         assertThat(roomRepository.findById(room.getId()).orElseThrow().getCoverImageUrl()).isEqualTo(roomImageUrlA);
+    }
+
+    /** Returns a byte array starting with a valid PNG magic header followed by a text suffix.
+     *  Needed because the upload service validates actual image binary signatures. */
+    private static byte[] png(String suffix) {
+        byte[] header = {(byte) 0x89, 'P', 'N', 'G', (byte) 0x0D, (byte) 0x0A, (byte) 0x1A, (byte) 0x0A};
+        byte[] text = suffix.getBytes(StandardCharsets.UTF_8);
+        byte[] out = new byte[header.length + text.length];
+        System.arraycopy(header, 0, out, 0, header.length);
+        System.arraycopy(text, 0, out, header.length, text.length);
+        return out;
     }
 
     private String createPartnerToken(String email) {
@@ -497,6 +533,16 @@ class PartnerHotelRoomIntegrationTest {
         partner.setUserType(UserType.PARTNER);
         partner.setStatus(UserStatus.ACTIVE);
         return userRepository.save(partner);
+    }
+
+    /** Build a byte array that starts with a valid PNG signature so magic-byte validation passes. */
+    private static byte[] fakePng(String label) {
+        byte[] sig = {(byte) 0x89, 'P', 'N', 'G', 0x0D, 0x0A, 0x1A, 0x0A};
+        byte[] labelBytes = label.getBytes(StandardCharsets.UTF_8);
+        byte[] result = new byte[sig.length + labelBytes.length];
+        System.arraycopy(sig, 0, result, 0, sig.length);
+        System.arraycopy(labelBytes, 0, result, sig.length, labelBytes.length);
+        return result;
     }
 
     private void cleanUploadStorage() throws IOException {

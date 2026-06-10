@@ -15,6 +15,7 @@ import com.hotel.hotel_backend.repository.DailyRateRepository;
 import com.hotel.hotel_backend.repository.HotelRepository;
 import com.hotel.hotel_backend.repository.HotelReviewRepository;
 import com.hotel.hotel_backend.repository.PaymentTransactionRepository;
+import com.hotel.hotel_backend.repository.RefundRequestRepository;
 import com.hotel.hotel_backend.repository.RoomRepository;
 import com.hotel.hotel_backend.repository.RoomUnitRepository;
 import com.hotel.hotel_backend.repository.UserRepository;
@@ -86,6 +87,9 @@ class PartnerRoomCalendarIntegrationTest {
     private HotelReviewRepository hotelReviewRepository;
 
     @Autowired
+    private RefundRequestRepository refundRequestRepository;
+
+    @Autowired
     private InventoryService inventoryService;
 
     private LocalDate from;
@@ -95,6 +99,7 @@ class PartnerRoomCalendarIntegrationTest {
     void setUp() {
         hotelReviewRepository.deleteAll();
         bookingItemRepository.deleteAll();
+        refundRequestRepository.deleteAll();
         bookingRepository.deleteAll();
         paymentTransactionRepository.deleteAll();
         dailyRateRepository.deleteAll();

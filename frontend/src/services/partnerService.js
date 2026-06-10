@@ -96,6 +96,13 @@ export const partnerService = {
     return apiClient.get("/api/partner/analytics/summary", { params: p });
   },
 
+  // Thống kê theo tháng (aggregate server-side) cho tab Thống kê.
+  getMonthlyStats: (hotelId, year) => {
+    const p = { year };
+    if (hotelId) p.hotelId = hotelId;
+    return apiClient.get("/api/partner/analytics/monthly", { params: p });
+  },
+
   // ── Room calendar ───────────────────────────────────────────────────
   getRoomCalendar: (roomId, params) =>
     apiClient.get(`/api/partner/rooms/${roomId}/calendar`, {

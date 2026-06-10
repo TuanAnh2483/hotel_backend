@@ -15,6 +15,7 @@ import com.hotel.hotel_backend.repository.DailyRateRepository;
 import com.hotel.hotel_backend.repository.HotelRepository;
 import com.hotel.hotel_backend.repository.HotelReviewRepository;
 import com.hotel.hotel_backend.repository.PaymentTransactionRepository;
+import com.hotel.hotel_backend.repository.RefundRequestRepository;
 import com.hotel.hotel_backend.repository.RoomRepository;
 import com.hotel.hotel_backend.repository.RoomUnitRepository;
 import com.hotel.hotel_backend.repository.UserRepository;
@@ -80,6 +81,9 @@ class PartnerBookingIntegrationTest {
     private PaymentTransactionRepository paymentTransactionRepository;
 
     @Autowired
+    private RefundRequestRepository refundRequestRepository;
+
+    @Autowired
     private DailyInventoryRepository dailyInventoryRepository;
 
     @Autowired
@@ -91,6 +95,7 @@ class PartnerBookingIntegrationTest {
     @BeforeEach
     void setUp() {
         hotelReviewRepository.deleteAll();
+        refundRequestRepository.deleteAll();
         bookingItemRepository.deleteAll();
         bookingRepository.deleteAll();
         paymentTransactionRepository.deleteAll();
@@ -237,7 +242,11 @@ class PartnerBookingIntegrationTest {
 
         long bookingId = createBooking(customerToken, room.getId(), checkIn, checkOut, "complete@test.com");
         payBooking(customerToken, bookingId, "partner-complete-pay");
-        moveBookingStay(bookingId, LocalDate.now().minusDays(3), LocalDate.now().minusDays(1));
+        LocalDate pastIn = LocalDate.now().minusDays(3);
+        LocalDate pastOut = LocalDate.now().minusDays(1);
+        initInventory(room, pastIn, pastOut);
+        inventoryService.reserveInventory(room.getId(), pastIn, pastOut, 1);
+        moveBookingStay(bookingId, pastIn, pastOut);
 
         mockMvc.perform(post("/api/partner/bookings/{bookingId}/complete", bookingId)
                         .header(HttpHeaders.AUTHORIZATION, bearer(partnerToken)))
@@ -363,7 +372,11 @@ class PartnerBookingIntegrationTest {
         payBooking(customerToken, confirmedBookingId, "analytics-pay-confirmed");
         payBooking(customerToken, completedBookingId, "analytics-pay-completed");
         payBooking(customerToken, refundedBookingId, "analytics-pay-refunded");
-        moveBookingStay(completedBookingId, LocalDate.now().minusDays(3), LocalDate.now().minusDays(2));
+        LocalDate cPastIn = LocalDate.now().minusDays(3);
+        LocalDate cPastOut = LocalDate.now().minusDays(2);
+        initInventory(room, cPastIn, cPastOut);
+        inventoryService.reserveInventory(room.getId(), cPastIn, cPastOut, 1);
+        moveBookingStay(completedBookingId, cPastIn, cPastOut);
 
         mockMvc.perform(post("/api/partner/bookings/{bookingId}/complete", completedBookingId)
                         .header(HttpHeaders.AUTHORIZATION, bearer(partnerToken)))

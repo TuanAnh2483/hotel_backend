@@ -3,14 +3,17 @@ package com.hotel.hotel_backend.service;
 import com.hotel.hotel_backend.entity.Booking;
 import com.hotel.hotel_backend.entity.BookingItem;
 import com.hotel.hotel_backend.entity.BookingStatus;
+import com.hotel.hotel_backend.entity.DailyInventory;
 import com.hotel.hotel_backend.repository.BookingItemRepository;
 import com.hotel.hotel_backend.repository.BookingRepository;
+import com.hotel.hotel_backend.repository.DailyInventoryRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 @Slf4j
@@ -20,6 +23,7 @@ public class BookingExpirationService {
 
     private final BookingRepository bookingRepository;
     private final BookingItemRepository bookingItemRepository;
+    private final DailyInventoryRepository dailyInventoryRepository;
     private final InventoryService inventoryService;
 
     @Transactional
@@ -65,7 +69,15 @@ public class BookingExpirationService {
             return;
         }
 
+        long nights = ChronoUnit.DAYS.between(booking.getCheckIn(), booking.getCheckOut());
         for (BookingItem item : items) {
+            List<DailyInventory> inventories = dailyInventoryRepository.findByIdRoomIdAndIdDateBetween(
+                    item.getRoom().getId(), booking.getCheckIn(), booking.getCheckOut().minusDays(1));
+            if (inventories.size() != nights) {
+                log.warn("Skipping inventory release for bookingId={}, roomId={}: incomplete inventory range",
+                        booking.getId(), item.getRoom().getId());
+                continue;
+            }
             inventoryService.releaseInventory(
                     item.getRoom().getId(),
                     booking.getCheckIn(),
