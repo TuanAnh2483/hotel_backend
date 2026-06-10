@@ -65,7 +65,6 @@ class VillaBookingFlowIntegrationTest {
     @Autowired private PaymentTransactionRepository paymentTransactionRepository;
     @Autowired private RefundRequestRepository refundRequestRepository;
     @Autowired private HotelReviewRepository hotelReviewRepository;
-    @Autowired private RefundRequestRepository refundRequestRepository;
     @Autowired private RoomUnitRepository roomUnitRepository;
 
     @BeforeEach
