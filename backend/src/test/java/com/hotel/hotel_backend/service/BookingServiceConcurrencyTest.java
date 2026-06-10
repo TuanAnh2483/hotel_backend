@@ -158,7 +158,7 @@ class BookingServiceConcurrencyTest {
         try {
             ready.countDown();
             start.await(5, TimeUnit.SECONDS);
-            bookingService.createBooking(customerId, request);
+            bookingService.createBooking(customerId, request, null);
             return null;
         } catch (Throwable t) {
             return t;
