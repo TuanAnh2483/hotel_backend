@@ -17,8 +17,9 @@ public interface BookingService {
 
     /**
      * Confirm booking, giữ inventory và tạo booking ở trạng thái PENDING_PAYMENT.
+     * Nếu {@code idempotencyKey} không null và đã tồn tại booking cùng key + userId → trả về booking cũ (idempotent replay).
      */
-    BookingResponse createBooking(Long userId, CreateBookingRequest  request);
+    BookingResponse createBooking(Long userId, CreateBookingRequest request, String idempotencyKey);
 
     /**
      * Lấy danh sách booking của user hiện tại.
