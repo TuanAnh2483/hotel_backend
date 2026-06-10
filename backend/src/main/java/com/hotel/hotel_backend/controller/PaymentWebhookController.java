@@ -24,9 +24,14 @@ public class PaymentWebhookController {
      * Endpoint public để SePay gọi khi tài khoản ngân hàng nhận được tiền.
      *
      * Route này không dùng JWT vì request đến từ hệ thống SePay chứ không phải user.
-     * Vì vậy SecurityConfig permitAll endpoint này, sau đó service tự kiểm tra
-     * header Authorization: Apikey <key> để đảm bảo request thật sự đến từ webhook
-     * mà mình đã cấu hình trên SePay.
+     * SecurityConfig permitAll endpoint này; service tự xác thực bằng header
+     * Authorization: Apikey <key> (PAYMENT_SEPAY_WEBHOOK_API_KEY).
+     *
+     * Idempotency: SePay có thể retry webhook nhiều lần (network timeout, etc.).
+     * Service xử lý an toàn nhờ 3 lớp:
+     *   1. Check gateway_transaction_id đã tồn tại trong DB → bỏ qua nếu trùng
+     *   2. Check transaction.status == SUCCESS → không xử lý lại
+     *   3. UNIQUE constraint trên gateway_transaction_id ở tầng DB
      */
     @PostMapping("/sepay")
     public SepayWebhookResponse handleSepayWebhook(
