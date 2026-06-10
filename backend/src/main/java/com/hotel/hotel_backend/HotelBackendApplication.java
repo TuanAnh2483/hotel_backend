@@ -7,11 +7,13 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.security.autoconfigure.UserDetailsServiceAutoConfiguration;
 import org.springframework.cache.annotation.EnableCaching;
+import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 @EnableConfigurationProperties({JwtProperties.class, AdminSeedProperties.class})
 @EnableScheduling
 @EnableCaching
+@EnableAsync
 @SpringBootApplication(exclude = UserDetailsServiceAutoConfiguration.class)
 public class HotelBackendApplication {
 

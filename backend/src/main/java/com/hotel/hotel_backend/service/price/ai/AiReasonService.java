@@ -16,6 +16,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.OptionalDouble;
+import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
@@ -48,7 +49,10 @@ public class AiReasonService {
 
         try {
             String prompt = promptBuilder.build(room, pricing, model, recentFeedback, avgLeadDays);
-            String response = geminiClient.generate(prompt);
+            // Gọi Gemini trên dedicated thread pool — tránh block main HTTP thread.
+            // Timeout 10s: nếu Gemini chậm/quá tải, fall back về rule-based ngay.
+            String response = geminiClient.generateAsync(prompt)
+                    .get(10, TimeUnit.SECONDS);
             Map<String, AiPricingResult> parsed =
                     responseParser.parse(response, pricing, room.getPrice());
             return fallbackService.mergeFallback(pricing, parsed);

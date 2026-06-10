@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
@@ -11,6 +12,7 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 @Service
 @Slf4j
@@ -68,5 +70,15 @@ public class GeminiClient {
                 .body(String.class);
         log.debug("[Gemini] Response received, len={}", response != null ? response.length() : 0);
         return response;
+    }
+
+    /**
+     * Gọi Gemini API trên dedicated thread pool (geminiExecutor) để không block
+     * main HTTP thread. Caller dùng CompletableFuture.get(timeout) để giới hạn
+     * thời gian chờ — nếu Gemini chậm sẽ timeout và fallback về rule-based.
+     */
+    @Async("geminiExecutor")
+    public CompletableFuture<String> generateAsync(String prompt) {
+        return CompletableFuture.completedFuture(generate(prompt));
     }
 }
