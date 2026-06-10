@@ -43,6 +43,7 @@ public class HotelService {
     private final DailyInventoryRepository dailyInventoryRepository;
     private final DailyRateRepository dailyRateRepository;
     private final SecurityService securityService;
+    private final GeocodingService geocodingService;
 
     @CacheEvict(value = "locationOptions", allEntries = true)
     public HotelResponse create(CreateHotelRequest request) {
@@ -59,6 +60,7 @@ public class HotelService {
         hotel.setAddress(normalizeRequiredText(request.address()));
         hotel.setDistrict(LocationNormalizer.normalizeDistrictLabel(request.district()));
         hotel.setProvince(LocationNormalizer.normalizeProvinceLabel(request.province()));
+        applyCoordinates(hotel, request.latitude(), request.longitude());
         hotel.setOwner(owner);
         hotel.setDescription(normalizeOptionalText(request.description()));
         hotel.setHotelType(request.hotelType());
@@ -99,6 +101,7 @@ public class HotelService {
         hotel.setAddress(normalizeRequiredText(request.address()));
         hotel.setDistrict(LocationNormalizer.normalizeDistrictLabel(request.district()));
         hotel.setProvince(LocationNormalizer.normalizeProvinceLabel(request.province()));
+        applyCoordinates(hotel, request.latitude(), request.longitude());
         hotel.setDescription(normalizeOptionalText(request.description()));
         hotel.setHotelType(request.hotelType());
         hotel.setBookingMode(resolveBookingMode(request.bookingMode(), request.hotelType()));
@@ -219,6 +222,8 @@ public class HotelService {
                 hotel.getAddress(),
                 hotel.getDistrict(),
                 hotel.getProvince(),
+                hotel.getLatitude(),
+                hotel.getLongitude(),
                 hotel.getDescription(),
                 hotel.getHotelType(),
                 hotel.getBookingMode() != null ? hotel.getBookingMode() : BookingMode.BY_ROOM,
@@ -231,6 +236,24 @@ public class HotelService {
                 hotel.getStatus() != null ? hotel.getStatus() : HotelStatus.ACTIVE,
                 hotel.getCancellationPolicy() != null ? hotel.getCancellationPolicy() : com.hotel.hotel_backend.entity.CancellationPolicy.MODERATE
         );
+    }
+
+    /**
+     * Gán toạ độ cho khách sạn. Ưu tiên toạ độ partner ghim trên bản đồ; nếu không có thì
+     * tự geocode từ address + district + province (đã được set trên hotel trước khi gọi).
+     * Geocode lỗi/chưa cấu hình key → để toạ độ null, không chặn việc tạo/sửa khách sạn.
+     */
+    private void applyCoordinates(Hotel hotel, Double requestedLat, Double requestedLng) {
+        if (requestedLat != null && requestedLng != null) {
+            hotel.setLatitude(requestedLat);
+            hotel.setLongitude(requestedLng);
+            return;
+        }
+        geocodingService.geocode(hotel.getAddress(), hotel.getDistrict(), hotel.getProvince())
+                .ifPresent(point -> {
+                    hotel.setLatitude(point.latitude());
+                    hotel.setLongitude(point.longitude());
+                });
     }
 
     /**

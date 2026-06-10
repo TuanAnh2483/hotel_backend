@@ -20,6 +20,7 @@ import {
   CheckCircle2, Clock, Ban, AlertTriangle
 } from "lucide-react";
 import AmenityPicker from "../../components/partner/AmenityPicker";
+import LocationPickerMap from "../../components/map/LocationPickerMap";
 import { HOTEL_AMENITY_CATEGORIES, HOTEL_AMENITIES_FLAT, HOTEL_AMENITY_KEYS } from "../../utils/amenityConfig";
 import "../../styles/pages/partner/PartnerHotels.css";
 import { useLang } from "../../contexts/LanguageContext";
@@ -41,6 +42,7 @@ const BOOKING_MODE_OPTIONS = [
 
 const EMPTY_FORM = {
   name: "", province: "", district: "", address: "",
+  latitude: null, longitude: null,
   hotelType: "HOTEL", bookingMode: "BY_ROOM", description: "",
   amenities: [], customAmenities: [],
   images: [], coverImageUrl: "",
@@ -133,6 +135,17 @@ function HotelForm({ form, setForm, onSubmit, onCancel, saving, title, hotelType
 
         <Field label={t("pt_hotels_address")} required>
           <input className="partner-hotel-form-input" value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))} placeholder={t("pt_hotels_address_ph")} />
+        </Field>
+
+        <Field label="Vị trí trên bản đồ">
+          <LocationPickerMap
+            latitude={form.latitude}
+            longitude={form.longitude}
+            address={form.address}
+            district={form.district}
+            province={form.province}
+            onChange={({ latitude, longitude }) => setForm(f => ({ ...f, latitude, longitude }))}
+          />
         </Field>
 
         <div className="partner-hotel-form-grid">
@@ -300,6 +313,7 @@ export default function PartnerHotels() {
     setForm({
       name: hotel.name || "", province: hotel.province || "", district: hotel.district || "",
       address: hotel.address || "", hotelType: hotel.hotelType || "HOTEL",
+      latitude: hotel.latitude ?? null, longitude: hotel.longitude ?? null,
       bookingMode: hotel.bookingMode || "BY_ROOM",
       description: hotel.description || "",
       amenities: hotel.amenities ? [...hotel.amenities] : [],

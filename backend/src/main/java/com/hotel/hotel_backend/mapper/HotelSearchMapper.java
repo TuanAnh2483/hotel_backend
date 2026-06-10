@@ -16,6 +16,8 @@ public class HotelSearchMapper {
                 hotel.getAddress(),
                 hotel.getProvince(),
                 hotel.getDistrict(),
+                hotel.getLatitude(),
+                hotel.getLongitude(),
                 resolveCoverImageUrl(hotel.getCoverImageUrl(), hotel.getImageUrls()),
                 copyImageUrls(hotel.getImageUrls()),
                 hotel.getRatingAvg(),

@@ -11,6 +11,8 @@ public record HotelSearchItemResponse(
         String address,
         String province,
         String district,
+        Double latitude,
+        Double longitude,
         String coverImageUrl,
         List<String> imageUrls,
         BigDecimal ratingAvg,

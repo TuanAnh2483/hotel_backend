@@ -46,6 +46,10 @@ public class HotelController {
         HotelSearchCriteria criteria = new HotelSearchCriteria(
                 request.getProvince(),
                 request.getDistrict(),
+                request.getSwLat(),
+                request.getSwLng(),
+                request.getNeLat(),
+                request.getNeLng(),
                 request.getCheckIn(),
                 request.getCheckOut(),
                 request.getAdults(),

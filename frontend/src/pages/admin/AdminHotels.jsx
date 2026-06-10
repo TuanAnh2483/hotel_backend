@@ -13,14 +13,14 @@ import { HOTEL_AMENITIES_FLAT, ROOM_AMENITIES_FLAT } from "../../utils/amenityCo
 import { Building2, CheckCircle2, Star, Clock, XCircle, Eye, Pencil, Trash2, Check } from "lucide-react";
 import { useVnLocations } from "../../hooks/useVnLocations";
 import "../../styles/pages/admin/AdminCommon.css";
+import LocationPickerMap from "../../components/map/LocationPickerMap";
 
 const HOTEL_AMENITY_LABEL = Object.fromEntries(HOTEL_AMENITIES_FLAT.map(a => [a.key, a.label]));
 const ROOM_AMENITY_LABEL  = Object.fromEntries(ROOM_AMENITIES_FLAT.map(a => [a.key, a.label]));
 
 const HOTEL_TYPES = ["HOTEL", "RESORT", "VILLA", "APARTMENT", "HOMESTAY", "HOSTEL", "GUEST_HOUSE"];
-const EMPTY_FORM  = { name: "", province: "", district: "", address: "", hotelType: "HOTEL", description: "" };
+const EMPTY_FORM = { name: "", province: "", district: "", address: "", hotelType: "HOTEL", description: "", latitude: null, longitude: null };
 
-// Khách sạn ở trạng thái nào thì hiện nút duyệt/từ chối
 const isPending = h => h.status === "PENDING_APPROVAL";
 
 export default function AdminHotels({ navigate, user, onLogout }) {
@@ -97,7 +97,7 @@ export default function AdminHotels({ navigate, user, onLogout }) {
   const openEdit    = h => {
     setFormError("");
     setSelected(h);
-    setForm({ name: h.name || "", province: h.province || "", district: h.district || "", address: h.address || "", hotelType: h.hotelType || "HOTEL", description: h.description || "" });
+    setForm({ name: h.name || "", province: h.province || "", district: h.district || "", address: h.address || "", hotelType: h.hotelType || "HOTEL", description: h.description || "", latitude: h.latitude ?? null, longitude: h.longitude ?? null });
     setModal("edit");
   };
   const openDel = h => { setFormError(""); setSelected(h); setModal("delete"); };
@@ -531,6 +531,18 @@ export default function AdminHotels({ navigate, user, onLogout }) {
             <div style={{ gridColumn: "1/-1" }}>
               <FormField label={t("adm_hotels_address")} required>
                 <Input value={form.address} onChange={upd("address")} placeholder={t("adm_hotels_address_ph")} />
+              </FormField>
+            </div>
+            <div style={{ gridColumn: "1/-1" }}>
+              <FormField label="Vị trí trên bản đồ">
+                <LocationPickerMap
+                  latitude={form.latitude}
+                  longitude={form.longitude}
+                  address={form.address}
+                  district={form.district}
+                  province={form.province}
+                  onChange={({ latitude, longitude }) => setForm(f => ({ ...f, latitude, longitude }))}
+                />
               </FormField>
             </div>
             <div style={{ gridColumn: "1/-1" }}>

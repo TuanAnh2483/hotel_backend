@@ -35,6 +35,11 @@
     display: none !important;
   }
 
+  /* Ẩn cột bản đồ trên mobile (giữ danh sách full chiều rộng) */
+  .hsr-map-col {
+    display: none !important;
+  }
+
   /* Filter toggle button */
   .hsr-filter-toggle {
     display: inline-flex;

@@ -50,4 +50,17 @@ public interface HotelRepository extends JpaRepository<Hotel, Long> {
  /** Chỉ lấy 2 cột province + district, không load entity → không trigger EAGER collections */
  @Query("SELECT h.province, h.district FROM Hotel h WHERE h.status = :status")
  List<Object[]> findDistinctLocationsByStatus(@Param("status") HotelStatus status);
+
+ /** Khách sạn chưa có toạ độ — dùng cho backfill geocoding dữ liệu cũ. */
+ List<Hotel> findByLatitudeIsNullOrLongitudeIsNull();
+
+ /** Khách sạn nằm trong khung nhìn bản đồ (bounding box) — dùng cho "search as I move the map". */
+ @EntityGraph(attributePaths = {"amenities", "imageUrls"})
+ List<Hotel> findByStatusAndLatitudeBetweenAndLongitudeBetween(
+         HotelStatus status, double swLat, double neLat, double swLng, double neLng);
+
+ @EntityGraph(attributePaths = {"amenities", "imageUrls"})
+ List<Hotel> findByStatusAndHotelTypeInAndLatitudeBetweenAndLongitudeBetween(
+         HotelStatus status, Collection<HotelType> hotelTypes,
+         double swLat, double neLat, double swLng, double neLng);
 }

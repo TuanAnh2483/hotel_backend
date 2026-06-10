@@ -54,6 +54,8 @@ public class HotelDetailService {
                 hotel.getAddress(),
                 hotel.getProvince(),
                 hotel.getDistrict(),
+                hotel.getLatitude(),
+                hotel.getLongitude(),
                 hotel.getDescription(),
                 hotel.getHotelType(),
                 hotel.getBookingMode() != null ? hotel.getBookingMode() : BookingMode.BY_ROOM,

@@ -10,6 +10,9 @@ import { ROOM_AMENITIES_FLAT, HOTEL_AMENITIES_FLAT } from "../utils/amenityConfi
 import { ROOM_CATEGORY_LABELS, BED_TYPE_LABELS } from "../utils/roomConfig";
 import { getTypeLabel } from "../utils/propertyGroupUtils";
 import "../styles/pages/HotelDetailPage.css";
+import HotelLocationMap from "../components/map/HotelLocationMap";
+
+const PLACEHOLDER = "repeating-conic-gradient(#ccc 0% 25%,#e8e8e8 0% 50%) 0 0/20px 20px";
 
 const ROOM_CATEGORY_LABEL = ROOM_CATEGORY_LABELS;
 const BED_TYPE_LABEL       = BED_TYPE_LABELS;
@@ -471,6 +474,22 @@ export default function HotelDetailPage({ navigate, params = {}, user, onLogout,
               </div>
             </div>
           )}
+
+          {/* Vị trí trên bản đồ */}
+          <div style={{ background: "#fff", borderRadius: 12, padding: "20px 24px", marginBottom: 20, boxShadow: "0 1px 6px rgba(0,0,0,0.07)" }}>
+            <h2 style={{ margin: "0 0 16px", fontSize: 18, fontWeight: 700, color: C.dark }}>Vị trí</h2>
+            {hotel?.address && (
+              <p style={{ margin: "0 0 12px", fontSize: 14, color: "#555", display: "flex", alignItems: "center", gap: 6 }}>
+                <MapPin size={15} aria-hidden="true" /> {hotel.address}
+              </p>
+            )}
+            <HotelLocationMap
+              latitude={hotel?.latitude}
+              longitude={hotel?.longitude}
+              name={hotel?.name}
+              address={hotel?.address}
+            />
+          </div>
 
           {/* Rooms — BY_ROOM only */}
           {!isEntire && (

@@ -1,16 +1,33 @@
 package com.hotel.hotel_backend.entity;
 
 
-import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
-
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
+import jakarta.persistence.CollectionTable;
+import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Index;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.OrderColumn;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
+import jakarta.persistence.Table;
+import lombok.Getter;
+import lombok.Setter;
 
 @Entity
 @Table(name = "hotels", indexes = {
@@ -41,6 +58,12 @@ public class  Hotel {
     private String address;
     private String province;
     private String district;
+
+    // Toạ độ địa lý để vẽ pin trên bản đồ và tìm theo vùng (bounding box).
+    // Null nếu chưa geocode hoặc partner chưa ghim vị trí.
+    private Double latitude;
+    private Double longitude;
+
     @Column(columnDefinition = "TEXT")
     private String description;
 

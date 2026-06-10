@@ -46,6 +46,8 @@ function normalizeHotel(h) {
     id:                 h.hotelId,
     name:               h.name,
     address:            h.address || [h.district, h.province].filter(Boolean).join(", "),
+    latitude:           h.latitude != null ? Number(h.latitude) : null,
+    longitude:          h.longitude != null ? Number(h.longitude) : null,
     rating:             Number(h.ratingAvg) || 0,
     ratingCount:        h.ratingCount || 0,
     price:              h.minPrice || 0,
@@ -120,6 +122,11 @@ export const hotelService = {
       bedTypes:       params.bedTypes  || "",
       hotelAmenities: params.hotelAmenities || "",
       roomAmenities:  params.roomAmenities  || "",
+      // Bounding box cho "search as I move the map" (chỉ gửi khi đủ 4 giá trị).
+      swLat:          params.swLat ?? "",
+      swLng:          params.swLng ?? "",
+      neLat:          params.neLat ?? "",
+      neLng:          params.neLng ?? "",
     });
     try {
       const data = await apiClient.get(`/api/hotels/search?${query}`);
@@ -148,6 +155,8 @@ export const hotelService = {
         address:     data.address || [data.district, data.province].filter(Boolean).join(", "),
         province:    data.province  || "",
         district:    data.district  || "",
+        latitude:    data.latitude != null ? Number(data.latitude) : null,
+        longitude:   data.longitude != null ? Number(data.longitude) : null,
         description: data.description || "",
         rating:      Number(data.ratingAvg) || 0,
         ratingCount: data.ratingCount || 0,

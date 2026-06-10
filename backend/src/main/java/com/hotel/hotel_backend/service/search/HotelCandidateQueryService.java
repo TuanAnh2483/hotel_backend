@@ -23,17 +23,23 @@ public class HotelCandidateQueryService {
         String district = StringUtils.hasText(criteria.district()) ? criteria.district().trim() : null;
         Set<HotelType> hotelTypes = criteria.hotelTypes();
 
-        List<Hotel> candidates = queryDatabase(hotelTypes);
-
-        if (province != null) {
-            candidates = candidates.stream()
-                    .filter(hotel -> LocationNormalizer.provinceMatches(hotel.getProvince(), province))
-                    .toList();
-        }
-        if (district != null) {
-            candidates = candidates.stream()
-                    .filter(hotel -> LocationNormalizer.districtMatches(hotel.getDistrict(), district))
-                    .toList();
+        // Khi có khung nhìn bản đồ ("search as I move the map") thì tìm theo toạ độ,
+        // bỏ qua province/district. Database chỉ trả về hotel nằm trong khung nhìn.
+        List<Hotel> candidates;
+        if (criteria.hasBoundingBox()) {
+            candidates = queryByBoundingBox(criteria, hotelTypes);
+        } else {
+            candidates = queryDatabase(hotelTypes);
+            if (province != null) {
+                candidates = candidates.stream()
+                        .filter(hotel -> LocationNormalizer.provinceMatches(hotel.getProvince(), province))
+                        .toList();
+            }
+            if (district != null) {
+                candidates = candidates.stream()
+                        .filter(hotel -> LocationNormalizer.districtMatches(hotel.getDistrict(), district))
+                        .toList();
+            }
         }
 
         if (!criteria.hotelAmenities().isEmpty()) {
@@ -43,6 +49,20 @@ public class HotelCandidateQueryService {
         }
 
         return candidates;
+    }
+
+    private List<Hotel> queryByBoundingBox(HotelSearchCriteria criteria, Set<HotelType> hotelTypes) {
+        double swLat = criteria.swLat();
+        double neLat = criteria.neLat();
+        double swLng = criteria.swLng();
+        double neLng = criteria.neLng();
+
+        if (hotelTypes != null && !hotelTypes.isEmpty()) {
+            return hotelRepository.findByStatusAndHotelTypeInAndLatitudeBetweenAndLongitudeBetween(
+                    HotelStatus.ACTIVE, hotelTypes, swLat, neLat, swLng, neLng);
+        }
+        return hotelRepository.findByStatusAndLatitudeBetweenAndLongitudeBetween(
+                HotelStatus.ACTIVE, swLat, neLat, swLng, neLng);
     }
 
     private List<Hotel> queryDatabase(Set<HotelType> hotelTypes) {

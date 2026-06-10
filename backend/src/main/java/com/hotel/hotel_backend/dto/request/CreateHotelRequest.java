@@ -31,5 +31,9 @@ public record CreateHotelRequest(
         Set<HotelAmenity> amenities,
         Set<String> customAmenities,
         List<@NotBlank(message = "imageUrl must not be blank") String> imageUrls,
-        CancellationPolicy cancellationPolicy
+        CancellationPolicy cancellationPolicy,
+
+        // Toạ độ do partner ghim trên bản đồ. Nếu null, backend sẽ tự geocode từ địa chỉ.
+        Double latitude,
+        Double longitude
 ) {}

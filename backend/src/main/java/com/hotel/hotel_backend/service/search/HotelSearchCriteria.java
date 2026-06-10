@@ -12,6 +12,10 @@ import java.util.Set;
 public record HotelSearchCriteria(
         String province,
         String district,
+        Double swLat,
+        Double swLng,
+        Double neLat,
+        Double neLng,
         LocalDate checkIn,
         LocalDate checkOut,
         Integer adults,
@@ -25,4 +29,9 @@ public record HotelSearchCriteria(
         Set<HotelAmenity> hotelAmenities,
         Set<RoomAmenity> roomAmenities
 ) {
+    /** Có đủ 4 góc toạ độ hợp lệ để tìm theo khung nhìn bản đồ. */
+    public boolean hasBoundingBox() {
+        return swLat != null && swLng != null && neLat != null && neLng != null
+                && swLat <= neLat && swLng <= neLng;
+    }
 }

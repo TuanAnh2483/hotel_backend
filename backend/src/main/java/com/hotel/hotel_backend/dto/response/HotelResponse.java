@@ -16,6 +16,8 @@ public record HotelResponse(
         String address,
         String district,
         String province,
+        Double latitude,
+        Double longitude,
         String description,
         HotelType hotelType,
         BookingMode bookingMode,

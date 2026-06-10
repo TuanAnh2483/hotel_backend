@@ -27,6 +27,14 @@ public class HotelSearchRequest {
 
     private String district;
 
+    // Khung nhìn bản đồ (bounding box) cho "search as I move the map".
+    // Khi đủ cả 4 giá trị, tìm theo toạ độ thay vì province/district.
+    // sw = góc Tây-Nam, ne = góc Đông-Bắc.
+    private Double swLat;
+    private Double swLng;
+    private Double neLat;
+    private Double neLng;
+
     @NotNull
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
     private LocalDate checkIn;

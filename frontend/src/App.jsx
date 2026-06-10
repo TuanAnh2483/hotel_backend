@@ -367,14 +367,17 @@ function AppRoutes() {
 }
 
 import ScrollToTop from "./components/ScrollToTop";
+import MapsProvider from "./components/map/MapsProvider";
 
 export default function App() {
   return (
     <LanguageProvider>
       <ToastProvider>
         <AuthProvider>
-          <AppRoutes />
-          <ScrollToTop />
+          <MapsProvider>
+            <AppRoutes />
+            <ScrollToTop />
+          </MapsProvider>
         </AuthProvider>
       </ToastProvider>
     </LanguageProvider>

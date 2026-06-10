@@ -1,8 +1,10 @@
-﻿import { useState, useEffect, useRef } from "react";
+﻿import { useState, useEffect, useRef, useCallback } from "react";
 import { C } from "../../lib/constants";
 import { useHotelSearch } from "../../hooks/useHotelQueries";
 import { useLang } from "../../contexts/LanguageContext";
-import { Building2, Zap, ShieldCheck, MapPin, CalendarDays, User, BedDouble } from "lucide-react";
+import { Building2, Zap, ShieldCheck, MapPin, CalendarDays, User, BedDouble, Map as MapIcon } from "lucide-react";
+import HotelResultsMap from "../map/HotelResultsMap";
+import PlaceAutocomplete from "../map/PlaceAutocomplete";
 import "./HotelSearchResults.css";
 
 function Img({ src, alt = "", h = 160, r = 0 }) {
@@ -227,7 +229,7 @@ function FilterSidebar({ filters, onChange, onApply, isDirty, hasActiveFilters, 
   );
 }
 
-function HotelResultCard({ hotel, onView }) {
+function HotelResultCard({ hotel, onView, onHover }) {
   const { t } = useLang();
   return (
     <div
@@ -237,8 +239,8 @@ function HotelResultCard({ hotel, onView }) {
         overflow: "hidden", marginBottom: 20, boxShadow: "0 4px 12px rgba(0,0,0,0.03)",
         transition: "all 0.3s ease", cursor: "pointer"
       }}
-      onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-4px)"; e.currentTarget.style.boxShadow = "0 12px 24px rgba(0,0,0,0.08)"; }}
-      onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.03)"; }}
+      onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-4px)"; e.currentTarget.style.boxShadow = "0 12px 24px rgba(0,0,0,0.08)"; onHover?.(hotel.id); }}
+      onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.03)"; onHover?.(null); }}
       onClick={onView}
     >
       <div className="hsr-result-card-image" style={{ flex: "0 0 260px", position: "relative" }}>
@@ -380,6 +382,13 @@ function filtersToSearchParams(filters) {
   };
 }
 
+/** Vùng vuông (bbox) quanh một điểm theo bán kính km — để tìm "quanh đây" trên bản đồ. */
+function bboxFromPoint(lat, lng, radiusKm) {
+  const dLat = radiusKm / 111; // ~111km cho 1 độ vĩ
+  const dLng = radiusKm / (111 * Math.cos((lat * Math.PI) / 180) || 1);
+  return { swLat: lat - dLat, swLng: lng - dLng, neLat: lat + dLat, neLng: lng + dLng };
+}
+
 function isoDate(date) {
   return date.toISOString().slice(0, 10);
 }
@@ -439,11 +448,20 @@ export default function HotelSearchResults({ navigate, params = {}, hideBanner =
   const [page, setPage] = useState(1);
   const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
 
+  // Bản đồ kết quả
+  const [showMap, setShowMap] = useState(true);
+  const [searchOnMove, setSearchOnMove] = useState(false);
+  const [bbox, setBbox] = useState(null);
+  const [hoveredId, setHoveredId] = useState(null);
+  const [searchPoint, setSearchPoint] = useState(null); // tâm tìm kiếm khi click bản đồ
+  const [radiusKm, setRadiusKm] = useState(2);
+
   const searchParams = {
     ...params,
     ...filtersToSearchParams(appliedFilters),
+    ...(bbox ? bbox : {}),
     page,
-    size: 10,
+    size: bbox ? 50 : 10,
   };
 
   const { data: searchResult, isLoading: loading } = useHotelSearch(searchParams);
@@ -456,7 +474,33 @@ export default function HotelSearchResults({ navigate, params = {}, hideBanner =
     setFilters(next);
     setAppliedFilters(next);
     setPage(1);
+    // Tìm kiếm mới (đổi tỉnh/ngày...) → bỏ khung nhìn bản đồ cũ.
+    setBbox(null);
+    setSearchPoint(null);
   }, [params]);
+
+  // User kéo/zoom bản đồ khi bật "tìm khi di chuyển bản đồ".
+  const handleBoundsChange = useCallback((nextBbox) => {
+    setBbox(nextBbox);
+    setSearchPoint(null); // kéo bản đồ tìm theo vùng → bỏ tâm điểm cũ
+    setPage(1);
+  }, []);
+
+  // User click (hoặc kéo pin) trên bản đồ → tìm quanh điểm theo bán kính.
+  const handlePointSelect = useCallback((lat, lng) => {
+    setSearchPoint({ lat, lng });
+    setSearchOnMove(false); // chuyển sang chế độ tìm theo điểm
+    setBbox(bboxFromPoint(lat, lng, radiusKm));
+    setPage(1);
+  }, [radiusKm]);
+
+  // Đổi bán kính khi đã có tâm → tính lại vùng tìm.
+  useEffect(() => {
+    if (!searchPoint) return;
+    setBbox(bboxFromPoint(searchPoint.lat, searchPoint.lng, radiusKm));
+    setPage(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [radiusKm]);
 
   const handlePageChange = (p) => {
     setPage(p);
@@ -521,7 +565,33 @@ export default function HotelSearchResults({ navigate, params = {}, hideBanner =
       </div>
 
       {/* ── Desktop sidebar ───────────────────────────────────────────── */}
-      <div className="hsr-sidebar" style={{ flex: "0 0 280px" }}>
+      <div
+        className="hsr-sidebar"
+        style={{
+          flex: "0 0 280px",
+          position: "sticky",
+          top: 86,
+          alignSelf: "flex-start",
+          maxHeight: "calc(100vh - 102px)",
+          overflowY: "auto",
+        }}
+      >
+        {/* Bản đồ kết quả — đặt ở đầu khung bộ lọc */}
+        {showMap && (
+          <div style={{ marginBottom: 16 }}>
+            <HotelResultsMap
+              hotels={displayed}
+              activeId={hoveredId}
+              searchOnMove={searchOnMove}
+              onBoundsChange={handleBoundsChange}
+              searchPoint={searchPoint}
+              radiusKm={radiusKm}
+              onPointSelect={handlePointSelect}
+              onView={(h) => navigate("hotel", { hotelId: h.id, ...defaultStayParams(params) })}
+              height={320}
+            />
+          </div>
+        )}
         <FilterSidebar
           filters={filters}
           onChange={setFilters}
@@ -548,6 +618,66 @@ export default function HotelSearchResults({ navigate, params = {}, hideBanner =
 
         <SearchSummaryBar params={params} totalItems={totalItems} loading={loading} />
 
+        {/* Thanh điều khiển bản đồ */}
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16, flexWrap: "wrap" }}>
+          <PlaceAutocomplete
+            onPlaceSelect={({ bbox: placeBbox }) => { setBbox(placeBbox); setSearchPoint(null); setPage(1); }}
+          />
+          <button
+            type="button"
+            onClick={() => setShowMap(v => !v)}
+            style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 10, border: `1.5px solid ${C.primary}`, background: showMap ? "#fff5f5" : "#fff", color: C.primary, fontSize: 13, fontWeight: 700, cursor: "pointer", flexShrink: 0 }}
+          >
+            <MapIcon size={15} /> {showMap ? "Ẩn bản đồ" : "Hiện bản đồ"}
+          </button>
+          {showMap && (
+            <label style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 13, color: "#475569", cursor: "pointer", fontWeight: 600, flexShrink: 0 }}>
+              <input
+                type="checkbox"
+                checked={searchOnMove}
+                onChange={e => setSearchOnMove(e.target.checked)}
+                style={{ accentColor: C.primary, width: 16, height: 16 }}
+              />
+              Tìm khi di chuyển bản đồ
+            </label>
+          )}
+          {showMap && (
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+              <span style={{ fontSize: 13, color: "#475569", fontWeight: 600 }}>Bán kính:</span>
+              {[1, 2, 5, 10].map(km => (
+                <button
+                  key={km}
+                  type="button"
+                  onClick={() => setRadiusKm(km)}
+                  style={{
+                    padding: "6px 10px", borderRadius: 8,
+                    border: `1.5px solid ${radiusKm === km ? C.primary : "#e2e8f0"}`,
+                    background: radiusKm === km ? C.primary : "#fff",
+                    color: radiusKm === km ? "#fff" : "#64748b",
+                    fontSize: 12, fontWeight: 700, cursor: "pointer",
+                  }}
+                >
+                  {km}km
+                </button>
+              ))}
+            </div>
+          )}
+          {bbox && (
+            <button
+              type="button"
+              onClick={() => { setBbox(null); setSearchPoint(null); setSearchOnMove(false); setPage(1); }}
+              style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid #e2e8f0", background: "#fff", color: "#64748b", fontSize: 12, fontWeight: 600, cursor: "pointer", flexShrink: 0 }}
+            >
+              Xoá vùng đã chọn
+            </button>
+          )}
+        </div>
+        {showMap && !bbox && (
+          <p style={{ fontSize: 12.5, color: "#94a3b8", marginTop: -8, marginBottom: 16, display: "flex", alignItems: "center", gap: 6 }}>
+            <MapIcon size={13} /> Mẹo: click thẳng lên bản đồ để tìm khách sạn quanh điểm đó (theo bán kính đã chọn).
+          </p>
+        )}
+
         {!loading && !hideResultText && !params.province && !params.checkIn && !params.hotelTypes && (
           <h2 style={{ fontSize: 20, fontWeight: 800, color: "#1a1a1a", marginBottom: 16 }}>
             {t("results_found")} {totalItems} {t("results_suffix")}
@@ -561,7 +691,12 @@ export default function HotelSearchResults({ navigate, params = {}, hideBanner =
           : displayed.length === 0
             ? <p style={{ color: "#888", textAlign: "center", padding: "40px 0" }}>{t("no_results")}</p>
             : displayed.map(h => (
-                <HotelResultCard key={h.id} hotel={h} onView={() => navigate("hotel", { hotelId: h.id, ...defaultStayParams(params) })} />
+                <HotelResultCard
+                  key={h.id}
+                  hotel={h}
+                  onHover={setHoveredId}
+                  onView={() => navigate("hotel", { hotelId: h.id, ...defaultStayParams(params) })}
+                />
               ))
         }
 

@@ -10,6 +10,10 @@ public record AdminUpdateHotelRequest(
         @NotBlank String province,
         @NotBlank String district,
         String description,
-        @NotNull HotelType hotelType
+        @NotNull HotelType hotelType,
+
+        // Toạ độ do admin chỉnh. Nếu null thì giữ nguyên toạ độ hiện có.
+        Double latitude,
+        Double longitude
 ) {
 }

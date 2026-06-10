@@ -19,6 +19,8 @@ public class SearchMapper {
                         hotel.getAddress(),
                         hotel.getProvince(),
                         hotel.getDistrict(),
+                        hotel.getLatitude(),
+                        hotel.getLongitude(),
                         hotel.getCoverImageUrl() != null ? hotel.getCoverImageUrl()
                                 : hotel.getImageUrls().isEmpty() ? null : hotel.getImageUrls().get(0),
                         hotel.getImageUrls(),

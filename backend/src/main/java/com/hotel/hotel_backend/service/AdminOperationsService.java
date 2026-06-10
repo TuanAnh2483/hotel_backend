@@ -11,6 +11,7 @@ import com.hotel.hotel_backend.dto.response.AdminSystemDataResponse;
 import com.hotel.hotel_backend.dto.response.AdminSystemFlaggedBookingResponse;
 import com.hotel.hotel_backend.dto.response.AdminSystemRecentErrorResponse;
 import com.hotel.hotel_backend.dto.response.AdminUserResponse;
+import com.hotel.hotel_backend.dto.response.GeocodeBackfillResponse;
 import com.hotel.hotel_backend.entity.Booking;
 import com.hotel.hotel_backend.entity.BookingMode;
 import com.hotel.hotel_backend.entity.BookingStatus;
@@ -59,6 +60,7 @@ public class AdminOperationsService {
     private final RefundRequestRepository refundRequestRepository;
     private final PasswordEncoder passwordEncoder;
     private final HotelReviewService hotelReviewService;
+    private final GeocodingService geocodingService;
 
     @Transactional(readOnly = true)
     public AdminStatsResponse getStats() {
@@ -163,8 +165,47 @@ public class AdminOperationsService {
         hotel.setDistrict(request.district());
         hotel.setDescription(request.description());
         hotel.setHotelType(request.hotelType());
+        if (request.latitude() != null) {
+            hotel.setLatitude(request.latitude());
+        }
+        if (request.longitude() != null) {
+            hotel.setLongitude(request.longitude());
+        }
 
         return toHotelResponse(hotelRepository.save(hotel));
+    }
+
+    /**
+     * Backfill toạ độ cho các khách sạn cũ chưa có lat/lng bằng Geocoding API.
+     * Chạy một lần cho dữ liệu hiện có; khách sạn nào geocode không ra sẽ để null
+     * và được tính vào "failed" để admin/partner nhập tay sau.
+     */
+    public GeocodeBackfillResponse backfillMissingCoordinates() {
+        if (!geocodingService.isConfigured()) {
+            throw new ApiException(ErrorCode.VALIDATION_ERROR,
+                    "Dịch vụ geocoding chưa sẵn sàng");
+        }
+
+        List<Hotel> missing = hotelRepository.findByLatitudeIsNullOrLongitudeIsNull();
+        int updated = 0;
+        for (Hotel hotel : missing) {
+            var point = geocodingService.geocode(
+                    hotel.getAddress(), hotel.getDistrict(), hotel.getProvince());
+            if (point.isPresent()) {
+                hotel.setLatitude(point.get().latitude());
+                hotel.setLongitude(point.get().longitude());
+                hotelRepository.save(hotel);
+                updated++;
+            }
+            // Nominatim công cộng giới hạn ~1 request/giây — giãn nhịp để không bị chặn.
+            try {
+                Thread.sleep(1100);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                break;
+            }
+        }
+        return new GeocodeBackfillResponse(missing.size(), updated, missing.size() - updated);
     }
 
     @CacheEvict(value = "locationOptions", allEntries = true)
@@ -275,6 +316,8 @@ public class AdminOperationsService {
                 hotel.getAddress(),
                 hotel.getDistrict(),
                 hotel.getProvince(),
+                hotel.getLatitude(),
+                hotel.getLongitude(),
                 hotel.getDescription(),
                 hotel.getHotelType(),
                 hotel.getBookingMode() != null ? hotel.getBookingMode() : com.hotel.hotel_backend.entity.BookingMode.BY_ROOM,

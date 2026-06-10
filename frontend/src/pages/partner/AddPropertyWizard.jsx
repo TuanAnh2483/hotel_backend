@@ -16,6 +16,7 @@ import { ROOM_CATEGORIES, ROOM_CATEGORY_LABELS, BED_TYPES, BED_TYPE_LABELS } fro
 import AmenityPicker from "../../components/partner/AmenityPicker";
 import { HOTEL_AMENITY_CATEGORIES, ROOM_AMENITY_CATEGORIES, HOTEL_AMENITY_KEYS } from "../../utils/amenityConfig";
 import { useVnLocations } from "../../hooks/useVnLocations";
+import LocationPickerMap from "../../components/map/LocationPickerMap";
 
 // ── Constants ───────────────────────────────────────────────────────────
 
@@ -40,6 +41,7 @@ const INITIAL_STATE = {
   step: 0,
   // Step 1
   name: "", province: "", district: "", address: "", phone: "", email: "", website: "",
+  latitude: null, longitude: null,
   // Step 2 - hotel
   totalRooms: "", checkInTime: "14:00", checkOutTime: "12:00",
   roomTypes: [{ ...EMPTY_ROOM_TYPE }],
@@ -226,6 +228,17 @@ function StepBasicInfo({ state, update }) {
           </select>
         </Field>
       </div>
+
+      <Field label="Vị trí trên bản đồ" hint="Ghim đúng vị trí giúp khách dễ tìm. Nếu bỏ trống, hệ thống sẽ tự định vị từ địa chỉ.">
+        <LocationPickerMap
+          latitude={state.latitude}
+          longitude={state.longitude}
+          address={state.address}
+          district={state.district}
+          province={state.province}
+          onChange={({ latitude, longitude }) => update({ latitude, longitude })}
+        />
+      </Field>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
         <Field label="Số điện thoại" required>
@@ -708,6 +721,8 @@ export default function AddPropertyWizard() {
         province: state.province,
         district: state.district,
         address: state.address,
+        latitude: state.latitude,
+        longitude: state.longitude,
         hotelType: state.propertyType,
         bookingMode,
         description: state.description || "",

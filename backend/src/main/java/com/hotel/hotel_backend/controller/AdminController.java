@@ -12,6 +12,7 @@ import com.hotel.hotel_backend.dto.response.AdminStatsResponse;
 import com.hotel.hotel_backend.dto.response.AdminSystemDataResponse;
 import com.hotel.hotel_backend.dto.response.AdminUserResponse;
 import com.hotel.hotel_backend.dto.response.ApiResponse;
+import com.hotel.hotel_backend.dto.response.GeocodeBackfillResponse;
 import com.hotel.hotel_backend.dto.response.PartnerApplicationResponse;
 import com.hotel.hotel_backend.dto.response.RefundRequestResponse;
 import com.hotel.hotel_backend.entity.PartnerApplication;
@@ -70,6 +71,19 @@ public class AdminController {
     @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<List<AdminRoomResponse>> getHotelRooms(@PathVariable Long hotelId) {
         return ok(adminOperationsService.getHotelRooms(hotelId));
+    }
+
+    @PostMapping("/hotels/geocode-missing")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ApiResponse<GeocodeBackfillResponse> geocodeMissingHotels() {
+        return ok(adminOperationsService.backfillMissingCoordinates());
+    }
+
+    @DeleteMapping("/hotels/{hotelId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ApiResponse<Void> deleteHotel(@PathVariable Long hotelId) {
+        adminOperationsService.deleteHotel(hotelId);
+        return ok(null);
     }
 
     @GetMapping("/bookings")
