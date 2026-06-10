@@ -52,9 +52,12 @@ public class BookingController {
 
     @PostMapping()
     @PreAuthorize("hasRole('CUSTOMER')")
-    public ResponseEntity<ApiResponse<BookingResponse>> createBooking(@Valid @RequestBody CreateBookingRequest request,
-                                 @AuthenticationPrincipal JwtPrincipal principal) {
-        BookingResponse booking = bookingService.createBooking(requireUserId(principal), request);
+    public ResponseEntity<ApiResponse<BookingResponse>> createBooking(
+            @Valid @RequestBody CreateBookingRequest request,
+            @AuthenticationPrincipal JwtPrincipal principal,
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey
+    ) {
+        BookingResponse booking = bookingService.createBooking(requireUserId(principal), request, idempotencyKey);
         URI location = URI.create("/api/v1/bookings/" + booking.bookingId());
         return ResponseEntity.created(location).body(ApiResponse.ok(booking));
     }

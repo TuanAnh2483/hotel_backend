@@ -36,6 +36,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -77,17 +78,17 @@ public class BookingServiceImpl implements BookingService {
     }
 
     /**
-     * FIX TASK-2: Retry wrapper — not transactional itself; each attempt is a fresh transaction
-     * via self-proxy. On optimistic-lock conflict, backs off briefly and retries up to
-     * MAX_BOOKING_ATTEMPTS times. After exhausting retries, maps to CONFLICT (HTTP 409).
-     * GlobalExceptionHandler also catches any escaping ObjectOptimisticLockingFailureException
-     * as a second safety net.
+     * Retry wrapper — not transactional itself; each attempt is a fresh transaction via self-proxy.
+     * On optimistic-lock conflict, backs off briefly and retries up to MAX_BOOKING_ATTEMPTS times.
+     *
+     * Idempotency: nếu {@code idempotencyKey} không null và booking đã tồn tại cho cùng key+userId
+     * thì trả về booking cũ ngay, không tạo mới — check nằm bên trong createBookingOnce (trong transaction).
      */
     @Override
-    public BookingResponse createBooking(Long userId, CreateBookingRequest bookingRequest) {
+    public BookingResponse createBooking(Long userId, CreateBookingRequest bookingRequest, String idempotencyKey) {
         for (int attempt = 1; attempt <= MAX_BOOKING_ATTEMPTS; attempt++) {
             try {
-                return self.createBookingOnce(userId, bookingRequest);
+                return self.createBookingOnce(userId, bookingRequest, idempotencyKey);
             } catch (ObjectOptimisticLockingFailureException ex) {
                 if (attempt == MAX_BOOKING_ATTEMPTS) {
                     throw new ApiException(ErrorCode.CONFLICT,
@@ -108,9 +109,21 @@ public class BookingServiceImpl implements BookingService {
     /**
      * Single transactional attempt: reserve inventory, create booking entity, persist contact/items.
      * Called exclusively via self-proxy so @Transactional is enforced through the Spring AOP chain.
+     *
+     * Idempotency check: nếu key không null và booking đã tồn tại cho cùng key+userId → trả ngay,
+     * không tạo mới. Check trong transaction nên lazy-load items/contact hoạt động bình thường.
      */
     @Transactional
-    public BookingResponse createBookingOnce(Long userId, CreateBookingRequest bookingRequest) {
+    public BookingResponse createBookingOnce(Long userId, CreateBookingRequest bookingRequest, String idempotencyKey) {
+        // Idempotency replay — phải check trước khi reserve inventory
+        if (idempotencyKey != null && !idempotencyKey.isBlank()) {
+            Optional<Booking> existing =
+                    bookingRepository.findByIdempotencyKeyAndUserId(idempotencyKey.trim(), userId);
+            if (existing.isPresent()) {
+                return bookingMapper.toBookingResponse(existing.get());
+            }
+        }
+
         validateUserId(userId);
 
         List<BookingRoomRequest> roomRequests = requireRoomRequests(bookingRequest.getRoom());
@@ -123,7 +136,7 @@ public class BookingServiceImpl implements BookingService {
         validateGuestCapacity(bookingRequest.getGuests(), preparation.reservations());
         reserveInventory(preparation.reservations(), bookingRequest.getCheckIn(), bookingRequest.getCheckOut());
 
-        Booking booking = createBookingEntity(userId, bookingRequest);
+        Booking booking = createBookingEntity(userId, bookingRequest, idempotencyKey);
         bookingRepository.save(booking);
 
         BookingContact contact = createBookingContact(bookingContactRequest, booking);
@@ -370,16 +383,18 @@ public class BookingServiceImpl implements BookingService {
         }
     }
 
-    private Booking createBookingEntity(Long userId, CreateBookingRequest bookingRequest) {
+    private Booking createBookingEntity(Long userId, CreateBookingRequest bookingRequest, String idempotencyKey) {
         Booking booking = new Booking();
         booking.setUserId(userId);
         booking.setCheckIn(bookingRequest.getCheckIn());
         booking.setCheckOut(bookingRequest.getCheckOut());
         booking.setGuests(bookingRequest.getGuests());
         booking.setTotalPrice(0L);
-        // Sau confirm booking đã được giữ chỗ nhưng vẫn chờ bước pay placeholder.
         booking.setStatus(BookingStatus.PENDING_PAYMENT);
         booking.setExpiresAt(LocalDateTime.now().plusMinutes(PAYMENT_TTL_MINUTES));
+        if (idempotencyKey != null && !idempotencyKey.isBlank()) {
+            booking.setIdempotencyKey(idempotencyKey.trim());
+        }
         return booking;
     }
 

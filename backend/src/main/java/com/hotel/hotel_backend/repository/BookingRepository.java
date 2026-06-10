@@ -39,6 +39,9 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
 
     Optional<Booking> findByIdAndUserId(Long id, Long userId);
 
+    /** Dùng để replay idempotent booking — scoped by userId để không leak booking của user khác */
+    Optional<Booking> findByIdempotencyKeyAndUserId(String idempotencyKey, Long userId);
+
     List<Booking> findByStatusAndExpiresAtBefore(BookingStatus status, LocalDateTime expiresAt);
 
     long countByStatus(BookingStatus status);

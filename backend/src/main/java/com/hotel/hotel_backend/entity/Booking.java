@@ -85,6 +85,10 @@ public class Booking {
     @Column(name = "checked_out_at")
     private LocalDateTime checkedOutAt;
 
+    /** Idempotency key do client gửi lên, ngăn double-booking khi retry request */
+    @Column(name = "idempotency_key", length = 64, unique = true)
+    private String idempotencyKey;
+
     @PrePersist
     void prePersist() {
         var now = LocalDateTime.now();
