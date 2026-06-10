@@ -85,6 +85,9 @@ jobs:
     name: Deploy to VPS
     runs-on: ubuntu-latest
     needs: build-and-push
+    # Job này chỉ chạy khi secret SSH_HOST được cấu hình (có VPS thật).
+    # Luận văn: chưa có VPS → bỏ qua để CI/CD pipeline không báo lỗi.
+    if: ${{ vars.DEPLOY_ENABLED == 'true' }}
     # Required GitHub Secrets:
     #   SSH_HOST         — VPS IP or hostname
     #   SSH_USER         — SSH username (e.g. ubuntu)
