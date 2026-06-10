@@ -6,10 +6,12 @@
 name: Qodana
 on:
   workflow_dispatch:
-  pull_request:
-  push:
-    branches:
-      - master
+  # Tạm disable auto-trigger — cần QODANA_TOKEN secret để chạy.
+  # Bật lại bằng cách uncomment pull_request và push bên dưới.
+  # pull_request:
+  # push:
+  #   branches:
+  #     - master
 
 jobs:
   qodana:
