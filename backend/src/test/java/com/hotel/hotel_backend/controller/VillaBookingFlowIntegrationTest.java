@@ -10,6 +10,7 @@ import com.hotel.hotel_backend.repository.DailyRateRepository;
 import com.hotel.hotel_backend.repository.HotelRepository;
 import com.hotel.hotel_backend.repository.HotelReviewRepository;
 import com.hotel.hotel_backend.repository.PaymentTransactionRepository;
+import com.hotel.hotel_backend.repository.RefundRequestRepository;
 import com.hotel.hotel_backend.repository.RoomRepository;
 import com.hotel.hotel_backend.repository.RoomUnitRepository;
 import com.hotel.hotel_backend.repository.UserRepository;
@@ -62,6 +63,7 @@ class VillaBookingFlowIntegrationTest {
     @Autowired private BookingItemRepository bookingItemRepository;
     @Autowired private BookingRepository bookingRepository;
     @Autowired private PaymentTransactionRepository paymentTransactionRepository;
+    @Autowired private RefundRequestRepository refundRequestRepository;
     @Autowired private HotelReviewRepository hotelReviewRepository;
     @Autowired private RoomUnitRepository roomUnitRepository;
 
@@ -77,6 +79,7 @@ class VillaBookingFlowIntegrationTest {
 
     private void cleanAll() {
         hotelReviewRepository.deleteAll();
+        refundRequestRepository.deleteAll();
         bookingItemRepository.deleteAll();
         bookingRepository.deleteAll();
         paymentTransactionRepository.deleteAll();

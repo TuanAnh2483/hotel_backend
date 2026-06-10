@@ -17,6 +17,7 @@ import com.hotel.hotel_backend.repository.DailyRateRepository;
 import com.hotel.hotel_backend.repository.HotelRepository;
 import com.hotel.hotel_backend.repository.HotelReviewRepository;
 import com.hotel.hotel_backend.repository.PaymentTransactionRepository;
+import com.hotel.hotel_backend.repository.RefundRequestRepository;
 import com.hotel.hotel_backend.repository.RoomRepository;
 import com.hotel.hotel_backend.repository.RoomUnitRepository;
 import com.hotel.hotel_backend.repository.UserRepository;
@@ -85,6 +86,9 @@ class ReviewIntegrationTest {
     private PaymentTransactionRepository paymentTransactionRepository;
 
     @Autowired
+    private RefundRequestRepository refundRequestRepository;
+
+    @Autowired
     private DailyInventoryRepository dailyInventoryRepository;
 
     @Autowired
@@ -96,6 +100,7 @@ class ReviewIntegrationTest {
     @BeforeEach
     void setUp() {
         hotelReviewRepository.deleteAll();
+        refundRequestRepository.deleteAll();
         bookingItemRepository.deleteAll();
         bookingRepository.deleteAll();
         paymentTransactionRepository.deleteAll();
