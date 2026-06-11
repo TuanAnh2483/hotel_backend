@@ -21,7 +21,7 @@ public class GeminiClient {
     @Value("${app.ai.gemini-api-key:}")
     private String geminiApiKey;
 
-    @Value("${app.ai.model:gemini-2.0-flash}")
+    @Value("${app.ai.model:gemini-2.5-flash-lite}")
     private String model;
 
     private final RestClient restClient;

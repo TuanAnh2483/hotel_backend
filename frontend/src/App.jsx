@@ -368,6 +368,7 @@ function AppRoutes() {
 
 import ScrollToTop from "./components/ScrollToTop";
 import MapsProvider from "./components/map/MapsProvider";
+import ChatWidget from "./components/ChatWidget";
 
 export default function App() {
   return (
@@ -377,6 +378,7 @@ export default function App() {
           <MapsProvider>
             <AppRoutes />
             <ScrollToTop />
+            <ChatWidget />
           </MapsProvider>
         </AuthProvider>
       </ToastProvider>

@@ -131,6 +131,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/auth/resend-verification", "/api/v1/auth/resend-verification").permitAll()
                         // Webhook SePay — v1 + legacy
                         .requestMatchers(HttpMethod.POST, "/api/payments/webhooks/sepay", "/api/v1/payments/webhooks/sepay").permitAll()
+                        // Chatbot customer — public (partner endpoint vẫn cần JWT + @PreAuthorize)
+                        .requestMatchers(HttpMethod.POST, "/api/chat/customer", "/api/v1/chat/customer").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/chat/customer/stream", "/api/v1/chat/customer/stream").permitAll()
                         .requestMatchers(HttpMethod.GET, "/auth-demo.html").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/health", "/api/v1/health").permitAll()
                         .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()

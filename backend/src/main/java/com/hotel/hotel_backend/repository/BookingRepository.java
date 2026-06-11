@@ -155,6 +155,35 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
             """)
     Optional<Booking> findPartnerBookingDetailById(@Param("ownerId") Long ownerId, @Param("bookingId") Long bookingId);
 
+    /** Tra cứu booking theo id kèm contact/items/room/hotel — dùng cho chatbot customer (get_booking_status). */
+    @Query("""
+            select distinct b
+            from Booking b
+            left join fetch b.contact c
+            left join fetch b.items bi
+            left join fetch bi.room r
+            left join fetch r.hotel h
+            where b.id = :id
+            """)
+    Optional<Booking> findByIdWithDetails(@Param("id") Long id);
+
+    /**
+     * Tra cứu booking theo email hoặc số điện thoại trên contact — dùng cho chatbot customer.
+     * Khách thường không nhớ mã id; truyền email và/hoặc phone (ít nhất một). So khớp email không phân biệt hoa thường.
+     */
+    @Query("""
+            select distinct b
+            from Booking b
+            left join fetch b.contact c
+            left join fetch b.items bi
+            left join fetch bi.room r
+            left join fetch r.hotel h
+            where (:email is not null and lower(c.email) = lower(:email))
+               or (:phone is not null and c.phone = :phone)
+            order by b.createdAt desc
+            """)
+    List<Booking> findByContactEmailOrPhone(@Param("email") String email, @Param("phone") String phone);
+
     @Query("""
             select distinct b
             from Booking b

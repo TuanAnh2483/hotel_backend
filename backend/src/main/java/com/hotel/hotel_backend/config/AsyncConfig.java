@@ -31,4 +31,22 @@ public class AsyncConfig {
         executor.initialize();
         return executor;
     }
+
+    /**
+     * Executor riêng cho chat streaming (SseEmitter). Mỗi kết nối SSE giữ 1 thread
+     * suốt phiên trả lời, nên tách khỏi {@code geminiExecutor} (pool nhỏ, dùng cho
+     * price AI) để không starve lẫn nhau.
+     */
+    @Bean(name = "chatStreamExecutor")
+    public Executor chatStreamExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(4);
+        executor.setMaxPoolSize(16);
+        executor.setQueueCapacity(50);
+        executor.setThreadNamePrefix("chat-stream-");
+        executor.setKeepAliveSeconds(60);
+        executor.setRejectedExecutionHandler(new java.util.concurrent.ThreadPoolExecutor.CallerRunsPolicy());
+        executor.initialize();
+        return executor;
+    }
 }

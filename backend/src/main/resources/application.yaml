@@ -45,6 +45,10 @@ spring:
         format_sql: true
         dialect: org.hibernate.dialect.PostgreSQLDialect
         default_batch_fetch_size: 16
+        # Bind/đọc cột thời gian theo UTC nhất quán giữa local (UTC+7) và deploy (UTC),
+        # tránh lệch giờ làm booking PENDING_PAYMENT bị tự hủy ngay khi tạo.
+        jdbc:
+          time_zone: UTC
         boot:
           allow_jdbc_metadata_access: false
 
@@ -134,7 +138,7 @@ app:
 
   ai:
     gemini-api-key: ${GEMINI_API_KEY:}
-    model: ${GEMINI_MODEL:gemini-2.0-flash}
+    model: ${GEMINI_MODEL:gemini-2.5-flash-lite}
 
 springdoc:
   api-docs:

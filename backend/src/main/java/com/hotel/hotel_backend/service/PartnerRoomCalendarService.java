@@ -151,6 +151,47 @@ public class PartnerRoomCalendarService {
     }
 
     /**
+     * Block/unblock phòng cho chatbot partner (tool block_room).
+     *
+     * <p>Tái dùng {@link #loadOwnedRoom} để verify room thuộc đối tác trước khi ghi.
+     * Giữ đúng invariant của codebase: {@code availableRooms} là tổng số phòng mở bán,
+     * {@code blockedRooms} là phần bị khoá, lượng bán được = available − blocked. Vì vậy block
+     * = tăng {@code blockedRooms} (không vượt {@code availableRooms}); unblock = giảm
+     * {@code blockedRooms} (không xuống dưới 0). Trả về số ngày thực sự thay đổi.
+     *
+     * @return số ngày trong range bị tác động
+     */
+    public int blockRooms(Long roomId, LocalDate from, LocalDate to, boolean block, String reason) {
+        Room room = loadOwnedRoom(roomId);
+        validateRange(from, to);
+
+        // Đảm bảo tồn kho tồn tại trong range trước khi điều chỉnh (giống upsertCalendar).
+        inventoryService.initInventory(roomId, from, to.plusDays(1), room.getQuantity());
+
+        List<DailyInventory> inventories = dailyInventoryRepository.findByIdRoomIdAndIdDateBetween(roomId, from, to);
+        int affected = 0;
+        for (DailyInventory inventory : inventories) {
+            int blocked = inventory.getBlockedRooms();
+            int available = inventory.getAvailableRooms();
+            if (block) {
+                if (blocked < available) {
+                    inventory.setBlockedRooms(blocked + 1);
+                    affected++;
+                }
+            } else {
+                if (blocked > 0) {
+                    inventory.setBlockedRooms(blocked - 1);
+                    affected++;
+                }
+            }
+        }
+        if (!inventories.isEmpty()) {
+            dailyInventoryRepository.saveAll(inventories);
+        }
+        return affected;
+    }
+
+    /**
      * Sets base pricing (price + optional minStay) for every room of a hotel
      * over a 1-year window starting from today.
      * Used by AddPropertyWizard on final submit to avoid N individual room calls.
