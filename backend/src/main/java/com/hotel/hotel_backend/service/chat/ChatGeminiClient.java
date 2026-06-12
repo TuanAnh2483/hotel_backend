@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.ResourceAccessException;
@@ -107,7 +108,14 @@ public class ChatGeminiClient {
                         .uri(url)
                         .contentType(MediaType.APPLICATION_JSON)
                         .body(body)
-                        .exchange((request, response) -> readSseStream(response.getBody(), guard));
+                        .exchange((request, response) -> {
+                            // exchange() KHÔNG tự ném khi 4xx/5xx (khác retrieve()). Tự kiểm tra
+                            // status để retry/fallback hoạt động, tránh đọc body lỗi thành text rỗng.
+                            if (response.getStatusCode().isError()) {
+                                throw toHttpException(response);
+                            }
+                            return readSseStream(response.getBody(), guard);
+                        });
             } catch (HttpClientErrorException.TooManyRequests | HttpServerErrorException | ResourceAccessException e) {
                 if (guard.emitted || attempt == MAX_ATTEMPTS - 1) {
                     throw e;
@@ -165,6 +173,23 @@ public class ChatGeminiClient {
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────────
+
+    /**
+     * Dựng exception đúng loại từ response lỗi của stream để {@code withRetry}/fallback bắt được:
+     * 5xx → {@link HttpServerErrorException}, 4xx → {@link HttpClientErrorException} (429 ra
+     * {@code TooManyRequests}). Đọc body lỗi để log nguyên nhân (vd hết credit/quota).
+     */
+    private RuntimeException toHttpException(ClientHttpResponse response) throws java.io.IOException {
+        var status = response.getStatusCode();
+        byte[] bodyBytes = response.getBody().readAllBytes();
+        String bodyText = new String(bodyBytes, StandardCharsets.UTF_8);
+        log.warn("[Chat] stream Gemini trả HTTP {}: {}", status.value(),
+                bodyText.length() > 300 ? bodyText.substring(0, 300) : bodyText);
+        String statusText = status.toString();
+        return status.is5xxServerError()
+                ? HttpServerErrorException.create(status, statusText, response.getHeaders(), bodyBytes, StandardCharsets.UTF_8)
+                : HttpClientErrorException.create(status, statusText, response.getHeaders(), bodyBytes, StandardCharsets.UTF_8);
+    }
 
     private void requireConfigured() {
         if (!isConfigured()) {

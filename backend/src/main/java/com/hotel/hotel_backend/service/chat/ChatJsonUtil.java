@@ -1,7 +1,9 @@
 package com.hotel.hotel_backend.service.chat;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -65,6 +67,37 @@ final class ChatJsonUtil {
             }
         }
         return null;
+    }
+
+    static Double asDouble(Map<String, Object> args, String key) {
+        Object v = args.get(key);
+        if (v instanceof Number n) {
+            return n.doubleValue();
+        }
+        if (v instanceof String s && !s.isBlank()) {
+            try {
+                return Double.parseDouble(s.trim());
+            } catch (NumberFormatException ignored) {
+                return null;
+            }
+        }
+        return null;
+    }
+
+    /** Đọc 1 tham số mảng do Gemini sinh (List), bỏ phần tử rỗng. Chấp nhận cả String đơn lẻ. */
+    static List<String> asStringList(Map<String, Object> args, String key) {
+        Object v = args.get(key);
+        List<String> out = new ArrayList<>();
+        if (v instanceof List<?> list) {
+            for (Object o : list) {
+                if (o != null && !String.valueOf(o).isBlank()) {
+                    out.add(String.valueOf(o).trim());
+                }
+            }
+        } else if (v instanceof String s && !s.isBlank()) {
+            out.add(s.trim());
+        }
+        return out;
     }
 
     static LocalDate asDate(Map<String, Object> args, String key) {

@@ -17,7 +17,7 @@ final class ChatTools {
     static final List<Map<String, Object>> CUSTOMER_TOOLS = List.of(
             decl("search_rooms",
                     "Tìm kiếm phòng còn trống theo tiêu chí của khách. Hỗ trợ lọc theo địa điểm "
-                            + "(tỉnh/thành phố hoặc quận/huyện) qua tham số location.",
+                            + "(tỉnh/thành phố hoặc quận/huyện) qua tham số location, theo tiện nghi và khoảng giá.",
                     obj("type", "object",
                             "properties", obj(
                                     "checkIn", str("Ngày nhận phòng, định dạng yyyy-MM-dd"),
@@ -25,7 +25,10 @@ final class ChatTools {
                                     "guests", integer("Số người ở"),
                                     "location", str("Địa điểm khách muốn ở: tên tỉnh/thành phố hoặc quận/huyện "
                                             + "(ví dụ: Hồ Chí Minh, Đà Nẵng, Quận 1). Tuỳ chọn."),
+                                    "minPrice", number("Giá tối thiểu mỗi đêm (VND), tuỳ chọn"),
                                     "maxPrice", number("Giá tối đa mỗi đêm (VND), tuỳ chọn"),
+                                    "amenities", strArray("Tiện nghi khách sạn cần có, ví dụ: hồ bơi, đỗ xe, gym, "
+                                            + "spa, wifi, ăn sáng. Tuỳ chọn."),
                                     "hotelId", integer("ID khách sạn cụ thể nếu khách hỏi đích danh, tuỳ chọn")
                             ),
                             "required", List.of("checkIn", "checkOut", "guests"))),
@@ -46,14 +49,24 @@ final class ChatTools {
                             ),
                             "required", List.of())),
 
+            decl("get_my_bookings",
+                    "Xem các booking của chính khách đang đăng nhập (không cần email/phone). Dùng khi khách "
+                            + "đã đăng nhập hỏi 'đơn của tôi', 'booking của tôi'. Nếu khách chưa đăng nhập, "
+                            + "tool trả về authenticated=false — khi đó hãy hỏi email/phone và dùng find_booking_by_contact.",
+                    obj("type", "object",
+                            "properties", obj(),
+                            "required", List.of())),
+
             decl("suggest_hotels",
-                    "Gợi ý khách sạn nổi bật (rating cao) hoặc giá rẻ, có thể lọc theo địa điểm. "
-                            + "Dùng khi khách hỏi chung chung chưa có ngày cụ thể.",
+                    "Gợi ý khách sạn nổi bật (rating cao), giá rẻ hoặc gần vị trí khách, có thể lọc theo địa điểm/tiện nghi. "
+                            + "Dùng khi khách hỏi chung chung chưa có ngày cụ thể. Dùng sortBy='distance' khi khách muốn "
+                            + "khách sạn gần vị trí hiện tại (hệ thống tự cung cấp toạ độ).",
                     obj("type", "object",
                             "properties", obj(
                                     "location", str("Tỉnh/thành phố hoặc quận/huyện muốn lọc, tuỳ chọn"),
-                                    "sortBy", enumStr("Tiêu chí xếp hạng: rating (mặc định) hoặc price",
-                                            List.of("rating", "price"))
+                                    "amenities", strArray("Tiện nghi cần có (hồ bơi, đỗ xe, gym, spa…), tuỳ chọn"),
+                                    "sortBy", enumStr("Tiêu chí xếp hạng: rating (mặc định), price, hoặc distance (gần tôi)",
+                                            List.of("rating", "price", "distance"))
                             ),
                             "required", List.of())),
 
@@ -68,14 +81,36 @@ final class ChatTools {
                             "required", List.of("topic"))),
 
             decl("get_nearby_attractions",
-                    "Gợi ý địa điểm tham quan, ăn uống gần khách sạn",
+                    "Lấy liên kết bản đồ để khám phá địa điểm (ăn uống, tham quan…) quanh khách sạn. "
+                            + "Trả về mapsUrl — hãy chia sẻ liên kết này cho khách thay vì tự liệt kê tên địa điểm.",
                     obj("type", "object",
                             "properties", obj(
                                     "hotelId", integer("ID khách sạn"),
                                     "category", enumStr("Loại địa điểm, tuỳ chọn",
                                             List.of("food", "entertainment", "shopping", "nature", "all"))
                             ),
-                            "required", List.of("hotelId")))
+                            "required", List.of("hotelId"))),
+
+            decl("cancel_my_booking",
+                    "Huỷ một booking của chính khách đang đăng nhập. Chỉ huỷ được đơn chưa hoàn tất. "
+                            + "Hệ thống sẽ hiện nút xác nhận trước khi huỷ.",
+                    obj("type", "object",
+                            "properties", obj("bookingId", integer("ID đơn cần huỷ")),
+                            "required", List.of("bookingId"))),
+
+            decl("create_booking_hold",
+                    "Giữ phòng (tạo đơn chờ thanh toán) cho khách đã đăng nhập theo phòng/ngày cụ thể, rồi đưa link "
+                            + "thanh toán. Cần biết hotelId, roomId, ngày nhận/trả và số khách. Hệ thống sẽ hiện nút xác nhận.",
+                    obj("type", "object",
+                            "properties", obj(
+                                    "hotelId", integer("ID khách sạn"),
+                                    "roomId", integer("ID loại phòng cần đặt"),
+                                    "checkIn", str("Ngày nhận phòng, định dạng yyyy-MM-dd"),
+                                    "checkOut", str("Ngày trả phòng, định dạng yyyy-MM-dd"),
+                                    "guests", integer("Số người ở"),
+                                    "quantity", integer("Số phòng cần đặt, mặc định 1")
+                            ),
+                            "required", List.of("roomId", "checkIn", "checkOut")))
     );
 
     static final List<Map<String, Object>> PARTNER_TOOLS = List.of(
@@ -117,7 +152,74 @@ final class ChatTools {
                                     "action", enumStr("Hành động", List.of("block", "unblock")),
                                     "reason", str("Lý do block, tuỳ chọn")
                             ),
-                            "required", List.of("roomId", "dateFrom", "dateTo", "action")))
+                            "required", List.of("roomId", "dateFrom", "dateTo", "action"))),
+
+            decl("set_room_price",
+                    "Đặt giá phòng (VND/đêm) cho một khoảng ngày. PHẢI xác nhận rõ ràng với đối tác "
+                            + "(roomId, khoảng ngày, mức giá) TRƯỚC khi gọi tool này.",
+                    obj("type", "object",
+                            "properties", obj(
+                                    "roomId", integer("ID loại phòng"),
+                                    "dateFrom", str("Ngày bắt đầu, định dạng yyyy-MM-dd"),
+                                    "dateTo", str("Ngày kết thúc, định dạng yyyy-MM-dd"),
+                                    "price", number("Giá mới mỗi đêm (VND), >= 0")
+                            ),
+                            "required", List.of("roomId", "dateFrom", "dateTo", "price"))),
+
+            decl("get_occupancy_rate",
+                    "Xem tỷ lệ lấp đầy (occupancy) của khách sạn đối tác trong khoảng ngày: "
+                            + "phần trăm phòng đã đặt/khoá trên tổng phòng mở bán.",
+                    obj("type", "object",
+                            "properties", obj(
+                                    "dateFrom", str("Ngày bắt đầu, định dạng yyyy-MM-dd"),
+                                    "dateTo", str("Ngày kết thúc, định dạng yyyy-MM-dd"),
+                                    "hotelId", integer("ID khách sạn cụ thể, tuỳ chọn (bỏ trống = tất cả KS của đối tác)")
+                            ),
+                            "required", List.of("dateFrom", "dateTo"))),
+
+            decl("get_recent_reviews",
+                    "Xem đánh giá gần đây của khách sạn đối tác (kèm reviewId để có thể trả lời). "
+                            + "Dùng để tóm tắt cảm nhận khách, điểm cần cải thiện, hoặc lấy reviewId trước khi reply_to_review.",
+                    obj("type", "object",
+                            "properties", obj(
+                                    "hotelId", integer("ID khách sạn cụ thể, tuỳ chọn"),
+                                    "rating", integer("Lọc theo số sao 1-5, tuỳ chọn"),
+                                    "limit", integer("Số đánh giá tối đa cần xem (mặc định 5, tối đa 10)")
+                            ),
+                            "required", List.of())),
+
+            decl("get_booking_detail",
+                    "Xem chi tiết một booking thuộc khách sạn của đối tác (trạng thái, ngày, khách, phòng, tổng tiền).",
+                    obj("type", "object",
+                            "properties", obj("bookingId", integer("ID booking cần xem")),
+                            "required", List.of("bookingId"))),
+
+            decl("get_today_overview",
+                    "Tổng quan nhanh cho đối tác hôm nay: số khách check-in hôm nay, đơn chờ thanh toán, "
+                            + "doanh thu tháng hiện tại và các phòng sắp hết chỗ trong 7 ngày tới.",
+                    obj("type", "object",
+                            "properties", obj(),
+                            "required", List.of())),
+
+            decl("get_revenue_trend",
+                    "Xu hướng doanh thu theo tháng để đối tác thấy biến động: chuỗi nhiều tháng gần nhất, "
+                            + "thay đổi so tháng trước (MoM) và so cùng kỳ năm trước (YoY).",
+                    obj("type", "object",
+                            "properties", obj(
+                                    "year", integer("Năm cần xem, mặc định năm hiện tại"),
+                                    "months", integer("Số tháng gần nhất cần xem, mặc định 6")
+                            ),
+                            "required", List.of())),
+
+            decl("reply_to_review",
+                    "Gửi phản hồi của đối tác cho một đánh giá của khách. Lấy reviewId từ get_recent_reviews. "
+                            + "Hệ thống sẽ hiện nút xác nhận trước khi gửi.",
+                    obj("type", "object",
+                            "properties", obj(
+                                    "reviewId", integer("ID đánh giá cần trả lời"),
+                                    "reply", str("Nội dung phản hồi gửi tới khách")
+                            ),
+                            "required", List.of("reviewId", "reply")))
     );
 
     private static Map<String, Object> decl(String name, String description, Map<String, Object> parameters) {
@@ -138,5 +240,9 @@ final class ChatTools {
 
     private static Map<String, Object> enumStr(String description, List<String> values) {
         return obj("type", "string", "description", description, "enum", values);
+    }
+
+    private static Map<String, Object> strArray(String description) {
+        return obj("type", "array", "description", description, "items", obj("type", "string"));
     }
 }

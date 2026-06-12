@@ -192,6 +192,18 @@ public class PartnerRoomCalendarService {
     }
 
     /**
+     * Đổi giá phòng theo khoảng ngày cho chatbot partner (tool set_room_price).
+     * Tái dùng {@link #upsertCalendar} với request chỉ chứa price (các field khác null → giữ nguyên).
+     * loadOwnedRoom trong upsertCalendar đã verify room thuộc đối tác.
+     *
+     * @return số ngày trong range bị tác động
+     */
+    public int setRoomPrice(Long roomId, LocalDate from, LocalDate to, long price) {
+        upsertCalendar(roomId, new PartnerRoomCalendarUpsertRequest(from, to, price, null, null, null, null));
+        return (int) (to.toEpochDay() - from.toEpochDay() + 1);
+    }
+
+    /**
      * Sets base pricing (price + optional minStay) for every room of a hotel
      * over a 1-year window starting from today.
      * Used by AddPropertyWizard on final submit to avoid N individual room calls.

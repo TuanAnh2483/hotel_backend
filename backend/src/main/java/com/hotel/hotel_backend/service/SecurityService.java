@@ -30,6 +30,18 @@ public class SecurityService {
         return jwtPrincipal;
     }
 
+    /**
+     * Như {@link #getCurrentPrincipal()} nhưng trả {@code null} thay vì ném khi chưa đăng nhập.
+     * Dùng cho các luồng cho phép ẩn danh (vd chat customer public) cần biết "có user hay không".
+     */
+    public JwtPrincipal getCurrentPrincipalOrNull() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return null;
+        }
+        return authentication.getPrincipal() instanceof JwtPrincipal jwtPrincipal ? jwtPrincipal : null;
+    }
+
     public User getCurrentUser() {
         JwtPrincipal principal = getCurrentPrincipal();
         return userRepository.findById(principal.userId())

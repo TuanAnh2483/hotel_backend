@@ -52,14 +52,17 @@ public interface HotelRepository extends JpaRepository<Hotel, Long> {
  List<Object[]> findDistinctLocationsByStatus(@Param("status") HotelStatus status);
 
  /**
-  * Dòng gợi ý khách sạn cho chatbot: id, name, province, district, ratingAvg, ratingCount, giá phòng thấp nhất.
-  * Chỉ khách sạn ACTIVE có ít nhất 1 phòng. Lọc địa điểm + sắp xếp xử lý ở tầng service.
+  * Dòng gợi ý khách sạn cho chatbot: id, name, province, district, ratingAvg, ratingCount,
+  * giá phòng thấp nhất, coverImageUrl, latitude, longitude. Chỉ khách sạn ACTIVE có ít nhất 1 phòng.
+  * Lọc địa điểm/tiện nghi + sắp xếp (rating/price/distance) xử lý ở tầng service.
   */
  @Query("""
-         SELECT h.id, h.name, h.province, h.district, h.ratingAvg, h.ratingCount, MIN(r.price)
+         SELECT h.id, h.name, h.province, h.district, h.ratingAvg, h.ratingCount, MIN(r.price),
+                h.coverImageUrl, h.latitude, h.longitude
          FROM Hotel h JOIN h.rooms r
          WHERE h.status = com.hotel.hotel_backend.entity.HotelStatus.ACTIVE
-         GROUP BY h.id, h.name, h.province, h.district, h.ratingAvg, h.ratingCount
+         GROUP BY h.id, h.name, h.province, h.district, h.ratingAvg, h.ratingCount, h.coverImageUrl,
+                  h.latitude, h.longitude
          """)
  List<Object[]> findHotelSuggestionRows();
 
